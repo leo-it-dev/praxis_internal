@@ -1,0 +1,61 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "typescript",
+			"tsconfig": "backend/tsconfig.json",
+			"option": "watch",
+			"problemMatcher": [
+				"$tsc-watch"
+			],
+			"group": {
+				"kind": "build",
+			},
+			"label": "tsc: watch - backend"
+		},
+		{
+			"label": "angular: watch - frontend",
+			"type": "npm",
+			"script": "watch",
+			"group": "build",
+			"problemMatcher": {
+				"owner": "typescript",
+				"source": "ts",
+				"applyTo": "closedDocuments",
+				"pattern": {
+					"regexp": "^ERROR in ([^\\s].*)[\\(:](\\d+)[,:](\\d+)(?:\\):\\s+|\\s+-\\s+)(error|warning|info)\\s+(TS\\d+)\\s*:\\s*(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"code": 5,
+					"message": 6
+				},
+				"fileLocation": "relative"
+			},
+			"path": "frontend/intranet/",
+		},
+		{
+			"label": "angular: build - frontend",
+			"type": "npm",
+			"script": "build",
+			"group": "build",
+			"problemMatcher": {
+				"owner": "typescript",
+				"source": "ts",
+				"applyTo": "closedDocuments",
+				"pattern": {
+					"regexp": "^ERROR in ([^\\s].*)[\\(:](\\d+)[,:](\\d+)(?:\\):\\s+|\\s+-\\s+)(error|warning|info)\\s+(TS\\d+)\\s*:\\s*(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"code": 5,
+					"message": 6
+				},
+				"fileLocation": "relative"
+			},
+			"path": "frontend/intranet/",
+		}
+	]
+}

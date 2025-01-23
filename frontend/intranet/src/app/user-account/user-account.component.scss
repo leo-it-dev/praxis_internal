@@ -1,0 +1,76 @@
+.loginHeader {
+    margin: 5px 0px;
+    text-align: left;
+}
+
+.loginHeader1 {
+    font-size: 25pt;
+}
+
+.loginHeader4 {
+    font-size: 15pt;
+}
+
+#loginProfileText {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    row-gap: 10px;
+}
+
+logged-in-svg,
+logged-out-svg {
+    width: 140px;
+    margin: 30px 0px;
+}
+
+#profileThumbnailPhoto {
+    width: 130px;
+    margin: 30px 0px;
+    border-radius: 30px;
+    box-shadow: 0px 0px 5px var(--shadeLevel2);
+}
+
+:host {
+    padding: 50px;
+    box-shadow: 0px 0px 10px gray;
+    display: flex;
+    flex-direction: column;
+    row-gap: 0px;
+    box-sizing: border-box;
+    max-height: 80%;
+    overflow: scroll;
+    background-color: var(--background);
+}
+
+#loggedIn,
+#loggedOut {
+    row-gap: 15px;
+    flex-direction: column;
+    display: flex;
+}
+
+.loginProfileProperty {
+    padding: 10px 20px;
+    border-radius: 100px;
+    background-color: var(--account-property);
+    width: 100%;
+    font-size: 13pt;
+    box-sizing: border-box;
+    display: block;
+}
+
+.gradientText {
+    background: linear-gradient(var(--action-button-gradient-left), var(--action-button-gradient-right));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+}
+
+hr {
+    width: 15%;
+    padding: 0;
+    margin: 0 auto;
+    border-color: #eee;
+}

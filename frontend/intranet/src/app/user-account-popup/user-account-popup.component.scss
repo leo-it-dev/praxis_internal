@@ -1,0 +1,57 @@
+:host {
+    padding: 10px 15px;
+    box-shadow: 0px 0px 10px gray;
+    display: flex;
+    flex-direction: row;
+    column-gap: 10px;
+    box-sizing: border-box;
+    background-color: var(--background);
+    height: 80px;
+    width: min-content;
+    position: relative;
+    cursor: pointer;
+    z-index: 100;
+}
+
+#loginProfileText {
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    row-gap: 10px;
+}
+
+.userdata {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-left: 1px solid var(--shelfGradientDark);
+    padding-left: 6px;
+}
+
+logged-in-svg,
+logged-out-svg,
+#profileThumbnailPhoto {
+    height: 60px;
+    width: 60px;
+    border-radius: 20px;
+}
+
+.loginProfileProperty {
+    padding: 3px;
+    width: min-content;
+    font-size: 10pt;
+    box-sizing: border-box;
+    text-wrap: nowrap;
+    display: block;
+    color: black;
+    line-height: normal;
+}
+
+.gradientText {
+    background: linear-gradient(var(--action-button-gradient-left), var(--action-button-gradient-right));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+}

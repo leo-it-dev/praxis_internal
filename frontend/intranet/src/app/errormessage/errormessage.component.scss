@@ -1,0 +1,70 @@
+@keyframes unload {
+    0% {
+        --progress: 100%;
+        transform: translateX(-50%);
+    }
+    98% {
+        --progress: 0%;
+        opacity: 1;
+        transform: translateX(-50%);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-80%);
+        --progress: 0%;
+    }
+}
+
+@property --progress {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 100%;
+}
+
+:host {
+    --progress: 100%;
+    background-color: var(--shelfGradientDark);
+    font-size: 6pt;
+    color: black;
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+    align-items: center;
+    width: 100%;
+    position: fixed;
+    position: relative;
+    border-bottom: 2px solid transparent;
+    border-image: linear-gradient(to right, var(--error) var(--progress), transparent calc(var(--progress) + 1px));
+    border-image-slice: 1;
+    margin-bottom: 10px;
+    animation: unload 15s ease-out;
+}
+
+#closemsg {
+    display: block;
+    height: auto;
+    width: 50px;
+    background-color: var(--shadeLevel2);
+    cursor: pointer;
+    position: relative;
+    padding: 5px;
+    box-sizing: border-box;
+    color: transparent;
+    font-size: 18pt;
+}
+#closemsg:after {
+    display: block;
+    content: '×';
+    font-size: 18pt;
+    color: black;
+    top: 50%;
+    left: 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 100%;
+}
+
+h1 {
+    margin: 5px;
+}

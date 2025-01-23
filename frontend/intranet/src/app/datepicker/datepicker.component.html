@@ -1,0 +1,2 @@
+<input #dateinput type="text" name="datepicker" class="datepicker" (change)="inputChanged($event)" (select)="inputSelected($event)" (keydown)="keyDownPressed($event)" [placeholder]="placeholder"/>
+<button #todayButton class="todayButton" (click)="setDateToToday()">Heute</button>

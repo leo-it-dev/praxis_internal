@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+        "module": "CommonJS",
+        "sourceMap": true,
+        "outDir": "js"
+    }
+}

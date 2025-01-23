@@ -1,0 +1,21 @@
+<a routerLink="/"><img class="action-item" id="logo" src="/images/logo_tiere.svg" /></a>
+<a routerLink="/qs"><span class="action-item">QS-Meldung</span></a>
+<span class="action-item">Lorem</span>
+<span class="action-item">Ipsum</span>
+<span class="spreader"></span>
+<span class="action-item" id="account" (click)="showAccountPopup = !showAccountPopup">
+    @if(isLoggedIn()) {
+        @if(hasProfilePhoto()) {
+            <img class="action-item" id="profileThumbnailPhoto" src="{{profilePhoto()}}" />
+        }
+        @else {
+            <logged-in-svg col="black" class="action-item"></logged-in-svg>
+        }
+    }
+    @else {
+        <logged-out-svg col="black" class="action-item"></logged-out-svg>
+    }
+    @if(showAccountPopup) {
+        <app-user-account-popup></app-user-account-popup>
+    }
+</span>

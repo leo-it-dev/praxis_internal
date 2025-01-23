@@ -1,0 +1,8 @@
+<div id="inputContainer">
+    <input #searchInput (focusin)="gainedFocus($event)" (focusout)="lostFocus($event)" (input)="handleTextChange($event)" (keydown)="handleKeyDown($event)" type="text" id="searchText" [disabled]="!this.hasMultipleItems()" (scroll)="inputScrolled($event)" />
+    <span #searchTooltip id="inputTooltip">{{hintText()}}</span>
+</div>
+<span id="selected"></span>
+<div id="options">
+    <span tabindex="{{i}}" *ngFor="let item of this.recommendedItems(); index as i" class="option" id="option-{{i}}" [class.hovered]="i == this.hoveredItem()" (click)="optionClicked($event)" (mouseover)="optionMouseOver($event)">{{this.serial.display(item)}}</span>
+</div>

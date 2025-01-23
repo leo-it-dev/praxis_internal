@@ -1,0 +1,39 @@
+{
+  "name": "praxis_internal",
+  "version": "1.0.0",
+  "description": "PraxisInternal provides an intranet endpoint with various veterineral processes implemented.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leo-it-dev/praxis_internal.git"
+  },
+  "keywords": [
+    "veterinary",
+    "node",
+    "webapp"
+  ],
+  "author": "Leonhard Mittermeier",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/leo-it-dev/praxis_internal/issues"
+  },
+  "homepage": "https://github.com/leo-it-dev/praxis_internal#readme",
+  "dependencies": {
+    "@types/express": "^5.0.0",
+    "@types/ldapjs": "^3.0.6",
+    "async-mutex": "^0.5.0",
+    "body-parser": "^1.20.3",
+    "express": "^4.21.1",
+    "js-xlsx": "^0.8.22",
+    "jsonwebtoken": "^9.0.2",
+    "ldapjs": "^3.0.7",
+    "node": "^18.20.5",
+    "vet_proof_external_tools_api": "1.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0"
+  }
+}

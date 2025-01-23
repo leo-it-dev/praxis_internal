@@ -1,0 +1,92 @@
+/* You can add global styles to this file, and also import other style files */
+@font-face {
+    font-family: comfortaa;
+    src: url('../public/fonts/Comfortaa-VariableFont_wght.ttf');
+}
+
+
+html, button, input {
+    font-family: comfortaa;
+}
+input, button {
+    border: 1px solid var(--shadeLevel2) !important;
+    border-radius: 2px;
+    padding: var(--input-padding);
+}
+
+input:focus {
+    outline: none !important;
+    box-shadow: 0 0 3px gray;
+}
+
+html {
+    --background: #fff;
+    --shelfGradientLight: #fff;
+    --shelfGradientDark: #ddd;
+    --shadeLevel2: #bbb;
+    --action-button-gradient-left: #ef709b;
+    --action-button-gradient-right: #fa9372;
+    --account-property: #eee;
+    --error: #f33;
+    --input-padding: 10px;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.actionButton {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0px;
+    border-radius: 20px;
+    padding: 10px;
+    font-size: 13pt;
+    font-weight: bold;
+    color: white;
+    width: 100%;
+    cursor: pointer;
+    text-wrap: nowrap;
+    background: linear-gradient(90deg, var(--action-button-gradient-left), var(--action-button-gradient-right));
+    box-shadow: 0px 0px 0px black;
+    filter: brightness(1.0);
+    transition: box-shadow .1s ease-out, filter .1s ease-out;
+}
+.actionButton:hover {
+    box-shadow: 0px 0px 5px gray;
+    filter: brightness(1.1);
+}
+
+.smallActionButton {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0px;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 9pt;
+    font-weight: bold;
+    color: white;
+    width: 100%;
+    cursor: pointer;
+    text-wrap: nowrap;
+    background: linear-gradient(90deg, var(--action-button-gradient-left), var(--action-button-gradient-right));
+}
+
+.hidden {
+    visibility: hidden;
+}
+
+*:disabled {
+    background-color: var(--shelfGradientDark) !important;
+}
+
+*::selection {
+    background-color: var(--action-button-gradient-right);
+}

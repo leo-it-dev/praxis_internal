@@ -1,0 +1,19 @@
+@if(isLoggedIn()) {
+    @if(hasProfilePhoto()) {
+        <img id="profileThumbnailPhoto" src="{{profilePhoto()}}" />
+    }
+    @else {
+        <logged-in-svg></logged-in-svg>
+    }
+    <div class="userdata">
+        <span class="loginProfileProperty">{{profileMail()}}</span>
+        <span class="loginProfileProperty">{{profileName()}}</span>
+    </div>
+}
+@else {
+    <logged-out-svg></logged-out-svg>
+    <div class="userdata">
+        <span class="loginProfileProperty">Du bist aktuell <span class="gradientText">abgemeldet</span> </span>
+        <button class="smallActionButton" id="goToLoginButton">Zur Login-Seite >></button>
+    </div>
+}

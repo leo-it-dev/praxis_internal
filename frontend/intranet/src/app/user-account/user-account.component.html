@@ -1,0 +1,32 @@
+<div>
+    <h1 class="loginHeader loginHeader1">Login</h1>
+    <h4 class="loginHeader loginHeader4">Intranet Zugang</h4>
+</div>
+
+@if(isLoggedIn()) {
+    <div id="loggedIn">
+        <span id="loginProfileText">
+            @if(hasProfilePhoto()) {
+                <img id="profileThumbnailPhoto" src="{{profilePhoto()}}" />
+            }
+            @else {
+                <logged-in-svg></logged-in-svg>
+            }
+
+            <span class="loginProfileProperty">{{profileMail()}}</span>
+            <span class="loginProfileProperty">{{profileName()}}</span>
+        </span>
+        <hr />
+        <button class="actionButton" id="logout" (click)="handleLogoutClick()">Abmelden</button>
+    </div>
+}
+@else {
+    <div id="loggedOut">
+        <span id="loginProfileText">
+            <logged-out-svg></logged-out-svg>
+            <span class="loginProfileProperty">Du bist aktuell <span class="gradientText">abgemeldet</span> </span>
+        </span>
+        <hr />
+        <button class="actionButton" id="login" (click)="handleLoginClick()">Anmelden</button>
+    </div>
+}

@@ -1,0 +1,42 @@
+<div id="content">
+    <div>
+        <label for="document-number">Abgabebeleg-Nummer</label>
+        <input name="document-number" type="number" id="document-number" />    
+    </div>
+    <div>
+        <label for="delivery-date">Abgabedatum</label>
+        <app-datepicker placeholder="Bitte Datum angeben"></app-datepicker>
+    </div>
+    <div>
+        <!-- One holder-name may have multiple VVVO-Numbers -->
+        <label for="holder-name">Halterbetrieb</label>
+        <div>
+            <app-search-dropdown placeholder="Betrieb suchen..." [items]="this.farmers()" [serial]="this.farmerSerializer" (itemSelectedEvent)="this.selectedFarmer.set($event)"></app-search-dropdown>
+            <app-search-dropdown placeholder="Haltungsart auswählen..." [items]="this.selectedFarmerProductionTypes()" [serial]="this.farmerProductionTypeSerializer" (itemSelectedEvent)="this.selectedProductionType.set($event)"></app-search-dropdown>
+            <app-search-dropdown placeholder="Gruppe auswählen..." [items]="this.selectedProductionUsageGroups()" [serial]="this.usageGroupSerializer" (itemSelectedEvent)="this.usageGroupSelected($event)"></app-search-dropdown>
+        </div>
+    </div>
+    <div>
+        <label for="animal-count">Tieranzahl</label>        
+        <input type="number" id="animal-count" />
+    </div>
+    <div>
+        <label for="drug">Arzneimittel</label>
+        <app-search-dropdown placeholder="Arzneimittel suchen..." [items]="this.reportableDrugList()" [serial]="this.drugSerializer" (itemSelectedEvent)="this.selectedDrug.set($event)"></app-search-dropdown>
+        <app-search-dropdown placeholder="Packungform auswählen..." [items]="this.selectedDrugPackingForms()" [serial]="this.drugPackingSerializer" (itemSelectedEvent)="drugPackingFormSelected($event)"></app-search-dropdown>
+    </div>
+    <div>
+        <label for="drug-amount">Menge</label>
+        <input type="number" id="drug-amount" />
+        <select id="drug-amount-unit">
+            <option name="DrugAmount1">Drug amount 1</option>
+            <option name="DrugAmount2">Drug amount 2</option>
+            <option name="DrugAmount3">Drug amount 3</option>
+        </select>
+    </div>
+    <div>
+        <label for="application-days">Anwendungstage</label>
+        <input type="number" id="application-days" />
+    </div>
+    <button class="actionButton" id="submit-form">Abgabebeleg speichern</button>
+</div>
