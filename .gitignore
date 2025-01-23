@@ -5,3 +5,4 @@ vetproof_api/
 **/node_modules/
 backend/js
 frontend/dist
+backend/options.ts
