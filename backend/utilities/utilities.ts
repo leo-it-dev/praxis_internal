@@ -16,3 +16,29 @@ export function base64urlDecode(base64url: string) {
     // Decode the Base64 string
     return Buffer.from(base64, 'base64').toString('utf8');
 }
+
+export function parseSimpleDate(dateStr: string): Date {
+    let parts = dateStr.split(".");
+    if (parts.length !== 3) {
+        console.error("Error parsing simple date! Not exactly three parts to date!");
+        return new Date(0);
+    }
+    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+}
+
+export function compare(a: number, b: number): number {
+    if ( a > b ) {
+        return 1;
+    }
+    if ( b > a ) {
+        return -1;
+    }
+    return 0;
+}
+
+export function sum(elements: number[]): number {
+    return elements.reduce((last, current) => last + current, 0)
+}
+export function sumVA(...elements: number[]): number {
+    return sum(elements);
+}

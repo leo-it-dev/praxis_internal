@@ -1,7 +1,11 @@
 import { ApiModule } from '../../api_module';
 import { Farmer, QsApiHandler } from './qsapi_handler';
 import { options } from '../../options';
-import { readReportableDrugListFromHIT, ReportableDrug } from './hit_drug_crawler';
+import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
+import { ReportableDrug } from './api_qs_types';
+import { readReportableDrugListFromHIT } from './hit_drug_crawler';
+import { sum } from '../../utilities/utilities';
+// import { readReportableDrugListFromMovetaDB, ReportableDrug } from './moveta_drug_crawler';
 
 /*
 ✔️ ZNR 6500578.00.00
@@ -20,10 +24,12 @@ Farmer -> productionType must be split up into it's elements: e.g.: 1005 -> Mas
 
 export class ApiModuleQs extends ApiModule {
 
-// TODO: Muxes
+    // TODO: Muxes
 
     private qsApiHandler: QsApiHandler;
-    private reportableDrugs: Array<ReportableDrug> = [];
+    private reportableDrugsPrefered: Array<ReportableDrug> = []; // List of drugs that *should* cover all drugs we use.
+    private reportableDrugsFallback: Array<ReportableDrug> = []; // If there are drugs missing though, a vet may also use drugs from the fallback list.
+
     private farmers: Array<Farmer> = [];
 
     modname(): string {
@@ -36,13 +42,26 @@ export class ApiModuleQs extends ApiModule {
 
     updateDrugs() {
         const inst = this;
-        console.log("Scheduled update of internal database of reportable drugs...");
-        readReportableDrugListFromHIT().then(rd => {
-            inst.reportableDrugs = rd;
-            let totalFormsCount =  inst.reportableDrugs.map(d => d.forms.length).reduce((a, b) => a + b, 0)
-            console.log("Successfully read database of reportable drugs! Read " + rd.length + " drugs in a total of " + totalFormsCount + " packaging forms!");
-        }).catch(e => {
-            console.error("Error reading database of reportable drugs!", e);
+        console.log("Scheduled update of internal databases of reportable drugs...");
+
+        let databases = [
+            {logname: "Moveta", promise: readReportableDrugListFromMovetaDB(), store: (drugs) => inst.reportableDrugsPrefered = drugs},
+            {logname: "HIT",    promise: readReportableDrugListFromHIT(),      store: (drugs) => inst.reportableDrugsFallback = drugs}
+        ];
+
+        Promise.allSettled(databases.map(d => d.promise)).then(drugs => {
+            let logStr = "Read databases of reportable drugs: \n";
+            databases.forEach((database, i) => {
+                let drug = drugs[i];
+                if (drug.status == "fulfilled") {
+                    database.store(drug.value);
+                    logStr += " - " + database.logname + ": " + drug.value.length + " Drugs / " + sum(drug.value.map(d => d.forms.length)) + " Packaging Forms\n";
+                } else {
+                    logStr += " - " + database.logname + ": error: " + drug.reason + "\n";
+                    console.error("Error receiving drug list from " + database.logname + " db: " + drug.reason);
+                }
+            })
+            console.log(logStr);
         });
     }
 
@@ -63,13 +82,13 @@ export class ApiModuleQs extends ApiModule {
 
     async initialize() {
         this.qsApiHandler = new QsApiHandler();
-    
+
         await this.qsApiHandler.renewAccessToken();
 
         try {
             let versionInformation = await this.qsApiHandler.requestVersionInformation();
             console.log("Detected Vetproof Gateway Version: " + versionInformation);
-        } catch(e) {
+        } catch (e) {
             console.error("Error detecting Vetproof Gateway Version!: " + e);
         }
 
@@ -85,17 +104,17 @@ export class ApiModuleQs extends ApiModule {
     registerEndpoints() {
         this.get("auth", async (req, user) => {
             this.qsApiHandler.checkAndRenewAccessToken();
-            return {statusCode: 200, responseObject: {}, error: undefined};
+            return { statusCode: 200, responseObject: {}, error: undefined };
         });
         this.get("ping", async (req, user) => {
             this.qsApiHandler.sendAuthenticatedPing();
-            return {statusCode: 200, responseObject: {}, error: undefined};
+            return { statusCode: 200, responseObject: {}, error: undefined };
         })
         this.get("drugs", async (req, user) => {
-            return {statusCode: 200, responseObject: this.reportableDrugs, error: undefined};
+            return { statusCode: 200, responseObject: {prefered: this.reportableDrugsPrefered, fallback: this.reportableDrugsFallback}, error: undefined };
         });
         this.get("farmers", async (req, user) => {
-            return {statusCode: 200, responseObject: this.farmers, error: undefined};
+            return { statusCode: 200, responseObject: this.farmers, error: undefined };
         });
     }
 }

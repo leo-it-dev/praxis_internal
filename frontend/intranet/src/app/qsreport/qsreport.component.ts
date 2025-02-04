@@ -52,7 +52,7 @@ export class QsreportComponent {
 	farmerSerializer: IStringify<Farmer> = {display: (farmer) => farmer.name};
 	farmerProductionTypeSerializer: IStringify<ApiCompatibleProductionType> = {display: (prodType) => prodType.productionTypeName};
 	usageGroupSerializer: IStringify<ProductionUsageGroup> = {display: (usageGroup) => usageGroup.usageGroupName};
-	drugSerializer: IStringify<ReportableDrug> = {display: (reportableDrug) => reportableDrug.name + " - " + reportableDrug.znr};
+	drugSerializer: IStringify<ReportableDrug> = {display: (reportableDrug) => reportableDrug.name + (reportableDrug.forms.length == 1 ? " - " + reportableDrug.forms[0].package : " ...")};
 	drugPackingSerializer: IStringify<DrugPackage> = {display: (drugPackage) => drugPackage.package};
 
 	constructor(
@@ -64,7 +64,10 @@ export class QsreportComponent {
 		}).then(async resp => {
 			const json = (await resp.json());
 			if (resp.ok) {
-				this.reportableDrugList.set(json["content"]);
+				let reportableDrugsPrefered = json["content"]["prefered"];
+				let reportableDrugsFallback = json["content"]["fallback"];
+
+				this.reportableDrugList.set(reportableDrugsPrefered.concat(reportableDrugsFallback));
 				console.log("Loaded " + this.reportableDrugList().length + " drugs!");
 			} else {
 				throw new Error(json["error"]);
@@ -106,8 +109,8 @@ export class QsreportComponent {
 }
 
 type DrugPackage = {
-    content: string;
     package: string;
+	pid: number;
 }
 
 export type ReportableDrug = {
