@@ -31,10 +31,10 @@ export abstract class ApiModule {
                 let response = {
                     error: "unauthorized" + validationResult
                 };
+                console.error("User tried to access backend resource (" + req.path + ") with invalid access token: " + req.ip + ". There may be a problem with the client app or a foreign program tries to access our backend!");
                 res.status(401).json(response);
             } else {
                 let moduleResponse = await handler(req, validationResult);
-
                 let transformedResponse = {
                     content: moduleResponse.responseObject,
                     error: moduleResponse.error
@@ -51,6 +51,7 @@ export abstract class ApiModule {
                 let response = {
                     error: "unauthorized: " + validationResult
                 };
+                console.error("User tried to access backend resource (" + req.path + ") with invalid access token: " + req.ip + ". There may be a problem with the client app or a foreign program tries to access our backend!");
                 res.status(401).json(response);
             } else {
                 let moduleResponse = await handler(req, validationResult);
