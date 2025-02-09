@@ -5,7 +5,7 @@ import { DatepickerComponent } from '../datepicker/datepicker.component';
 import { ApiCompatibleProductionType, QsFarmerProductionCombination } from './qs-farmer-production-combinations';
 import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from './qs-farmer-production-age-mapping';
 import { SessionService } from '../shared-service/session.service';
-import { CategorizedItem, CategorizedList } from '../categorized-list';
+import { CategorizedItem, CategorizedList } from '../utilities/categorized-list';
 import { BlockingoverlayComponent, OverlayButton, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
 
 @Component({
@@ -72,44 +72,50 @@ export class QsreportComponent {
 	})};
 	drugPackingSerializer: IStringify<DrugPackage> = { display: (drugPackage) => ({ text: drugPackage.package, hint: NO_HINT }) };
 
+	async loadApiData() {
+		this.sessionService.accessToken.then((accessToken) => {
+			fetch(QsreportComponent.API_URL_DRUG, {
+				headers: { 'Authorization': 'Bearer ' + accessToken }
+			}).then(async resp => {
+				const json = (await resp.json());
+				if (resp.ok) {
+					let reportableDrugsPrefered = json["content"]["prefered"];
+					let reportableDrugsFallback = json["content"]["fallback"];
+	
+					const categorized = new CategorizedList<ReportableDrug>();
+					categorized.init({ category: this.DRUG_CATEGORY_OK, items: reportableDrugsPrefered }, 
+									{ category: this.DRUG_CATEGORY_WARN, items: reportableDrugsFallback });
+					this.reportableDrugList.set(categorized);
+	
+					console.log("Loaded " + this.reportableDrugList().length + " drugs!");
+				} else {
+					throw new Error(json["error"]);
+				}
+			}).catch(e => {
+				this.errorlistService.showErrorMessage("Error receiving list of reportable drugs: " + e);
+			});
+	
+			fetch(QsreportComponent.API_URL_FARMER, {
+				headers: { 'Authorization': 'Bearer ' + accessToken }
+			}).then(async resp => {
+				const json = (await resp.json());
+				if (resp.ok) {
+					this.farmers.set(json["content"]);
+					console.log("Loaded " + this.farmers().length + " farmers!");
+				} else {
+					throw new Error(json["error"]);
+				}
+			}).catch(e => {
+				this.errorlistService.showErrorMessage("Error receiving list of reportable drugs: " + e);
+			});	
+		});
+	}
+
 	constructor(
 		private errorlistService: ErrorlistService,
 		private sessionService: SessionService
 	) {
-		fetch(QsreportComponent.API_URL_DRUG, {
-			headers: { 'Authorization': 'Bearer ' + sessionService.accessToken }
-		}).then(async resp => {
-			const json = (await resp.json());
-			if (resp.ok) {
-				let reportableDrugsPrefered = json["content"]["prefered"];
-				let reportableDrugsFallback = json["content"]["fallback"];
-
-				const categorized = new CategorizedList<ReportableDrug>();
-				categorized.init({ category: this.DRUG_CATEGORY_OK, items: reportableDrugsPrefered }, 
-								{ category: this.DRUG_CATEGORY_WARN, items: reportableDrugsFallback });
-				this.reportableDrugList.set(categorized);
-
-				console.log("Loaded " + this.reportableDrugList().length + " drugs!");
-			} else {
-				throw new Error(json["error"]);
-			}
-		}).catch(e => {
-			errorlistService.showErrorMessage("Error receiving list of reportable drugs: " + e);
-		});
-
-		fetch(QsreportComponent.API_URL_FARMER, {
-			headers: { 'Authorization': 'Bearer ' + sessionService.accessToken }
-		}).then(async resp => {
-			const json = (await resp.json());
-			if (resp.ok) {
-				this.farmers.set(json["content"]);
-				console.log("Loaded " + this.farmers().length + " farmers!");
-			} else {
-				throw new Error(json["error"]);
-			}
-		}).catch(e => {
-			errorlistService.showErrorMessage("Error receiving list of reportable drugs: " + e);
-		});
+		this.loadApiData();
 	}
 
 	drugPackingFormSelected(drugPacking?: DrugPackage) {

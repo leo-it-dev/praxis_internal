@@ -66,7 +66,6 @@ export class ApiModuleAuth extends ApiModule {
                     'POST', bodyContent,
                     'application/x-www-form-urlencoded', 'Basic ' + btoa(options.ADFS_INTRANET_CLIENT_ID + ":" + options.ADFS_INTRANET_CLIENT_SECRET));
 
-                // TODO: Verify status code
                 if (resp.statusCode == 200) {
                     const adfsToken = new AdfsSessionToken(idtoken);
                     console.log("User logged out: ", adfsToken.userPrincipalName);
@@ -77,6 +76,48 @@ export class ApiModuleAuth extends ApiModule {
                 }
             } catch(err) {
                 console.error("An internal error occurred trying to log out user: ", err);
+                return {statusCode: 500, responseObject: {}, error: 'An internal error occurred!'};
+            }
+        });
+
+        this.postJson("refreshToken", async (req, _) => {
+            const refreshToken = req.body['refresh_token'];
+            const idToken = req.body['id_token'];
+            const bodyContent = "grant_type=refresh_token&refresh_token=" + refreshToken;
+
+            await AdfsOidc.getOidcProvider().validateJWTtoken(idToken);
+            const adfsToken = new AdfsSessionToken(idToken);
+
+            try {
+                let res = await ssl.httpsRequest(
+                    options.HOSTNAME_ADFS, options.ADFS_URL_TOKEN,
+                    'POST', bodyContent,
+                    'application/x-www-form-urlencoded', 'Basic ' + btoa(options.ADFS_INTRANET_CLIENT_ID + ":" + options.ADFS_INTRANET_CLIENT_SECRET));
+                if (res.statusCode == 200) {
+                    const body = JSON.parse(res.data);
+                    let responseObject = {'access_token': undefined, 'refresh_token': undefined, 'id_token': undefined};
+
+                    if ("access_token" in body) {
+                        let accessToken = body["access_token"];
+                        responseObject.access_token = accessToken;
+                        await AdfsOidc.getOidcProvider().validateJWTtoken(accessToken);
+                    } else {
+                        throw new Error("Server returned invalid response in request to client querying /refreshToken! Answer does not contain a new access token!");
+                    }
+                    if ("refresh_token" in body) {
+                        responseObject.refresh_token = body["refresh_token"];
+                    }
+                    if ("id_token" in body) {
+                        responseObject.id_token = body["id_token"];
+                    }
+
+                    console.log("User refreshed it's access token: ", adfsToken.userPrincipalName);
+                    return {statusCode: 200, responseObject: responseObject, error: undefined};
+                } else {
+                    throw new Error("Server returned invalid response while user is trying to refresh it's access token!: " + res.statusCode + ", " + res.data);
+                }
+            } catch(err) {
+                console.error("An internal error occurred trying to refresh access token: ", err);
                 return {statusCode: 500, responseObject: {}, error: 'An internal error occurred!'};
             }
         });

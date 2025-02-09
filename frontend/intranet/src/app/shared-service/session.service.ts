@@ -1,6 +1,7 @@
 import { Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { JwtHelperService } from "./jwt-helper.service";
 import { ErrorlistService } from '../errorlist/errorlist.service';
+import { Router } from '@angular/router';
 
 type TokenClaims = {
     given_name: string,
@@ -27,20 +28,22 @@ export class SessionService {
     static EXCHANGE_TOKEN_URL = "https://internal.mittermeier-kraiburg.vet/module/auth/generateToken"
     static REVOKE_TOKEN_URL = "https://internal.mittermeier-kraiburg.vet/module/auth/revokeToken"
     static USERINFO_URL = "https://internal.mittermeier-kraiburg.vet/module/ldapquery/userinfo"
+    static REFRESH_TOKEN_URL = "https://internal.mittermeier-kraiburg.vet/module/auth/refreshToken"
 
-    private _rawIdToken: string|undefined = undefined;
-    private _rawAccessToken: string|undefined = undefined;
-    private _rawRefreshToken: string|undefined = undefined;
+    private _rawIdToken: string | undefined = undefined;
+    private _rawAccessToken: string | undefined = undefined;
+    private _rawRefreshToken: string | undefined = undefined;
     private _givenName: string = "<unset>";
     private _familyName: string = "<unset>";
     private _email: string = "<unset>";
     private _thumbnailPhoto?: string = undefined;
-    private _sid: string|undefined = undefined;
-    private _rawUserInfo: string|undefined = undefined;
+    private _sid: string | undefined = undefined;
+    private _rawUserInfo: string | undefined = undefined;
     private _isLoggedIn: WritableSignal<boolean> = signal(false);
 
     constructor(private jwtHelperService: JwtHelperService,
-                private errorlistService: ErrorlistService
+        private errorlistService: ErrorlistService,
+        private router: Router
     ) { }
 
     public get givenName() { return this._givenName; }
@@ -48,10 +51,78 @@ export class SessionService {
     public get email() { return this._email; }
     public get thumbnailPhoto() { return this._thumbnailPhoto; }
     public get isLoggedIn() { return this._isLoggedIn(); }
-    public get accessToken() { return this._rawAccessToken };
     public get refreshToken() { return this._rawRefreshToken };
     public get sid() { return this._sid };
-    
+    public get accessToken(): Promise<string> {
+        // Our application propably wants to send this access token to the server. In case it is expired, automatically renew it using our stored renewToken().
+        return new Promise(async (res, rej) => {
+            try {
+                console.log("User app requested access token...");
+                if (this._rawAccessToken == undefined) {
+                    console.log("Access token is undefined!");
+                    this.unauthorizeSession("You are not logged in!").then(rej).catch(rej);
+                    return;
+                }
+
+                const accessTokenIsStillValid = this.jwtHelperService.verifyExpirationClaim(this.jwtHelperService.parseJWTtoken(this._rawAccessToken));
+                if (accessTokenIsStillValid) {
+                    console.log("Access token is valid!");
+                    res(this._rawAccessToken);
+                    return;
+                }
+
+                console.log("Access token must be refreshed...");
+                await this.forceRefreshToken();
+                console.log("Access token was successfully refreshed!");
+                res(this._rawAccessToken);
+            } catch(e) {
+                console.log("Error refreshing access token! Terminating session!");
+                // Session ended and we couldn't refresh it. Unauthorize the user.
+                this.unauthorizeSession("Your session timed out and we could not refresh it!").then(rej).catch(rej);
+            }
+        });
+    };
+
+    forceRefreshToken(): Promise<void> {
+        return new Promise((res, rej) => {
+            fetch(SessionService.REFRESH_TOKEN_URL, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                method: 'POST',
+                body: JSON.stringify({ 'refresh_token': this._rawRefreshToken, 'id_token': this._rawIdToken })
+            }).then(async resp => {
+                if (resp.ok) {
+                    const json = (await resp.json())["content"];
+                    // Server must return a new access token. It may optionally include a new refresh and id token!
+                    this._rawAccessToken = json['access_token'];
+
+                    if ('refresh_token' in json && json['refresh_token'] !== undefined) {
+                        this._rawRefreshToken = json['refresh_token'];
+                    }
+
+                    if ('id_token' in json && json['id_token'] !== undefined) {
+                        let idtoken = json['id_token'];
+                        this._rawIdToken = idtoken;
+                        this.parseIdToken(idtoken);
+                    }
+
+                    this.storeSessionInStore();
+                    res();
+                } else {
+                    const text = await resp.text();
+                    console.error("forceRefreshToken(1): ", text);
+                    throw new Error("Server returned error code " + resp.status + "! Check log for further information!");
+                }
+            }).catch(err => {
+                console.error(err);
+                this.errorlistService.showErrorMessage("There was an error refreshing access token using refreshToken!");
+                rej(err);
+            });
+        });
+    }
+
     authorizeSession() {
         const randomUUID = self.crypto.randomUUID();
         window.location.href = SessionService.AUTH_SERVER + "/oauth2/authorize?response_type=code&scope=openid&client_id=" + SessionService.CLIENT_ID + "&state=" + randomUUID + "&redirect_uri=" + encodeURIComponent(SessionService.CALLBACK_URL);
@@ -120,9 +191,11 @@ export class SessionService {
     }
 
     parseUserInfo(rawDetails: any): boolean {
-        // TODO: Validate rawDetails
-        this._thumbnailPhoto = "data:image/jpg;base64," + rawDetails["thumbnail"];
-        return true;
+        if ('thumbnail' in rawDetails && typeof (rawDetails['thumbnail']) == 'string') {
+            this._thumbnailPhoto = "data:image/jpg;base64," + rawDetails["thumbnail"];
+            return true;
+        }
+        return false;
     }
 
     exchangeCodeForToken(code: string, state: string): Promise<void> {
@@ -190,9 +263,10 @@ export class SessionService {
         });
     }
 
-    unauthorizeSession(): Promise<void> {
+    unauthorizeSession(reason: string): Promise<void> {
         return new Promise((res, rej) => {
             if (!this._isLoggedIn()) {
+                setTimeout((() => {this.redirectClientToLoginPage(reason)}).bind(this), 100);
                 rej();
                 return;
             }
@@ -212,6 +286,7 @@ export class SessionService {
                     sessionStorage.removeItem("refresh");
                     this._isLoggedIn.set(false);
                     this.restoreSessionFromStore();
+                    setTimeout((() => {this.redirectClientToLoginPage(reason)}).bind(this), 100);
                     res();
                 } else {
                     const text = await resp.text();
@@ -221,17 +296,14 @@ export class SessionService {
             }).catch(err => {
                 console.log("unauthorizeSession(2): ", err);
                 this.errorlistService.showErrorMessage("There was an error revoking oauth2 token!");
+                setTimeout((() => {this.redirectClientToLoginPage(reason)}).bind(this), 100);
                 rej(err);
             });
         });
     }
-}
 
-/* Local User profile picture: 
-$user_sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-Path = Computer\HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AccountPicture\Users\<user_sid>\Image1080
-Sync to AD:
-Set-ADUser <username> -Replace @{thumbnailPhoto=([byte[]](Get-Content "<path_to_image>" -Encoding byte))}
-Write to AD users' thumbnailPhoto property!
-Then send that property as claim
-*/
+    redirectClientToLoginPage(reason: string) {
+        this.errorlistService.showErrorMessage(reason);
+        this.router.navigateByUrl("/login");
+    }
+}

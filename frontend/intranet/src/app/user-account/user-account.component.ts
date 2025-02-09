@@ -25,7 +25,7 @@ export class UserAccountComponent {
   }
 
   handleLogoutClick() {
-    this.sessionService.unauthorizeSession();
+    this.sessionService.unauthorizeSession("You have been logged out");
   }
 
   handleLoginClick() {
