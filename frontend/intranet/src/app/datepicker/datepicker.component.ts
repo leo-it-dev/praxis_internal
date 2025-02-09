@@ -47,17 +47,6 @@ export class DatepickerComponent implements AfterViewInit {
 		}
 	}
 
-	parseDate(): Date | null {
-		if (this.input) {
-			let dateParts = (this.input.nativeElement as HTMLInputElement).value.split(".");
-			if (dateParts.length == 3) {
-				let date = new Date(parseInt(dateParts[2]), parseInt(dateParts[1]) - 1, parseInt(dateParts[0]));
-				return date;
-			}
-		}
-		return null;
-	}
-
 	keyDownPressed(event: KeyboardEvent) {
 		let currentEnteredDate = this.parseDate();
 
@@ -77,6 +66,10 @@ export class DatepickerComponent implements AfterViewInit {
 			} else {
 				this.setDateToToday();
 			}
+		} else if(event.key == 'Enter') {
+			if (currentEnteredDate) {
+				this.setDate(currentEnteredDate);
+			}
 		}
 
 		setTimeout(() => {
@@ -94,5 +87,38 @@ export class DatepickerComponent implements AfterViewInit {
 	}
 
 	inputChanged(event: Event) {
+	}
+
+	parseDate(): Date | undefined {
+		let searchString = (this.input!.nativeElement as HTMLInputElement).value;
+		let dateParts = searchString.split(".");
+		let date = undefined;
+
+		if (dateParts.length >= 2) {
+			let dayStr = dateParts[0];
+			let monthStr = dateParts[1];
+			let year = new Date().getFullYear();
+			if (dayStr.length == 1) dayStr = '0' + dayStr;
+			if (monthStr.length == 1) monthStr = '0' + monthStr;
+
+			if (dateParts.length == 3) {
+				let yearStr = dateParts[2];
+				let yearNowStr = String(new Date().getFullYear());
+				console.log(yearNowStr);
+				if (yearStr.length < yearNowStr.length) {
+					yearStr = yearNowStr.substring(0, yearNowStr.length - yearStr.length) + yearStr;
+				}
+				year = parseInt(yearStr);
+			}
+			date = new Date(year, parseInt(monthStr) - 1, parseInt(dayStr));
+		}
+		return date;
+	}
+
+	lostFocus(event: Event) {
+		let currentEnteredDate = this.parseDate();
+		if (currentEnteredDate) {
+			this.setDate(currentEnteredDate);
+		}
 	}
 }

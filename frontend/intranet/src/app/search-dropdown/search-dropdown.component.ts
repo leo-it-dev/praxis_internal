@@ -1,8 +1,22 @@
 import { NgFor } from '@angular/common';
-import { Component, ElementRef, EventEmitter, Input, Output, Signal, signal, ViewChild, WritableSignal } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, QueryList, Signal, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
+
+export type Hint = {
+	color: string | undefined;
+	text: string | undefined;
+};
+export const NO_HINT: Hint = {
+	color: undefined,
+	text: undefined
+};
+
+export type RowDisplay = {
+	text: string;
+	hint: Hint;
+}
 
 export interface IStringify<T> {
-	display(obj: T): string;
+	display(obj: T): RowDisplay;
 }
 
 @Component({
@@ -12,7 +26,7 @@ export interface IStringify<T> {
 	styleUrl: './search-dropdown.component.scss'
 })
 export class SearchDropdownComponent<TItem> {
-	private _items?: TItem[];
+	private _items?: Array<TItem>;
 	private _placeholder: string = "<unset>";
 
 	@Input({required: true}) 
@@ -35,7 +49,7 @@ export class SearchDropdownComponent<TItem> {
 
 		if (this.inputElement) {
 			if (items.length == 1) {
-				this.inputElement.nativeElement.value = this.serial.display(items[0]);
+				this.inputElement.nativeElement.value = this.serial.display(items[0]).text;
 			} else {
 				this.inputElement.nativeElement.value = "";
 			}
@@ -45,12 +59,19 @@ export class SearchDropdownComponent<TItem> {
 		this.itemSelectedEvent.emit(undefined);
 	}
 
-	@Input({required: true}) serial: IStringify<TItem> = {display: (e) => String.apply(e)};
+	@Input({required: true}) serial: IStringify<TItem> = {display: (e) => 
+		({
+			text: String.apply(e),
+			hint: NO_HINT
+		})
+	};
 
 	@Output() itemSelectedEvent = new EventEmitter<TItem | undefined>();
+	lastItemSelectedEventItem: TItem | undefined = undefined;
 
 	@ViewChild("searchInput") inputElement?: ElementRef;
 	@ViewChild("searchTooltip") searchTooltip?: ElementRef;
+	@ViewChildren('optionItems') optionItems!: QueryList<ElementRef>;
 
 	constructor(private elRef: ElementRef) {}
 
@@ -58,7 +79,14 @@ export class SearchDropdownComponent<TItem> {
 	hoveredItem: WritableSignal<number> = signal(-1);
 	hintText: WritableSignal<String> = signal(this.placeholder);
 
-	recommendedItems: WritableSignal<TItem[]> = signal([] as TItem[]);
+	recommendedItems: WritableSignal<Array<TItem>> = signal([] as TItem[]);
+
+	emitEvent(item: TItem | undefined) {
+		if (this.lastItemSelectedEventItem !== item || item == undefined) {
+			this.lastItemSelectedEventItem = item;
+			this.itemSelectedEvent.emit(item);
+		}
+	}
 
 	hasMultipleItems(): boolean {
 		return this._items !== undefined && this._items.length > 1;
@@ -71,13 +99,13 @@ export class SearchDropdownComponent<TItem> {
 			if (search.trim() == '') {
 				this.recommendedItems.set(this._items!);
 			} else {
-				let filtered = this._items!.filter(e => this.serial!.display(e).toLowerCase().startsWith(search.toLowerCase()));
+				let filtered = this._items!.filter(e => this.serial!.display(e).text.toLowerCase().startsWith(search.toLowerCase()));
 				this.recommendedItems.set(filtered);
 			}
 			this.hoveredItem.set(-1);
 	
 			if (this.recommendedItems().length == 1) {
-				let recomText = this.serial!.display(this.recommendedItems()[0]);
+				let recomText = this.serial!.display(this.recommendedItems()[0]).text;
 				recomText = search + recomText.substring(search.length);
 				this.hintText.set(recomText);
 			} else {
@@ -99,11 +127,13 @@ export class SearchDropdownComponent<TItem> {
 		this.updateUIAfterInputValueChange();
 	}
 
-	hoveredItemChanged() {
+	hoveredItemChanged(autoScroll: boolean) {
 		let input = this.inputElement!.nativeElement as HTMLInputElement;
 		if(this.hoveredItem() >= 0) {
-			this.hintText.set(input.value + this.serial!.display(this.recommendedItems()[this.hoveredItem()]).substring(input.value.length));
-			(document.getElementsByClassName("option")[this.hoveredItem()] as HTMLElement).scrollIntoView({ block: "nearest" });
+			this.hintText.set(input.value + this.serial!.display(this.recommendedItems()[this.hoveredItem()]).text.substring(input.value.length));
+			if (autoScroll) {
+				(this.optionItems.get(this.hoveredItem())?.nativeElement as HTMLElement).scrollIntoView({block: "nearest"});
+			}
 		} else if (input.value.length == 0) {
 			this.hintText.set(this.placeholder);
 		}
@@ -116,7 +146,7 @@ export class SearchDropdownComponent<TItem> {
 			if (input.selectionStart == input.value.length) {
 				if (this.hoveredItem() < this.recommendedItems().length - 1) {
 					this.hoveredItem.set(this.hoveredItem() + 1);
-					this.hoveredItemChanged();
+					this.hoveredItemChanged(true);
 				}
 				event.preventDefault();
 			}
@@ -126,42 +156,42 @@ export class SearchDropdownComponent<TItem> {
 				event.preventDefault();
 				if (this.hoveredItem() >= 0) {
 					this.hoveredItem.set(this.hoveredItem() - 1);
-					this.hoveredItemChanged();
+					this.hoveredItemChanged(true);
 				}
 			}
 		}
 		if (event.key == "Enter") {
 			if (this.hoveredItem() != -1) {
 				let selectedItem = this.recommendedItems()[this.hoveredItem()];
-				input.value = this.serial!.display(selectedItem);
+				input.value = this.serial!.display(selectedItem).text;
 				this.updateUIAfterInputValueChange();
 				input.blur();
-				this.itemSelectedEvent.emit(selectedItem);
+				this.emitEvent(selectedItem);
 			} else if (this.recommendedItems().length == 1) {
 				let selectedItem = this.recommendedItems()[0];
-				input.value = this.serial!.display(selectedItem);
+				input.value = this.serial!.display(selectedItem).text;
 				this.updateUIAfterInputValueChange();
 				input.blur();
-				this.itemSelectedEvent.emit(selectedItem);
+				this.emitEvent(selectedItem);
 			}
 		}
 	}
 
 	getDropdownWrapperFromDOMElement(domElement: HTMLElement) {
-		return this.recommendedItems()[parseInt(domElement.id.split("option-")[1])];
+		return this.recommendedItems()[parseInt(domElement.getAttribute("data-id")!)];
 	}
 
 	optionClicked(event: Event) {
 		let option = (event.target as HTMLElement);
 		let input = this.inputElement!.nativeElement as HTMLInputElement;
-		input.value = option.textContent!;
+		input.value = option.getElementsByClassName("dropdownRowText")[0].textContent || "";
 		let selectedItem = this.getDropdownWrapperFromDOMElement(option);
 
 		new Promise((res, _) => {
 			this.handleTextChangeFinished = res;
 		}).then(() => {
 			option.blur(); // Remove focus
-			this.itemSelectedEvent.emit(selectedItem);
+			this.emitEvent(selectedItem);
 		});
 		this.updateUIAfterInputValueChange();
 	}
@@ -169,15 +199,18 @@ export class SearchDropdownComponent<TItem> {
 	optionMouseOver(event: Event) {
 		let optionId = this.getDropdownWrapperFromDOMElement(event.target as HTMLElement);
 		this.hoveredItem.set(this.recommendedItems().indexOf(optionId));
-		this.hoveredItemChanged();
+		this.hoveredItemChanged(false);
 	}
 
-	lostFocus(event: Event) {
+	lostFocus(_: Event) {
 		let searchString = (this.inputElement!.nativeElement as HTMLInputElement).value;
 		let inputIsEmpty = searchString.length == 0;
 
-		if (inputIsEmpty || searchString !== this.hintText()) {
-			this.itemSelectedEvent.emit(undefined);
+		if (this.recommendedItems().length == 1) {
+			this.inputElement!.nativeElement.value = this.serial.display(this.recommendedItems()[0]).text;
+			this.emitEvent(this.recommendedItems()[0]);
+		} else if (inputIsEmpty || searchString !== this.hintText()) {
+			this.emitEvent(undefined);
 		}
 
 		if (inputIsEmpty) {
@@ -197,6 +230,15 @@ export class SearchDropdownComponent<TItem> {
 			let searchTooltip = this.searchTooltip.nativeElement as HTMLElement;
 			searchTooltip.style.marginLeft = String(-pixelOffsetX) + "px";
 			console.log(String.apply(-pixelOffsetX) + "px");
+		}
+	}
+
+	performQuickDelete(event: Event) {
+		event.preventDefault();
+		if (this.inputElement) {
+			this.inputElement.nativeElement.value = "";
+			this.updateUIAfterInputValueChange();
+			this.inputElement.nativeElement.focus();
 		}
 	}
 }

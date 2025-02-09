@@ -129,6 +129,7 @@ export class QsApiHandler {
 
                     // Last branch handled. We are async, so handle res() here and not at end of branch loop.
                     if (branch == branches[branches.length - 1]) {
+                        farmers = farmers.sort((a, b) => a.name.localeCompare(b.name));
                         res(farmers);
                     }
                 });

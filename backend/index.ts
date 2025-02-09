@@ -48,6 +48,7 @@ async function startup() {
     app.use("/qs", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
     app.use("/datepicker", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
     app.use("/Books", express.static(path.join(__dirname, '../frontend/intranet/public/Books')));
+    app.use("/block", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
 
     https.createServer(ssl.SSL_OPTIONS, app).listen(443);
 }

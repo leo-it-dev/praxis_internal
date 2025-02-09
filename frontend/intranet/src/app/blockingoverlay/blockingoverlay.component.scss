@@ -1,0 +1,42 @@
+:host {
+    background-color: rgba(0, 0, 0, 0.5);
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+#blockingContainer {
+    padding: 50px;
+    box-shadow: 0px 0px 50px var(--shadeLevel2);
+    min-width: 30vw;
+    min-height: min-content;
+    width: max-content;
+    max-width: 70vw;
+    height: min-content;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--background);
+    z-index: 1001;
+}
+
+#blockingContTitle {
+    margin: 20px 0px;
+    text-align: left;
+    white-space: preserve nowrap;
+}
+
+#blockingContainerButtons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    column-gap: 10px;
+}
+
+#blockingContainerContent {
+    white-space: pre-line;
+}

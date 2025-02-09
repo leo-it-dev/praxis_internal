@@ -1,4 +1,17 @@
 <div id="content">
+    @if(this.drugErrorOverlayShown()) {
+        <app-blockingoverlay overlayTitle="Achtung!" overlayContent="Das gewählte Medikament gehört nicht zur internen Moveta Pegasus Medikamenten-Datenbank!
+        Handelt es sich um ein bereits länger verwendetes Medikament? Bitte alternatives Medikament mit &lt;OK&gt; Markierung selektieren!
+        Neues Medikament? Hier kann es einige Tage dauern, bis das Medikament in der Pegasus Datenbank aufgenommen wurde und die Markierung &lt;OK&gt; erhält.
+        In diesem Falle darf ein &lt;WARN&gt; Medikament der HIT Datenbank selektiert werden!"
+        [buttons] = '[{
+            text: "Meldung verstanden",
+            id: 1,
+            design: OverlayButtonDesign.PRIMARY_COLORED
+        }]'
+        (selectionMade)="this.drugErrorOverlayShown.set(false)"></app-blockingoverlay>
+    }
+
     <div>
         <label for="document-number">Abgabebeleg-Nummer</label>
         <input name="document-number" type="number" id="document-number" />    
@@ -22,7 +35,7 @@
     </div>
     <div>
         <label for="drug">Arzneimittel</label>
-        <app-search-dropdown placeholder="Arzneimittel suchen..." [items]="this.reportableDrugList()" [serial]="this.drugSerializer" (itemSelectedEvent)="this.selectedDrug.set($event)"></app-search-dropdown>
+        <app-search-dropdown placeholder="Arzneimittel suchen..." [items]="this.reportableDrugList()" [serial]="this.drugSerializer" (itemSelectedEvent)="this.drugSelected($event)"></app-search-dropdown>
         <app-search-dropdown placeholder="Packungform auswählen..." [items]="this.selectedDrugPackingForms()" [serial]="this.drugPackingSerializer" (itemSelectedEvent)="drugPackingFormSelected($event)"></app-search-dropdown>
     </div>
     <div>

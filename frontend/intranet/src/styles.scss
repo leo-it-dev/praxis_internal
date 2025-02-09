@@ -27,7 +27,7 @@ html {
     --action-button-gradient-left: #ef709b;
     --action-button-gradient-right: #fa9372;
     --account-property: #eee;
-    --error: #f33;
+    --error: #f66;
     --input-padding: 10px;
 }
 
@@ -59,7 +59,8 @@ body {
     filter: brightness(1.0);
     transition: box-shadow .1s ease-out, filter .1s ease-out;
 }
-.actionButton:hover {
+.actionButton:hover,
+.basicButton:hover {
     box-shadow: 0px 0px 5px gray;
     filter: brightness(1.1);
 }
@@ -77,6 +78,24 @@ body {
     cursor: pointer;
     text-wrap: nowrap;
     background: linear-gradient(90deg, var(--action-button-gradient-left), var(--action-button-gradient-right));
+}
+
+.basicButton {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0px;
+    border-radius: 20px;
+    padding: 10px;
+    font-size: 13pt;
+    font-weight: bold;
+    color: black;
+    width: 100%;
+    cursor: pointer;
+    text-wrap: nowrap;
+    background: var(--background);
+    box-shadow: 0px 0px 0px black;
+    filter: brightness(1.0);
+    transition: box-shadow .1s ease-out, filter .1s ease-out;
 }
 
 .hidden {

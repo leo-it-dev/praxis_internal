@@ -1,8 +1,14 @@
-<div id="inputContainer">
-    <input #searchInput (focusin)="gainedFocus($event)" (focusout)="lostFocus($event)" (input)="handleTextChange($event)" (keydown)="handleKeyDown($event)" type="text" id="searchText" [disabled]="!this.hasMultipleItems()" (scroll)="inputScrolled($event)" />
+<div id="inputContainer" (focusout)="lostFocus($event)" (focusin)="gainedFocus($event)">
+    <input #searchInput (input)="handleTextChange($event)" (keydown)="handleKeyDown($event)" type="text" id="searchText" [disabled]="!this.hasMultipleItems()" (scroll)="inputScrolled($event)" />
     <span #searchTooltip id="inputTooltip">{{hintText()}}</span>
+    <button id="quickDelete" tabindex="-1" (click)="performQuickDelete($event)"></button>
 </div>
 <span id="selected"></span>
-<div id="options">
-    <span tabindex="{{i}}" *ngFor="let item of this.recommendedItems(); index as i" class="option" id="option-{{i}}" [class.hovered]="i == this.hoveredItem()" (click)="optionClicked($event)" (mouseover)="optionMouseOver($event)">{{this.serial.display(item)}}</span>
+<div id="options" tabindex="-1">
+    <div #optionItems tabindex="-1" *ngFor="let item of this.recommendedItems(); index as i" class="option" [attr.data-id]="i" [attr.data-hint-txt]="this.serial.display(item).hint.text" [attr.data-hint-col]="this.serial.display(item).hint.color" [class.hovered]="i == this.hoveredItem()" (click)="optionClicked($event)" (mouseover)="optionMouseOver($event)">
+        <div class="dropdownRowText">{{this.serial.display(item).text}}</div>
+        @if(this.serial.display(item).hint.text != "") {
+            <div [style.background-color]="this.serial.display(item).hint.color" class="dropdownRowHint">{{this.serial.display(item).hint.text}}</div>
+        }
+    </div>
 </div>
