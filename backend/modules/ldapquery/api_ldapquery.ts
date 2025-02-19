@@ -3,6 +3,7 @@ import { options } from "../../options";
 import { ApiInterfaceUserInfoOut } from "../../../api_common/api_ldapquery";
 import { ApiInterfaceEmptyIn, ApiModuleResponse } from "../../../api_common/backend_call";
 import ldapjs = require('ldapjs');
+import { Mutex } from "async-mutex";
 
 export class ApiModuleLdapQuery extends ApiModule {
 
@@ -12,20 +13,42 @@ export class ApiModuleLdapQuery extends ApiModule {
         reconnect: true
     };
     private ldapClient: ldapjs.Client;
+    private ldapConnectMutex: Mutex;
 
     modname(): string {
         return "ldapquery";
     }
 
-    async initialize() {
-        this.ldapClient = ldapjs.createClient(this.ldapConfig);
-        this.ldapClient.bind(options.LDAP_LOGIN_USER, options.LDAP_LOGIN_PASS, (error) => {
-            if (error) {
-                throw new Error("Error binding to LDAP user: " + options.LDAP_LOGIN_USER + ": " + error);
+    async assureLdapConnected() {
+        return new Promise<void>((res, _) => {
+            if (this.ldapClient?.connected) {
+                res();
             } else {
-                console.log("Successfully bound to LDAP user: " + options.LDAP_LOGIN_USER + "!");
+                this.ldapConnectMutex.acquire();
+
+                this.ldapClient = ldapjs.createClient(this.ldapConfig);
+                this.ldapClient.on('error', (err) => {
+                    console.log("LDAP client disconnected. Next access will try to reconnect.", err);
+                    this.ldapClient.unbind();
+                    this.ldapClient.destroy();
+                    this.ldapClient = undefined;
+                });
+                this.ldapClient.bind(options.LDAP_LOGIN_USER, options.LDAP_LOGIN_PASS, (error) => {
+                    if (error) {
+                        console.error("Error binding to LDAP user: " + options.LDAP_LOGIN_USER + ": " + error);
+                    } else {
+                        console.log("Successfully bound to LDAP user: " + options.LDAP_LOGIN_USER + "!");
+                    }
+                    this.ldapConnectMutex.release();
+                    res();
+                });
             }
         });
+    }
+
+    async initialize() {
+        this.ldapConnectMutex = new Mutex();
+        await this.assureLdapConnected();
     }
 
     loginRequired(): boolean {
@@ -58,8 +81,9 @@ export class ApiModuleLdapQuery extends ApiModule {
     }
 
     performLdapSearch(baseDN: string, options: ldapjs.SearchOptions): Promise<ldapjs.SearchEntry | undefined> {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             let entryFound = false;
+            await this.assureLdapConnected();
             this.ldapClient.search(baseDN, options, function (err, res) {
                 if (err) {
                     reject(err.message);

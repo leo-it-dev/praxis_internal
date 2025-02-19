@@ -203,13 +203,13 @@ export class SearchDropdownComponent<TItem> {
 				if (this._items && this._items.includes(item)) {
 					input.value = this.serial!.display(item).text;
 					this.updateUIAfterInputValueChange();
-					input.blur();
+					//input.blur();
 					this.emitEvent(item);
 				}
 			} else {
 				input.value = "";
 				this.updateUIAfterInputValueChange();
-				input.blur();
+				//input.blur();
 				this.emitEvent(undefined);
 			}
 		}
@@ -222,13 +222,19 @@ export class SearchDropdownComponent<TItem> {
 	}
 
 	lostFocus(_: Event) {
+		if (this.recommendedItems().length == 1) {
+			let item = this.recommendedItems()[0];
+			this.inputElement!.nativeElement.value = this.serial.display(item).text;
+			this.emitEvent(item);
+		} else if (this.hoveredItem() !== -1) {
+			let item = this.recommendedItems()[this.hoveredItem()];
+			this.inputElement!.nativeElement.value = this.serial.display(item).text;
+			this.emitEvent(item);
+		}
+		
 		let searchString = (this.inputElement!.nativeElement as HTMLInputElement).value;
 		let inputIsEmpty = searchString.length == 0;
-
-		if (this.recommendedItems().length == 1) {
-			this.inputElement!.nativeElement.value = this.serial.display(this.recommendedItems()[0]).text;
-			this.emitEvent(this.recommendedItems()[0]);
-		} else if (inputIsEmpty || searchString !== this.hintText()) {
+		if (inputIsEmpty || searchString !== this.hintText()) {
 			this.emitEvent(undefined);
 		}
 

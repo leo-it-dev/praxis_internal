@@ -68,7 +68,7 @@ export class QsreportComponent {
 
 	drugUnits: Signal<DrugUnit[]> = signal(DrugUnits.values());
 
-	farmerSerializer: IStringify<Farmer> = { display: (farmer) => ({ text: farmer.name, hint: NO_HINT }) };
+	farmerSerializer: IStringify<Farmer> = { display: (farmer) => ({ text: farmer.name.replaceAll("  ", " "), hint: NO_HINT }) };
 	farmerProductionTypeSerializer: IStringify<ApiCompatibleProductionType> = { display: (prodType) => ({ text: prodType.productionTypeName, hint: NO_HINT }) };
 	usageGroupSerializer: IStringify<ProductionUsageGroup> = { display: (usageGroup) => ({ text: usageGroup.usageGroupName, hint: NO_HINT }) };
 	drugSerializer: IStringify<CategorizedItem<ReportableDrug>> = { display: (reportableDrug) => ({

@@ -25,7 +25,12 @@
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
+    align-items: center;
     column-gap: 10px;
+}
+
+#content > div > label {
+    height: min-content;
 }
 
 #content > div > div {
