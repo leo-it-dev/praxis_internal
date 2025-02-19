@@ -14,7 +14,7 @@
 
     <div>
         <label for="document-number">Abgabebeleg-Nummer</label>
-        <input name="document-number" type="number" id="document-number" />    
+        <input name="document-number" type="text" id="document-number" />
     </div>
     <div>
         <label for="delivery-date">Abgabedatum</label>
@@ -30,8 +30,8 @@
         </div>
     </div>
     <div>
-        <label for="animal-count">Tieranzahl</label>        
-        <input type="number" id="animal-count" />
+        <label for="animal-count">Tieranzahl</label>
+        <input type="number" id="animal-count" min="1" max="500000" />
     </div>
     <div>
         <label for="drug">Arzneimittel</label>
@@ -40,12 +40,12 @@
     </div>
     <div>
         <label for="drug-amount">Menge</label>
-        <input type="number" id="drug-amount" />
+        <input type="number" id="drug-amount" min="0" max="999999"/>
         <app-search-dropdown #drugUnitDOM placeholder="Einheit" [items]="this.drugUnits()" [serial]="this.drugUnitSerializer" (itemSelectedEvent)="this.drugUnitSelected($event)"></app-search-dropdown>
     </div>
     <div>
         <label for="application-days">Anwendungstage</label>
-        <input type="number" id="application-days" />
+        <input type="number" id="application-days" min="1" max="99" />
     </div>
     <button class="actionButton" id="submit-form">Abgabebeleg speichern</button>
 </div>

@@ -175,6 +175,44 @@ export class SearchDropdownComponent<TItem> {
 				this.selectItemExt(selectedItem);
 			}
 		}
+		if (event.key == "PageUp") {
+			let selected = this.hoveredItem() == -1 ? 0 : this.hoveredItem();
+			let optionDOM = this.optionItems.get(selected)?.nativeElement as HTMLElement;
+			optionDOM.parentElement!.scrollTop -= optionDOM.parentElement!.getBoundingClientRect().height;
+			
+			while(selected > 0) {
+				let optionDOM = this.optionItems.get(selected)?.nativeElement as HTMLElement;
+				if (optionDOM.getBoundingClientRect().y - optionDOM.parentElement!.getBoundingClientRect().y <= 0) {
+					this.hoveredItem.set(selected+1);
+					this.hoveredItemChanged(true);
+					break;
+				}
+				selected--;
+			}
+		}
+		if (event.key == "PageDown") {
+			let selected = this.hoveredItem() == -1 ? 0 : this.hoveredItem();
+			let optionDOM = this.optionItems.get(selected)?.nativeElement as HTMLElement;
+			optionDOM.parentElement!.scrollTop += optionDOM.parentElement!.getBoundingClientRect().height;
+			
+			while(selected < this.optionItems.length) {
+				let optionDOM = this.optionItems.get(selected)?.nativeElement as HTMLElement;
+				if (optionDOM.getBoundingClientRect().y - optionDOM.parentElement!.getBoundingClientRect().y + optionDOM.getBoundingClientRect().height >= optionDOM.parentElement!.getBoundingClientRect().height) {
+					this.hoveredItem.set(selected-1);
+					this.hoveredItemChanged(true);
+					break;
+				}
+				selected++;
+			}
+		}
+		if (event.key == "Home") {
+			this.hoveredItem.set(0);
+			this.hoveredItemChanged(true);
+		}
+		if (event.key == "End") {
+			this.hoveredItem.set(this.optionItems.length - 1);
+			this.hoveredItemChanged(true);
+		}
 	}
 
 	getDropdownWrapperFromDOMElement(domElement: HTMLElement) {
