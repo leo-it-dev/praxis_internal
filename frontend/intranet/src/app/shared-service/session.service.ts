@@ -1,7 +1,10 @@
-import { Injectable, Signal, signal, WritableSignal } from '@angular/core';
+import { Injectable, signal, WritableSignal } from '@angular/core';
 import { JwtHelperService } from "./jwt-helper.service";
 import { ErrorlistService } from '../errorlist/errorlist.service';
+import { BackendService } from "../api/backend.service"
+import { ApiInterfaceGenerateToken, ApiInterfaceRefreshToken } from '../../../../../api_common/api_auth';
 import { Router } from '@angular/router';
+import { ApiInterfaceUserInfo, UserInfo } from "../../../../../api_common/api_ldapquery"
 
 type TokenClaims = {
     given_name: string,
@@ -38,12 +41,13 @@ export class SessionService {
     private _email: string = "<unset>";
     private _thumbnailPhoto?: string = undefined;
     private _sid: string | undefined = undefined;
-    private _rawUserInfo: string | undefined = undefined;
+    private _rawUserInfo: UserInfo | undefined = undefined;
     private _isLoggedIn: WritableSignal<boolean> = signal(false);
 
     constructor(private jwtHelperService: JwtHelperService,
         private errorlistService: ErrorlistService,
-        private router: Router
+        private router: Router,
+        private backend: BackendService
     ) { }
 
     public get givenName() { return this._givenName; }
@@ -75,7 +79,7 @@ export class SessionService {
                 await this.forceRefreshToken();
                 console.log("Access token was successfully refreshed!");
                 res(this._rawAccessToken);
-            } catch(e) {
+            } catch (e) {
                 console.log("Error refreshing access token! Terminating session!");
                 // Session ended and we couldn't refresh it. Unauthorize the user.
                 this.unauthorizeSession("Your session timed out and we could not refresh it!").then(rej).catch(rej);
@@ -85,41 +89,23 @@ export class SessionService {
 
     forceRefreshToken(): Promise<void> {
         return new Promise((res, rej) => {
-            fetch(SessionService.REFRESH_TOKEN_URL, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                method: 'POST',
-                body: JSON.stringify({ 'refresh_token': this._rawRefreshToken, 'id_token': this._rawIdToken })
-            }).then(async resp => {
-                if (resp.ok) {
-                    const json = (await resp.json())["content"];
-                    // Server must return a new access token. It may optionally include a new refresh and id token!
-                    this._rawAccessToken = json['access_token'];
-
-                    if ('refresh_token' in json && json['refresh_token'] !== undefined) {
-                        this._rawRefreshToken = json['refresh_token'];
+            this.backend.anonymousBackendCall<ApiInterfaceRefreshToken>(SessionService.REFRESH_TOKEN_URL,
+                JSON.stringify({ 'refresh_token': this._rawRefreshToken, 'id_token': this._rawIdToken }
+                )).then(json => {
+                    this._rawAccessToken = json.access_token;
+                    if (json.refresh_token !== undefined) {
+                        this._rawRefreshToken = json.refresh_token;
                     }
-
-                    if ('id_token' in json && json['id_token'] !== undefined) {
-                        let idtoken = json['id_token'];
+                    if (json.id_token !== undefined) {
+                        let idtoken = json.id_token;
                         this._rawIdToken = idtoken;
                         this.parseIdToken(idtoken);
                     }
-
                     this.storeSessionInStore();
                     res();
-                } else {
-                    const text = await resp.text();
-                    console.error("forceRefreshToken(1): ", text);
-                    throw new Error("Server returned error code " + resp.status + "! Check log for further information!");
-                }
-            }).catch(err => {
-                console.error(err);
-                this.errorlistService.showErrorMessage("There was an error refreshing access token using refreshToken!");
-                rej(err);
-            });
+                }).catch(err => {
+                    rej(err);
+                });
         });
     }
 
@@ -200,36 +186,21 @@ export class SessionService {
 
     exchangeCodeForToken(code: string, state: string): Promise<void> {
         return new Promise((res, rej) => {
-            fetch(SessionService.EXCHANGE_TOKEN_URL, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                method: 'POST',
-                body: JSON.stringify({ 'code': code, 'state': state })
-            }).then(async resp => {
-                if (resp.ok) {
-                    const json = (await resp.json())["content"];
-                    this._rawIdToken = json['id_token'];
-                    this._rawAccessToken = json['access_token'];
-                    this._rawRefreshToken = json['refresh_token'];
-                    if (this._rawIdToken && this._rawAccessToken && this._rawRefreshToken) {
-                        this.parseIdToken(this._rawIdToken);
-                        await this.resolveUserDetails();
-                        this.storeSessionInStore();
-                        this._isLoggedIn.set(true);
-                        res();
-                    } else {
-                        throw new Error("Invalid server response! Keys: " + Object.keys(json));
-                    }
+            this.backend.anonymousBackendCall<ApiInterfaceGenerateToken>(SessionService.EXCHANGE_TOKEN_URL, 
+                JSON.stringify({ 'code': code, 'state': state })).then(async json => {
+                this._rawIdToken = json.id_token;
+                this._rawAccessToken = json.access_token;
+                this._rawRefreshToken = json.refresh_token;
+                if (this._rawIdToken && this._rawAccessToken && this._rawRefreshToken) {
+                    this.parseIdToken(this._rawIdToken);
+                    await this.resolveUserDetails();
+                    this.storeSessionInStore();
+                    this._isLoggedIn.set(true);
+                    res();
                 } else {
-                    const text = await resp.text();
-                    console.error("exchangeCodeForToken(2): ", text);
-                    throw new Error("Server returned error code " + resp.status + "! Check log for further information!");
+                    throw new Error("Invalid server response! Keys: " + Object.keys(json));
                 }
             }).catch(err => {
-                console.error(err);
-                this.errorlistService.showErrorMessage("There was an error exchanging oauth2 code for OICD/OAuth2 tokens!");
                 rej(err);
             });
         });
@@ -237,28 +208,16 @@ export class SessionService {
 
     resolveUserDetails(): Promise<void> {
         return new Promise((res, rej) => {
-            fetch(SessionService.USERINFO_URL, {
-                headers: {
-                    'Authorization': "Bearer " + this._rawAccessToken
-                }
-            }).then(async resp => {
-                if (resp.ok) {
-                    let json = await resp.json();
-                    let error = json['error'];
-                    let content = json['content'];
-                    if (error) {
-                        this.errorlistService.showErrorMessage("Internal server error reading user details: " + error);
-                    } else {
-                        this._rawUserInfo = content;
-                        if (!this.parseUserInfo(content)) {
-                            this.errorlistService.showErrorMessage("Error parsing user details!");
-                            console.error("Error parsing user details: ", json);
-                        }
-                    }
-                } else {
-                    this.errorlistService.showErrorMessage("Error retrieving user details: " + resp.text());
+            this.backend.authorizedBackendCall<ApiInterfaceUserInfo>(SessionService.USERINFO_URL).then(json => {
+                console.log(json);
+                this._rawUserInfo = json.userinfo;
+                if (!this.parseUserInfo(json.userinfo)) {
+                    this.errorlistService.showErrorMessage("Error parsing user details!");
+                    console.error("Error parsing user details: ", json);
                 }
                 res();
+            }).catch(err => {
+                rej(err);
             });
         });
     }
@@ -266,37 +225,23 @@ export class SessionService {
     unauthorizeSession(reason: string): Promise<void> {
         return new Promise((res, rej) => {
             if (!this._isLoggedIn()) {
-                setTimeout((() => {this.redirectClientToLoginPage(reason)}).bind(this), 100);
+                setTimeout((() => { this.redirectClientToLoginPage(reason) }).bind(this), 100);
                 rej();
                 return;
             }
 
-            fetch(SessionService.REVOKE_TOKEN_URL, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                method: 'POST',
-                body: JSON.stringify({ 'id_token': this._rawIdToken })
-            }).then(async resp => {
-                if (resp.ok) {
-                    const _ = (await resp.json())["content"];
-                    sessionStorage.removeItem("id");
-                    sessionStorage.removeItem("access");
-                    sessionStorage.removeItem("refresh");
-                    this._isLoggedIn.set(false);
-                    this.restoreSessionFromStore();
-                    setTimeout((() => {this.redirectClientToLoginPage(reason)}).bind(this), 100);
-                    res();
-                } else {
-                    const text = await resp.text();
-                    console.error("unauthorizeSession(1): ", text);
-                    throw new Error("Server returned error code " + resp.status + "! Check log for further information!");
-                }
+            this.backend.anonymousBackendCall(SessionService.REVOKE_TOKEN_URL,
+                JSON.stringify({ 'id_token': this._rawIdToken })
+            ).then(json => {
+                sessionStorage.removeItem("id");
+                sessionStorage.removeItem("access");
+                sessionStorage.removeItem("refresh");
+                this._isLoggedIn.set(false);
+                this.restoreSessionFromStore();
+                setTimeout((() => { this.redirectClientToLoginPage(reason) }).bind(this), 100);
+                res();
             }).catch(err => {
-                console.log("unauthorizeSession(2): ", err);
-                this.errorlistService.showErrorMessage("There was an error revoking oauth2 token!");
-                setTimeout((() => {this.redirectClientToLoginPage(reason)}).bind(this), 100);
+                setTimeout((() => { this.redirectClientToLoginPage(reason) }).bind(this), 100);
                 rej(err);
             });
         });

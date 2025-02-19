@@ -2,6 +2,7 @@ import { ApiModule } from "../../api_module";
 import { AdfsOidc } from "../../framework/adfs_oidc_instance";
 import { AdfsSessionToken } from "../../framework/adfs_sessiontoken";
 import { options } from "../../options";
+import { ApiInterfaceGenerateToken, ApiInterfaceRefreshToken, ApiInterfaceRevokeToken } from "../../../api_common/api_auth"
 import * as ssl from '../../ssl/ssl'
 
 export class ApiModuleAuth extends ApiModule {
@@ -17,7 +18,7 @@ export class ApiModuleAuth extends ApiModule {
     }
 
     registerEndpoints(): void {
-        this.postJson("generateToken", async (req, _) => {
+        this.postJson<ApiInterfaceGenerateToken>("generateToken", async (req, _) => {
             const code = req.body['code'];
             const stateUUID = req.body['state'];
 
@@ -42,21 +43,21 @@ export class ApiModuleAuth extends ApiModule {
                             const adfsToken = new AdfsSessionToken(idToken);
                             console.log("User authenticated: ", adfsToken.userPrincipalName);
 
-                            return {statusCode: 200, responseObject: { 'id_token': idToken, 'access_token': accessToken, 'refresh_token': refreshToken }, error: undefined};
+                            return {statusCode: 200, responseObject: { id_token: idToken, access_token: accessToken, refresh_token: refreshToken }, error: undefined};
                         } else {
                             throw new Error("Client sent invalid request body to /generateToken");
                         }
                     } catch (e) {
                         console.log("Error validating ID token while user tries to log in: ", e);
-                        return {statusCode: 500, responseObject: {}, error: 'Signature check failed on ADFS returned ID Token!'};
+                        return {statusCode: 500, responseObject: {id_token: undefined, access_token: undefined, refresh_token: undefined}, error: 'Signature check failed on ADFS returned ID Token!'};
                     }
             } catch(err) {
                 console.error(err);
-                return {statusCode: 500, responseObject: {}, error: 'An internal error occurred!'};
+                return {statusCode: 500, responseObject: {access_token: undefined, id_token: undefined, refresh_token: undefined}, error: 'An internal error occurred!'};
             }
         });
 
-        this.postJson("revokeToken", async (req, _) => {
+        this.postJson<ApiInterfaceRevokeToken>("revokeToken", async (req, _) => {
             const idtoken = req.body['id_token'];
             const bodyContent = "id_token_hint=" + idtoken + "&post_logout_redirect_uri=" + options.ADFS_INTRANET_REDIRECT_URL_LOGOUT;
 
@@ -80,7 +81,7 @@ export class ApiModuleAuth extends ApiModule {
             }
         });
 
-        this.postJson("refreshToken", async (req, _) => {
+        this.postJson<ApiInterfaceRefreshToken>("refreshToken", async (req, _) => {
             const refreshToken = req.body['refresh_token'];
             const idToken = req.body['id_token'];
             const bodyContent = "grant_type=refresh_token&refresh_token=" + refreshToken;
@@ -95,7 +96,7 @@ export class ApiModuleAuth extends ApiModule {
                     'application/x-www-form-urlencoded', 'Basic ' + btoa(options.ADFS_INTRANET_CLIENT_ID + ":" + options.ADFS_INTRANET_CLIENT_SECRET));
                 if (res.statusCode == 200) {
                     const body = JSON.parse(res.data);
-                    let responseObject = {'access_token': undefined, 'refresh_token': undefined, 'id_token': undefined};
+                    let responseObject = {access_token: undefined, refresh_token: undefined, id_token: undefined};
 
                     if ("access_token" in body) {
                         let accessToken = body["access_token"];
@@ -118,7 +119,7 @@ export class ApiModuleAuth extends ApiModule {
                 }
             } catch(err) {
                 console.error("An internal error occurred trying to refresh access token: ", err);
-                return {statusCode: 500, responseObject: {}, error: 'An internal error occurred!'};
+                return {statusCode: 500, responseObject: {access_token: undefined, id_token: undefined, refresh_token: undefined}, error: 'An internal error occurred!'};
             }
         });
     }

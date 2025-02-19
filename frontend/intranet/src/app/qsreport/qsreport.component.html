@@ -1,6 +1,6 @@
 <div id="content">
     @if(this.drugErrorOverlayShown()) {
-        <app-blockingoverlay overlayTitle="Achtung!" overlayContent="Das gewählte Medikament gehört nicht zur internen Moveta Pegasus Medikamenten-Datenbank!
+        <app-blockingoverlay overlayTitle="Achtung!" overlayContent="Dieses Medikament gehört nicht zu unserer Moveta-Datenbank!
         Handelt es sich um ein bereits länger verwendetes Medikament? Bitte alternatives Medikament mit &lt;OK&gt; Markierung selektieren!
         Neues Medikament? Hier kann es einige Tage dauern, bis das Medikament in der Pegasus Datenbank aufgenommen wurde und die Markierung &lt;OK&gt; erhält.
         In diesem Falle darf ein &lt;WARN&gt; Medikament der HIT Datenbank selektiert werden!"
@@ -41,11 +41,7 @@
     <div>
         <label for="drug-amount">Menge</label>
         <input type="number" id="drug-amount" />
-        <select id="drug-amount-unit">
-            <option name="DrugAmount1">Drug amount 1</option>
-            <option name="DrugAmount2">Drug amount 2</option>
-            <option name="DrugAmount3">Drug amount 3</option>
-        </select>
+        <app-search-dropdown #drugUnitDOM placeholder="Einheit" [items]="this.drugUnits()" [serial]="this.drugUnitSerializer" (itemSelectedEvent)="this.drugUnitSelected($event)"></app-search-dropdown>
     </div>
     <div>
         <label for="application-days">Anwendungstage</label>

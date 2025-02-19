@@ -1,5 +1,7 @@
-import { ApiModule, ApiModuleResponse } from "../../api_module";
+import { ApiModule } from "../../api_module";
 import { options } from "../../options";
+import { ApiInterfaceUserInfo, UserInfo } from "../../../api_common/api_ldapquery";
+import { ApiModuleResponse } from "../../../api_common/backend_call";
 import ldapjs = require('ldapjs');
 
 export class ApiModuleLdapQuery extends ApiModule {
@@ -31,8 +33,8 @@ export class ApiModuleLdapQuery extends ApiModule {
     }
 
     registerEndpoints(): void {
-        this.get("userinfo", async (req, user) => {
-            let result: ApiModuleResponse;
+        this.get<ApiInterfaceUserInfo>("userinfo", async (req, user) => {
+            let result: ApiModuleResponse<ApiInterfaceUserInfo>;
             try {
                 let ldapEntry = await this.performLdapSearch(options.LDAP_USER_DN_BASE, {
                     filter: "(&(objectClass=user)(objectsid=" + user.sid + "))",
@@ -41,15 +43,15 @@ export class ApiModuleLdapQuery extends ApiModule {
                 });
 
                 if (ldapEntry == undefined) {
-                    result = { statusCode: 400, responseObject: {}, error: "no user with such sid found!" };
+                    result = { statusCode: 400, responseObject: {userinfo: undefined}, error: "no user with such sid found!" };
                 } else {
-                    result = { statusCode: 200, responseObject: {
-                        // Append additional ActiveDirectory attributes needed here to add to the response
+                    // Append additional ActiveDirectory attributes needed here to add to the response
+                    result = { statusCode: 200, responseObject: {userinfo: {
                         thumbnail: ldapEntry.attributes.find(e => e.type == "thumbnailPhoto").buffers[0].toString('base64')
-                    }, error: undefined};
+                    }}, error: undefined};
                 }
             } catch(err) {
-                result = { statusCode: 400, responseObject: {}, error: err };
+                result = { statusCode: 400, responseObject: {userinfo: undefined}, error: err };
             }
             return result;
         });

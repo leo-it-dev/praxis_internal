@@ -56,7 +56,7 @@ export class OidcInstance {
     validateJWTtoken(jwtToken: string): Promise<JsonObject> {
         var inst = this;
         return new Promise<JsonObject>(async (res, rej) => {
-            if (!jwtToken.match(b64UrlRegexChar + "+\\." + b64UrlRegexChar + "+\\." + b64UrlRegexChar)) {
+            if (!jwtToken || !jwtToken.match(b64UrlRegexChar + "+\\." + b64UrlRegexChar + "+\\." + b64UrlRegexChar)) {
                 rej("Token is not in JWT format!");
                 return;
             }

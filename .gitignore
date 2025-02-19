@@ -6,3 +6,4 @@ vetproof_api/
 backend/js
 frontend/dist
 backend/options.ts
+frontend/intranet/public/Books

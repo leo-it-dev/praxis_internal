@@ -1,13 +1,13 @@
-import { Component, computed, signal, Signal, WritableSignal } from '@angular/core';
+import { Component, computed, ElementRef, EventEmitter, signal, Signal, ViewChild, WritableSignal } from '@angular/core';
 import { ErrorlistService } from '../errorlist/errorlist.service';
 import { IStringify, NO_HINT, SearchDropdownComponent } from '../search-dropdown/search-dropdown.component';
 import { DatepickerComponent } from '../datepicker/datepicker.component';
 import { ApiCompatibleProductionType, QsFarmerProductionCombination } from './qs-farmer-production-combinations';
 import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from './qs-farmer-production-age-mapping';
-import { SessionService } from '../shared-service/session.service';
 import { CategorizedItem, CategorizedList } from '../utilities/categorized-list';
-import { BlockingoverlayComponent, OverlayButton, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
+import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
 import { BackendService } from '../api/backend.service';
+import { DrugUnit, ReportableDrug, DrugUnits, Farmer, DrugPackage, ApiInterfaceDrugs, ApiInterfaceFarmers } from "../../../../../api_common/api_qs";
 
 @Component({
 	selector: 'app-qsreport',
@@ -23,6 +23,8 @@ export class QsreportComponent {
 	DRUG_CATEGORY_OK = "moveta";
 	DRUG_CATEGORY_WARN = "hit";
 
+	@ViewChild('drugUnitDOM') drugUnitDOM?: SearchDropdownComponent<DrugUnit>;
+
 	drugErrorOverlayShown: WritableSignal<boolean> = signal(false);
 	readonly OverlayButtonDesign: typeof OverlayButtonDesign = OverlayButtonDesign;
 	drugErrorOverlayButtons = [{
@@ -30,7 +32,6 @@ export class QsreportComponent {
 		id: 1,
 		design: OverlayButtonDesign.PRIMARY_COLORED
 	}];
-
 
 	reportableDrugList: WritableSignal<CategorizedList<ReportableDrug>> = signal(new CategorizedList<ReportableDrug>());
 	selectedDrug: WritableSignal<CategorizedItem<ReportableDrug> | undefined> = signal(undefined);
@@ -64,6 +65,8 @@ export class QsreportComponent {
 		return [];
 	});
 
+	drugUnits: Signal<DrugUnit[]> = signal(DrugUnits.values());
+
 	farmerSerializer: IStringify<Farmer> = { display: (farmer) => ({ text: farmer.name, hint: NO_HINT }) };
 	farmerProductionTypeSerializer: IStringify<ApiCompatibleProductionType> = { display: (prodType) => ({ text: prodType.productionTypeName, hint: NO_HINT }) };
 	usageGroupSerializer: IStringify<ProductionUsageGroup> = { display: (usageGroup) => ({ text: usageGroup.usageGroupName, hint: NO_HINT }) };
@@ -72,23 +75,21 @@ export class QsreportComponent {
 		hint: reportableDrug.category == 'moveta' ? { color: 'lightgreen', text: 'OK' } : { color: 'orange', text: 'WARN' }
 	})};
 	drugPackingSerializer: IStringify<DrugPackage> = { display: (drugPackage) => ({ text: drugPackage.package, hint: NO_HINT }) };
+	drugUnitSerializer: IStringify<DrugUnit> = { display: (drugUnit) => ({ text: drugUnit.name, hint: NO_HINT }) };
 
 	async loadApiData() {
-		this.backendService.authorizedBackendCall(QsreportComponent.API_URL_DRUG).then(dat => {
-			let reportableDrugsPrefered = dat["prefered"] as ReportableDrug[];
-			let reportableDrugsFallback = dat["fallback"] as ReportableDrug[];
-
+		this.backendService.authorizedBackendCall<ApiInterfaceDrugs>(QsreportComponent.API_URL_DRUG).then(dat => {
 			const categorized = new CategorizedList<ReportableDrug>();
-			categorized.init({ category: this.DRUG_CATEGORY_OK, items: reportableDrugsPrefered }, 
-							{ category: this.DRUG_CATEGORY_WARN, items: reportableDrugsFallback });
+			categorized.init({ category: this.DRUG_CATEGORY_OK, items: dat.prefered }, 
+							{ category: this.DRUG_CATEGORY_WARN, items: dat.fallback });
 			this.reportableDrugList.set(categorized);
 			console.log("Loaded " + this.reportableDrugList().length + " drugs!");
 		}).catch(e => {
 			this.errorlistService.showErrorMessage("Error receiving list of reportable drugs: " + e);
 		});
 
-		this.backendService.authorizedBackendCall(QsreportComponent.API_URL_FARMER).then(dat => {
-			this.farmers.set(dat as Farmer[]);
+		this.backendService.authorizedBackendCall<ApiInterfaceFarmers>(QsreportComponent.API_URL_FARMER).then(dat => {
+			this.farmers.set(dat.farmers);
 			console.log("Loaded " + this.farmers().length + " farmers!");
 		}).catch(e => {
 			this.errorlistService.showErrorMessage("Error receiving list of reportable drugs: " + e);
@@ -100,14 +101,6 @@ export class QsreportComponent {
 		private backendService: BackendService
 	) {
 		this.loadApiData();
-	}
-
-	drugPackingFormSelected(drugPacking?: DrugPackage) {
-		if (drugPacking) {
-			console.log("Drug packing type selected: " + drugPacking.package);
-		} else {
-			console.log("Drug packing type unselected!");
-		}
 	}
 
 	usageGroupSelected(usageGroup?: ProductionUsageGroup) {
@@ -124,23 +117,22 @@ export class QsreportComponent {
 		}
 		this.selectedDrug.set(drug);
 	}
+
+	drugPackingFormSelected(drugPacking?: DrugPackage) {
+		if (drugPacking) {
+			console.log("Drug packing type selected: " + drugPacking.package);
+			if (drugPacking.unitSuggestion) {
+				let unitQS = DrugUnits.values().find(u => u.id == drugPacking.unitSuggestion.id && u.name == drugPacking.unitSuggestion.name);
+				this.drugUnitDOM?.selectItemExt(unitQS);
+				console.log(unitQS);
+			}
+		} else {
+			this.drugUnitDOM?.selectItemExt(undefined);
+			console.log("Drug packing type unselected!");
+		}
+	}
+
+	drugUnitSelected(drugUnit?: DrugUnit) {
+		console.log(drugUnit);
+	}
 }
-
-type DrugPackage = {
-	package: string;
-	pid: number;
-}
-
-export type ReportableDrug = {
-	znr: string;
-	name: string;
-	forms: Array<DrugPackage>;
-};
-
-export type Farmer = {
-	name: string; // Eindeutige Identifikation des Tierhalters in VetProof
-	locationNumber: string; // VVVO-Nummer des Tierhalters
-	productionType: number[]; // Produktionsart laut QS
-	qsNumber: string; // QS-Nummer des Tierhalters
-	vpId: number; // Eindeutige Identifikation des Tierhalters in VetProof
-};

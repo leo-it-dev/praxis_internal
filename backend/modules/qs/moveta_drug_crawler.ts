@@ -1,6 +1,19 @@
 import { options } from "../../options";
-import { ReportableDrug } from "./api_qs_types";
+import { DrugUnits, ReportableDrug } from "../../../api_common/api_qs";
 const { exec } = require('child_process');
+
+const movetaDrugUnitMapping = {
+    "kg": DrugUnits.kilogram,
+    "ml": DrugUnits.milliliter,
+    "Inj.": DrugUnits.injector,
+    "Fl.": undefined,
+    "Pack.": undefined,
+    "Stck": undefined,
+    "Stck.": undefined,
+    "Tabl.": DrugUnits.tablet,
+    "g": DrugUnits.gram,
+    "Tube": undefined,
+};
 
 const SOURCE_CODING = 'CP1252';
 const DEST_CODING = 'UTF8';
@@ -45,6 +58,10 @@ async function runMovetaSQLQueryCmdLineConvertToUTF8(query: string): Promise<row
     });
 }
 
+function parseDrugUnitIfPossible(movetaUnit: string) {
+    return movetaUnit in movetaDrugUnitMapping ? movetaDrugUnitMapping[movetaUnit] : undefined;
+}
+
 function processRows(rows: row[]): ReportableDrug[] {
     let drugs: Array<ReportableDrug> = [];
     for (let row of rows) {
@@ -55,7 +72,8 @@ function processRows(rows: row[]): ReportableDrug[] {
             forms: [
                 {
                     package: row.AMEN + ' ' + row.APCK,
-                    pid: parseInt(row.APACKUNGSID)
+                    pid: parseInt(row.APACKUNGSID),
+                    unitSuggestion: parseDrugUnitIfPossible(row.APCK)
                 }
             ]
         })

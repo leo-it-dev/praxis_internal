@@ -56,7 +56,11 @@ export class SearchDropdownComponent<TItem> {
 			this.updateUIAfterInputValueChange();
 		}
 
-		this.itemSelectedEvent.emit(undefined);
+		if (items.length == 1) {
+			this.itemSelectedEvent.emit(items[0]);
+		} else {
+			this.itemSelectedEvent.emit(undefined);
+		}
 	}
 
 	@Input({required: true}) serial: IStringify<TItem> = {display: (e) => 
@@ -161,18 +165,14 @@ export class SearchDropdownComponent<TItem> {
 			}
 		}
 		if (event.key == "Enter") {
+			let selectedItem = undefined;
 			if (this.hoveredItem() != -1) {
-				let selectedItem = this.recommendedItems()[this.hoveredItem()];
-				input.value = this.serial!.display(selectedItem).text;
-				this.updateUIAfterInputValueChange();
-				input.blur();
-				this.emitEvent(selectedItem);
+				selectedItem = this.recommendedItems()[this.hoveredItem()];
 			} else if (this.recommendedItems().length == 1) {
-				let selectedItem = this.recommendedItems()[0];
-				input.value = this.serial!.display(selectedItem).text;
-				this.updateUIAfterInputValueChange();
-				input.blur();
-				this.emitEvent(selectedItem);
+				selectedItem = this.recommendedItems()[0];
+			}
+			if (selectedItem) {
+				this.selectItemExt(selectedItem);
 			}
 		}
 	}
@@ -194,6 +194,25 @@ export class SearchDropdownComponent<TItem> {
 			this.emitEvent(selectedItem);
 		});
 		this.updateUIAfterInputValueChange();
+	}
+
+	selectItemExt(item?: TItem) {
+		if (this.inputElement) {
+			const input = (this.inputElement.nativeElement as HTMLInputElement);
+			if (item) {
+				if (this._items && this._items.includes(item)) {
+					input.value = this.serial!.display(item).text;
+					this.updateUIAfterInputValueChange();
+					input.blur();
+					this.emitEvent(item);
+				}
+			} else {
+				input.value = "";
+				this.updateUIAfterInputValueChange();
+				input.blur();
+				this.emitEvent(undefined);
+			}
+		}
 	}
 
 	optionMouseOver(event: Event) {

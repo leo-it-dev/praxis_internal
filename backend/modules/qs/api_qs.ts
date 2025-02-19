@@ -2,7 +2,7 @@ import { ApiModule } from '../../api_module';
 import { Farmer, QsApiHandler } from './qsapi_handler';
 import { options } from '../../options';
 import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
-import { ReportableDrug } from './api_qs_types';
+import { ApiInterfaceAuth, ApiInterfaceDrugs, ApiInterfaceFarmers, ApiInterfacePing, ReportableDrug } from '../../../api_common/api_qs';
 import { readReportableDrugListFromHIT } from './hit_drug_crawler';
 import { sum } from '../../utilities/utilities';
 // import { readReportableDrugListFromMovetaDB, ReportableDrug } from './moveta_drug_crawler';
@@ -102,19 +102,19 @@ export class ApiModuleQs extends ApiModule {
     }
 
     registerEndpoints() {
-        this.get("auth", async (req, user) => {
+        this.get<ApiInterfaceAuth>("auth", async (req, user) => {
             this.qsApiHandler.checkAndRenewAccessToken();
             return { statusCode: 200, responseObject: {}, error: undefined };
         });
-        this.get("ping", async (req, user) => {
+        this.get<ApiInterfacePing>("ping", async (req, user) => {
             this.qsApiHandler.sendAuthenticatedPing();
             return { statusCode: 200, responseObject: {}, error: undefined };
         })
-        this.get("drugs", async (req, user) => {
+        this.get<ApiInterfaceDrugs>("drugs", async (req, user) => {
             return { statusCode: 200, responseObject: {prefered: this.reportableDrugsPrefered, fallback: this.reportableDrugsFallback}, error: undefined };
         });
-        this.get("farmers", async (req, user) => {
-            return { statusCode: 200, responseObject: this.farmers, error: undefined };
+        this.get<ApiInterfaceFarmers>("farmers", async (req, user) => {
+            return { statusCode: 200, responseObject: {farmers: this.farmers}, error: undefined };
         });
     }
 }

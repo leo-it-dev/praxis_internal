@@ -1,12 +1,7 @@
 import bodyParser = require("body-parser");
 import { Express } from "express";
 import { AdfsOidc } from "./framework/adfs_oidc_instance";
-
-export interface ApiModuleResponse {
-    statusCode: number,
-    responseObject: object,
-    error: string
-}
+import { ApiModuleResponse, ApiModuleBody, ApiModuleInterface } from "../api_common/backend_call"
 
 export abstract class ApiModule {
     private _app: Express;
@@ -24,7 +19,7 @@ export abstract class ApiModule {
         return "/module/" + this.modname();
     }
 
-    postJson(route: string, handler: (req, user) => Promise<ApiModuleResponse>) {
+    postJson<T extends ApiModuleInterface>(route: string, handler: (req, user) => Promise<ApiModuleResponse<T>>) {
         this._app.post(this.basepath() + "/" + route, bodyParser.json(), async (req, res) => {
             let validationResult: string|JsonObject = undefined;
             if (this.loginRequired() && typeof(validationResult = await AdfsOidc.validateTokenInRequest(req)) == "string") {
@@ -35,7 +30,7 @@ export abstract class ApiModule {
                 res.status(401).json(response);
             } else {
                 let moduleResponse = await handler(req, validationResult);
-                let transformedResponse = {
+                let transformedResponse: ApiModuleBody = {
                     content: moduleResponse.responseObject,
                     error: moduleResponse.error
                 };
@@ -44,7 +39,7 @@ export abstract class ApiModule {
         });
     }
 
-    get(route: string, handler: (req, user) => Promise<ApiModuleResponse>) {
+    get<T extends ApiModuleInterface>(route: string, handler: (req, user) => Promise<ApiModuleResponse<T>>) {
         this._app.get(this.basepath() + "/" + route, async (req, res) => {
             let validationResult: string|JsonObject = undefined;
             if (this.loginRequired() && typeof(validationResult = await AdfsOidc.validateTokenInRequest(req)) == "string") {
@@ -55,7 +50,7 @@ export abstract class ApiModule {
                 res.status(401).json(response);
             } else {
                 let moduleResponse = await handler(req, validationResult);
-                let transformedResponse = {
+                let transformedResponse: ApiModuleBody = {
                     content: moduleResponse.responseObject,
                     error: moduleResponse.error
                 };

@@ -2,7 +2,7 @@
 let xlsx = require('js-xlsx');
 import {options} from "../../options";
 import { compare, parseSimpleDate } from "../../utilities/utilities";
-import { DrugPackage, ReportableDrug } from "./api_qs_types";
+import { DrugPackage, ReportableDrug } from "../../../api_common/api_qs";
 
 function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
     let reportableDrugs: Array<ReportableDrug> = [];
@@ -83,7 +83,8 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
         
         drugListZnr.push({
             package: obj.pack + " - " + obj.pg,
-            pid: obj.pid
+            pid: obj.pid,
+            unitSuggestion: undefined
         });
     
         lastZnr = obj.znr
