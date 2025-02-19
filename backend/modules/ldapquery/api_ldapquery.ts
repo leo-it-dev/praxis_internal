@@ -1,7 +1,7 @@
 import { ApiModule } from "../../api_module";
 import { options } from "../../options";
-import { ApiInterfaceUserInfo, UserInfo } from "../../../api_common/api_ldapquery";
-import { ApiModuleResponse } from "../../../api_common/backend_call";
+import { ApiInterfaceUserInfoOut } from "../../../api_common/api_ldapquery";
+import { ApiInterfaceEmptyIn, ApiModuleResponse } from "../../../api_common/backend_call";
 import ldapjs = require('ldapjs');
 
 export class ApiModuleLdapQuery extends ApiModule {
@@ -33,8 +33,8 @@ export class ApiModuleLdapQuery extends ApiModule {
     }
 
     registerEndpoints(): void {
-        this.get<ApiInterfaceUserInfo>("userinfo", async (req, user) => {
-            let result: ApiModuleResponse<ApiInterfaceUserInfo>;
+        this.get<ApiInterfaceEmptyIn, ApiInterfaceUserInfoOut>("userinfo", async (req, user) => {
+            let result: ApiModuleResponse<ApiInterfaceUserInfoOut>;
             try {
                 let ldapEntry = await this.performLdapSearch(options.LDAP_USER_DN_BASE, {
                     filter: "(&(objectClass=user)(objectsid=" + user.sid + "))",

@@ -1,7 +1,7 @@
 import bodyParser = require("body-parser");
 import { Express } from "express";
 import { AdfsOidc } from "./framework/adfs_oidc_instance";
-import { ApiModuleResponse, ApiModuleBody, ApiModuleInterface } from "../api_common/backend_call"
+import { ApiModuleResponse, ApiModuleBody, ApiModuleInterfaceF2B, ApiModuleInterfaceB2F, RequestTyped } from "../api_common/backend_call"
 
 export abstract class ApiModule {
     private _app: Express;
@@ -19,17 +19,17 @@ export abstract class ApiModule {
         return "/module/" + this.modname();
     }
 
-    postJson<T extends ApiModuleInterface>(route: string, handler: (req, user) => Promise<ApiModuleResponse<T>>) {
+    postJson<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user) => Promise<ApiModuleResponse<RES>>) {
         this._app.post(this.basepath() + "/" + route, bodyParser.json(), async (req, res) => {
             let validationResult: string|JsonObject = undefined;
             if (this.loginRequired() && typeof(validationResult = await AdfsOidc.validateTokenInRequest(req)) == "string") {
                 let response = {
-                    error: "unauthorized" + validationResult
+                    error: "unauthorized: " + validationResult
                 };
                 console.error("User tried to access backend resource (" + req.path + ") with invalid access token: " + req.ip + ". There may be a problem with the client app or a foreign program tries to access our backend!");
                 res.status(401).json(response);
             } else {
-                let moduleResponse = await handler(req, validationResult);
+                let moduleResponse = await handler(new RequestTyped<REQ>(req), validationResult);
                 let transformedResponse: ApiModuleBody = {
                     content: moduleResponse.responseObject,
                     error: moduleResponse.error
@@ -39,7 +39,7 @@ export abstract class ApiModule {
         });
     }
 
-    get<T extends ApiModuleInterface>(route: string, handler: (req, user) => Promise<ApiModuleResponse<T>>) {
+    get<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user) => Promise<ApiModuleResponse<RES>>) {
         this._app.get(this.basepath() + "/" + route, async (req, res) => {
             let validationResult: string|JsonObject = undefined;
             if (this.loginRequired() && typeof(validationResult = await AdfsOidc.validateTokenInRequest(req)) == "string") {
@@ -49,7 +49,7 @@ export abstract class ApiModule {
                 console.error("User tried to access backend resource (" + req.path + ") with invalid access token: " + req.ip + ". There may be a problem with the client app or a foreign program tries to access our backend!");
                 res.status(401).json(response);
             } else {
-                let moduleResponse = await handler(req, validationResult);
+                let moduleResponse = await handler(new RequestTyped<REQ>(req), validationResult);
                 let transformedResponse: ApiModuleBody = {
                     content: moduleResponse.responseObject,
                     error: moduleResponse.error

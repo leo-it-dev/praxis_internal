@@ -1,4 +1,4 @@
-import { ApiModuleInterface } from "./backend_call";
+import { ApiModuleInterfaceB2F } from "./backend_call";
 
 export type DrugUnit = {
 	id: number;
@@ -53,7 +53,7 @@ export type Farmer = {
 
 /* Api endpoints */
 // drugs
-export interface ApiInterfaceDrugs   extends ApiModuleInterface { prefered: ReportableDrug[]; fallback: ReportableDrug[] }
-export interface ApiInterfaceFarmers extends ApiModuleInterface { farmers: Farmer[] };
-export interface ApiInterfacePing    extends ApiModuleInterface {};
-export interface ApiInterfaceAuth    extends ApiModuleInterface {};
+export interface ApiInterfaceDrugsOut   extends ApiModuleInterfaceB2F { prefered: ReportableDrug[]; fallback: ReportableDrug[] }
+export interface ApiInterfaceFarmersOut extends ApiModuleInterfaceB2F { farmers: Farmer[] };
+export interface ApiInterfacePingOut    extends ApiModuleInterfaceB2F {};
+export interface ApiInterfaceAuthOut    extends ApiModuleInterfaceB2F {};

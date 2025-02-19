@@ -2,9 +2,10 @@ import { Injectable, signal, WritableSignal } from '@angular/core';
 import { JwtHelperService } from "./jwt-helper.service";
 import { ErrorlistService } from '../errorlist/errorlist.service';
 import { BackendService } from "../api/backend.service"
-import { ApiInterfaceGenerateToken, ApiInterfaceRefreshToken } from '../../../../../api_common/api_auth';
+import { ApiInterfaceGenerateTokenIn, ApiInterfaceGenerateTokenOut, ApiInterfaceRefreshTokenIn, ApiInterfaceRefreshTokenOut, ApiInterfaceRevokeTokenIn } from '../../../../../api_common/api_auth';
 import { Router } from '@angular/router';
-import { ApiInterfaceUserInfo, UserInfo } from "../../../../../api_common/api_ldapquery"
+import { ApiInterfaceUserInfoOut, UserInfo } from "../../../../../api_common/api_ldapquery"
+import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../../../api_common/backend_call';
 
 type TokenClaims = {
     given_name: string,
@@ -89,9 +90,12 @@ export class SessionService {
 
     forceRefreshToken(): Promise<void> {
         return new Promise((res, rej) => {
-            this.backend.anonymousBackendCall<ApiInterfaceRefreshToken>(SessionService.REFRESH_TOKEN_URL,
-                JSON.stringify({ 'refresh_token': this._rawRefreshToken, 'id_token': this._rawIdToken }
-                )).then(json => {
+            if (!this._rawIdToken || !this._rawRefreshToken) {
+                rej("No id token or refresh token found!");
+                return;
+            }
+            this.backend.anonymousBackendCall<ApiInterfaceRefreshTokenIn, ApiInterfaceRefreshTokenOut>(SessionService.REFRESH_TOKEN_URL,
+                { id_token: this._rawIdToken, refresh_token: this._rawRefreshToken }).then(json => {
                     this._rawAccessToken = json.access_token;
                     if (json.refresh_token !== undefined) {
                         this._rawRefreshToken = json.refresh_token;
@@ -186,30 +190,29 @@ export class SessionService {
 
     exchangeCodeForToken(code: string, state: string): Promise<void> {
         return new Promise((res, rej) => {
-            this.backend.anonymousBackendCall<ApiInterfaceGenerateToken>(SessionService.EXCHANGE_TOKEN_URL, 
-                JSON.stringify({ 'code': code, 'state': state })).then(async json => {
-                this._rawIdToken = json.id_token;
-                this._rawAccessToken = json.access_token;
-                this._rawRefreshToken = json.refresh_token;
-                if (this._rawIdToken && this._rawAccessToken && this._rawRefreshToken) {
-                    this.parseIdToken(this._rawIdToken);
-                    await this.resolveUserDetails();
-                    this.storeSessionInStore();
-                    this._isLoggedIn.set(true);
-                    res();
-                } else {
-                    throw new Error("Invalid server response! Keys: " + Object.keys(json));
-                }
-            }).catch(err => {
-                rej(err);
-            });
+            this.backend.anonymousBackendCall<ApiInterfaceGenerateTokenIn, ApiInterfaceGenerateTokenOut>(SessionService.EXCHANGE_TOKEN_URL,
+                { 'code': code, 'state': state }).then(async json => {
+                    this._rawIdToken = json.id_token;
+                    this._rawAccessToken = json.access_token;
+                    this._rawRefreshToken = json.refresh_token;
+                    if (this._rawIdToken && this._rawAccessToken && this._rawRefreshToken) {
+                        this.parseIdToken(this._rawIdToken);
+                        await this.resolveUserDetails();
+                        this.storeSessionInStore();
+                        this._isLoggedIn.set(true);
+                        res();
+                    } else {
+                        throw new Error("Invalid server response! Keys: " + Object.keys(json));
+                    }
+                }).catch(err => {
+                    rej(err);
+                });
         });
     }
 
     resolveUserDetails(): Promise<void> {
         return new Promise((res, rej) => {
-            this.backend.authorizedBackendCall<ApiInterfaceUserInfo>(SessionService.USERINFO_URL).then(json => {
-                console.log(json);
+            this.backend.authorizedBackendCall<ApiInterfaceEmptyIn, ApiInterfaceUserInfoOut>(SessionService.USERINFO_URL).then(json => {
                 this._rawUserInfo = json.userinfo;
                 if (!this.parseUserInfo(json.userinfo)) {
                     this.errorlistService.showErrorMessage("Error parsing user details!");
@@ -224,14 +227,14 @@ export class SessionService {
 
     unauthorizeSession(reason: string): Promise<void> {
         return new Promise((res, rej) => {
-            if (!this._isLoggedIn()) {
+            if (!this._isLoggedIn() || !this._rawIdToken) {
                 setTimeout((() => { this.redirectClientToLoginPage(reason) }).bind(this), 100);
                 rej();
                 return;
             }
 
-            this.backend.anonymousBackendCall(SessionService.REVOKE_TOKEN_URL,
-                JSON.stringify({ 'id_token': this._rawIdToken })
+            this.backend.anonymousBackendCall<ApiInterfaceRevokeTokenIn, ApiInterfaceEmptyOut>(SessionService.REVOKE_TOKEN_URL,
+                { id_token: this._rawIdToken }
             ).then(json => {
                 sessionStorage.removeItem("id");
                 sessionStorage.removeItem("access");

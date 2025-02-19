@@ -7,7 +7,8 @@ import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from './qs-farmer-p
 import { CategorizedItem, CategorizedList } from '../utilities/categorized-list';
 import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
 import { BackendService } from '../api/backend.service';
-import { DrugUnit, ReportableDrug, DrugUnits, Farmer, DrugPackage, ApiInterfaceDrugs, ApiInterfaceFarmers } from "../../../../../api_common/api_qs";
+import { DrugUnit, ReportableDrug, DrugUnits, Farmer, DrugPackage, ApiInterfaceDrugsOut, ApiInterfaceFarmersOut } from "../../../../../api_common/api_qs";
+import { ApiInterfaceEmptyIn } from '../../../../../api_common/backend_call';
 
 @Component({
 	selector: 'app-qsreport',
@@ -78,7 +79,7 @@ export class QsreportComponent {
 	drugUnitSerializer: IStringify<DrugUnit> = { display: (drugUnit) => ({ text: drugUnit.name, hint: NO_HINT }) };
 
 	async loadApiData() {
-		this.backendService.authorizedBackendCall<ApiInterfaceDrugs>(QsreportComponent.API_URL_DRUG).then(dat => {
+		this.backendService.authorizedBackendCall<ApiInterfaceEmptyIn, ApiInterfaceDrugsOut>(QsreportComponent.API_URL_DRUG).then(dat => {
 			const categorized = new CategorizedList<ReportableDrug>();
 			categorized.init({ category: this.DRUG_CATEGORY_OK, items: dat.prefered }, 
 							{ category: this.DRUG_CATEGORY_WARN, items: dat.fallback });
@@ -88,7 +89,7 @@ export class QsreportComponent {
 			this.errorlistService.showErrorMessage("Error receiving list of reportable drugs: " + e);
 		});
 
-		this.backendService.authorizedBackendCall<ApiInterfaceFarmers>(QsreportComponent.API_URL_FARMER).then(dat => {
+		this.backendService.authorizedBackendCall<ApiInterfaceEmptyIn, ApiInterfaceFarmersOut>(QsreportComponent.API_URL_FARMER).then(dat => {
 			this.farmers.set(dat.farmers);
 			console.log("Loaded " + this.farmers().length + " farmers!");
 		}).catch(e => {

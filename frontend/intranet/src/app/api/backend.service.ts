@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SessionService } from '../shared-service/session.service';
 import { ErrorlistService } from '../errorlist/errorlist.service';
-import { ApiModuleBody, ApiModuleInterface } from '../../../../../api_common/backend_call'
+import { ApiModuleBody, ApiModuleInterfaceB2F, ApiModuleInterfaceF2B } from '../../../../../api_common/backend_call'
 import { Injector } from '@angular/core';
 
 @Injectable({
@@ -23,11 +23,11 @@ export class BackendService {
 		return this.sessionService;
 	}
 
-	anonymousBackendCall<T extends ApiModuleInterface>(url: string, body: BodyInit|undefined = undefined): Promise<T> {
+	anonymousBackendCall<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(url: string, body: REQ|undefined = undefined): Promise<RES> {
 		return new Promise((res, rej) => {
 			fetch(url, {
 				method: body === undefined ? "GET" : "POST",
-				body: body,
+				body: JSON.stringify(body),
 				headers: {
 					'Content-Type': 'application/json',
 					'Accept': 'application/json'
@@ -35,7 +35,7 @@ export class BackendService {
 			}).then(async resp => {
 				const json = (await resp.json()) as ApiModuleBody;
 				if (resp.ok) {
-					res(json.content as T);
+					res(json.content as RES);
 				} else {
 					throw new Error(resp.status + ": " + json.error);
 				}
@@ -46,12 +46,12 @@ export class BackendService {
 		});
 	}
 
-	authorizedBackendCall<T extends ApiModuleInterface>(url: string, body: BodyInit|undefined = undefined): Promise<T> {
+	authorizedBackendCall<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(url: string, body: REQ|undefined = undefined): Promise<RES> {
 		return new Promise((res, rej) => {
 			this.getSessionService().accessToken.then((accessToken) => {
 				fetch(url, {
 					method: body === undefined ? "GET" : "POST",
-					body: body,
+					body: JSON.stringify(body),
 					headers: {
 						'Content-Type': 'application/json',
 						'Accept': 'application/json',
@@ -60,7 +60,7 @@ export class BackendService {
 				}).then(async resp => {
 					const json = (await resp.json()) as ApiModuleBody;
 					if (resp.ok) {
-						res(json.content as T);
+						res(json.content as RES);
 					} else if (resp.status == 401) { // Unauthorized. There seems to be a problem with our access (session) token.
 						this.getSessionService().unauthorizeSession("Backend service reported a problem with your session! You have been logged out!");
 					} else {

@@ -2,9 +2,10 @@ import { ApiModule } from '../../api_module';
 import { Farmer, QsApiHandler } from './qsapi_handler';
 import { options } from '../../options';
 import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
-import { ApiInterfaceAuth, ApiInterfaceDrugs, ApiInterfaceFarmers, ApiInterfacePing, ReportableDrug } from '../../../api_common/api_qs';
+import { ApiInterfaceAuthOut, ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePingOut, ReportableDrug } from '../../../api_common/api_qs';
 import { readReportableDrugListFromHIT } from './hit_drug_crawler';
 import { sum } from '../../utilities/utilities';
+import { ApiInterfaceEmptyIn } from '../../../api_common/backend_call';
 // import { readReportableDrugListFromMovetaDB, ReportableDrug } from './moveta_drug_crawler';
 
 /*
@@ -102,18 +103,18 @@ export class ApiModuleQs extends ApiModule {
     }
 
     registerEndpoints() {
-        this.get<ApiInterfaceAuth>("auth", async (req, user) => {
+        this.get<ApiInterfaceEmptyIn, ApiInterfaceAuthOut>("auth", async (req, user) => {
             this.qsApiHandler.checkAndRenewAccessToken();
             return { statusCode: 200, responseObject: {}, error: undefined };
         });
-        this.get<ApiInterfacePing>("ping", async (req, user) => {
+        this.get<ApiInterfaceEmptyIn, ApiInterfacePingOut>("ping", async (req, user) => {
             this.qsApiHandler.sendAuthenticatedPing();
             return { statusCode: 200, responseObject: {}, error: undefined };
         })
-        this.get<ApiInterfaceDrugs>("drugs", async (req, user) => {
+        this.get<ApiInterfaceEmptyIn, ApiInterfaceDrugsOut>("drugs", async (req, user) => {
             return { statusCode: 200, responseObject: {prefered: this.reportableDrugsPrefered, fallback: this.reportableDrugsFallback}, error: undefined };
         });
-        this.get<ApiInterfaceFarmers>("farmers", async (req, user) => {
+        this.get<ApiInterfaceEmptyIn, ApiInterfaceFarmersOut>("farmers", async (req, user) => {
             return { statusCode: 200, responseObject: {farmers: this.farmers}, error: undefined };
         });
     }

@@ -2,8 +2,9 @@ import { ApiModule } from "../../api_module";
 import { AdfsOidc } from "../../framework/adfs_oidc_instance";
 import { AdfsSessionToken } from "../../framework/adfs_sessiontoken";
 import { options } from "../../options";
-import { ApiInterfaceGenerateToken, ApiInterfaceRefreshToken, ApiInterfaceRevokeToken } from "../../../api_common/api_auth"
+import { ApiInterfaceGenerateTokenIn, ApiInterfaceGenerateTokenOut, ApiInterfaceRefreshTokenIn, ApiInterfaceRefreshTokenOut, ApiInterfaceRevokeTokenIn, JwtError, JwtErrorType } from "../../../api_common/api_auth"
 import * as ssl from '../../ssl/ssl'
+import { ApiInterfaceEmptyOut } from "../../../api_common/backend_call";
 
 export class ApiModuleAuth extends ApiModule {
 
@@ -18,11 +19,8 @@ export class ApiModuleAuth extends ApiModule {
     }
 
     registerEndpoints(): void {
-        this.postJson<ApiInterfaceGenerateToken>("generateToken", async (req, _) => {
-            const code = req.body['code'];
-            const stateUUID = req.body['state'];
-
-            const bodyContent = "grant_type=authorization_code&code=" + code + "&redirect_uri=" + encodeURIComponent(options.ADFS_INTRANET_REDIRECT_URL_LOGIN);
+        this.postJson<ApiInterfaceGenerateTokenIn, ApiInterfaceGenerateTokenOut>("generateToken", async (req, _) => {
+            const bodyContent = "grant_type=authorization_code&code=" + req.body.code + "&redirect_uri=" + encodeURIComponent(options.ADFS_INTRANET_REDIRECT_URL_LOGIN);
 
             try {
                 let res = await ssl.httpsRequest(
@@ -57,9 +55,8 @@ export class ApiModuleAuth extends ApiModule {
             }
         });
 
-        this.postJson<ApiInterfaceRevokeToken>("revokeToken", async (req, _) => {
-            const idtoken = req.body['id_token'];
-            const bodyContent = "id_token_hint=" + idtoken + "&post_logout_redirect_uri=" + options.ADFS_INTRANET_REDIRECT_URL_LOGOUT;
+        this.postJson<ApiInterfaceRevokeTokenIn, ApiInterfaceEmptyOut>("revokeToken", async (req, _) => {
+            const bodyContent = "id_token_hint=" + req.body.id_token + "&post_logout_redirect_uri=" + options.ADFS_INTRANET_REDIRECT_URL_LOGOUT;
 
             try {
                 let resp = await ssl.httpsRequest(
@@ -68,7 +65,7 @@ export class ApiModuleAuth extends ApiModule {
                     'application/x-www-form-urlencoded', 'Basic ' + btoa(options.ADFS_INTRANET_CLIENT_ID + ":" + options.ADFS_INTRANET_CLIENT_SECRET));
 
                 if (resp.statusCode == 200) {
-                    const adfsToken = new AdfsSessionToken(idtoken);
+                    const adfsToken = new AdfsSessionToken(req.body.id_token);
                     console.log("User logged out: ", adfsToken.userPrincipalName);
                     return {statusCode: 200, responseObject: {}, error: undefined};
                 } else {
@@ -81,13 +78,22 @@ export class ApiModuleAuth extends ApiModule {
             }
         });
 
-        this.postJson<ApiInterfaceRefreshToken>("refreshToken", async (req, _) => {
-            const refreshToken = req.body['refresh_token'];
-            const idToken = req.body['id_token'];
-            const bodyContent = "grant_type=refresh_token&refresh_token=" + refreshToken;
+        this.postJson<ApiInterfaceRefreshTokenIn, ApiInterfaceRefreshTokenOut>("refreshToken", async (req, _) => {
+            const bodyContent = "grant_type=refresh_token&refresh_token=" + req.body.refresh_token;
+            
+            let adfsToken: AdfsSessionToken|undefined = undefined;
 
-            await AdfsOidc.getOidcProvider().validateJWTtoken(idToken);
-            const adfsToken = new AdfsSessionToken(idToken);
+            try {
+                await AdfsOidc.getOidcProvider().validateJWTtoken(req.body.id_token);
+                adfsToken = new AdfsSessionToken(req.body.id_token);
+            } catch(err) {
+                let errTyped = err as JwtError;
+                if (errTyped.error == JwtErrorType.EXPIRED) {
+                    return {statusCode: 401, responseObject: {access_token: undefined, id_token: undefined, refresh_token: undefined}, error: "ID Token expired!"};
+                } else {
+                    return {statusCode: 500, responseObject: {access_token: undefined, id_token: undefined, refresh_token: undefined}, error: "Error validating ID Token!"};
+                }
+            }
 
             try {
                 let res = await ssl.httpsRequest(

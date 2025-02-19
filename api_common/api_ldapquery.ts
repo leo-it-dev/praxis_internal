@@ -1,8 +1,8 @@
-import { ApiModuleInterface } from "./backend_call"
+import { ApiModuleInterfaceB2F } from "./backend_call"
 
 export type UserInfo = {
     thumbnail: string
 }
 
 /* Api endpoints */
-export interface ApiInterfaceUserInfo extends ApiModuleInterface { userinfo: UserInfo };
+export interface ApiInterfaceUserInfoOut extends ApiModuleInterfaceB2F { userinfo: UserInfo };

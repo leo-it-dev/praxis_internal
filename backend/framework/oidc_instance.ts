@@ -3,6 +3,7 @@ import { resolveOicdConfiguration, updateJwksCertificates } from '../utilities/j
 import { b64UrlRegexChar, base64urlDecode } from '../utilities/utilities';
 import jwt = require('jsonwebtoken');
 import { Mutex } from 'async-mutex';
+import { JwtError, JwtErrorType } from '../../api_common/api_auth';
 
 export class OidcInstance {
 
@@ -55,9 +56,9 @@ export class OidcInstance {
 
     validateJWTtoken(jwtToken: string): Promise<JsonObject> {
         var inst = this;
-        return new Promise<JsonObject>(async (res, rej) => {
+        return new Promise<JsonObject>(async (res, rej: (err: JwtError) => void) => {
             if (!jwtToken || !jwtToken.match(b64UrlRegexChar + "+\\." + b64UrlRegexChar + "+\\." + b64UrlRegexChar)) {
-                rej("Token is not in JWT format!");
+                rej({error: JwtErrorType.OTHER, reason: "Token is not in JWT format!"});
                 return;
             }
             // TODO: Check if valid base64 decodable!! Otherwise crash may occur
@@ -71,13 +72,13 @@ export class OidcInstance {
             const x5t = headerJson['x5t'];
         
             if (alg != 'RS256') { // Expected signature algorithm
-                rej("Unsupported algorithm used!");
+                rej({error: JwtErrorType.OTHER, reason: "Unsupported algorithm used!"});
                 return;
             }
         
             const issUrl = new URL(iss);
             if (issUrl.host != inst.configuration.hostname || !issUrl.pathname.startsWith(inst.configuration.oidcRoot)) { // Expected issuer
-                rej("Token issuer does not match expected issuer: " + issUrl);
+                rej({error: JwtErrorType.OTHER, reason: "Token issuer does not match expected issuer: " + issUrl});
                 return;
             }
         
@@ -86,7 +87,7 @@ export class OidcInstance {
 
             const certificate = inst.getJwksCertificate(x5t);
             if (certificate == undefined) {
-                rej("Unknown certificate used for hashing token!");
+                rej({error: JwtErrorType.OTHER, reason: "Unknown certificate used for hashing token!"});
                 return;
             }
 
@@ -96,9 +97,12 @@ export class OidcInstance {
                     console.log("Successfully validated JWT token!");
                     res(user);
                 } else {
-                    // Error
                     console.log("Error validating JWT token: ", err);
-                    rej("Error validating JWT token signature: " + err);
+                    if (err.name == 'TokenExpiredError') {
+                        rej({error: JwtErrorType.EXPIRED, reason: "Error validating JWT token signature: " + err});
+                    } else {
+                        rej({error: JwtErrorType.OTHER, reason: "Error validating JWT token signature: " + err});
+                    }
                 }
             });
         });
