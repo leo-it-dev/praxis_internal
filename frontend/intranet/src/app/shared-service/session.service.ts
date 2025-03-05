@@ -40,10 +40,11 @@ export class SessionService {
     private _givenName: string = "<unset>";
     private _familyName: string = "<unset>";
     private _email: string = "<unset>";
-    private _thumbnailPhoto?: string = undefined;
     private _sid: string | undefined = undefined;
     private _rawUserInfo: UserInfo | undefined = undefined;
     private _isLoggedIn: WritableSignal<boolean> = signal(false);
+    
+    private _lazyloadUserInfo?: UserInfo = undefined;
 
     constructor(private jwtHelperService: JwtHelperService,
         private errorlistService: ErrorlistService,
@@ -54,10 +55,11 @@ export class SessionService {
     public get givenName() { return this._givenName; }
     public get familyName() { return this._familyName; }
     public get email() { return this._email; }
-    public get thumbnailPhoto() { return this._thumbnailPhoto; }
+    public get thumbnailPhoto() { return this._lazyloadUserInfo?.thumbnail; }
     public get isLoggedIn() { return this._isLoggedIn(); }
     public get refreshToken() { return this._rawRefreshToken };
     public get sid() { return this._sid };
+    public get qsVeterinaryName() { return this._lazyloadUserInfo?.vetproofVeterinaryName };
     public get accessToken(): Promise<string> {
         // Our application propably wants to send this access token to the server. In case it is expired, automatically renew it using our stored renewToken().
         return new Promise(async (res, rej) => {
@@ -95,7 +97,7 @@ export class SessionService {
                 return;
             }
             this.backend.anonymousBackendCall<ApiInterfaceRefreshTokenIn, ApiInterfaceRefreshTokenOut>(SessionService.REFRESH_TOKEN_URL,
-                { id_token: this._rawIdToken, refresh_token: this._rawRefreshToken }).then(json => {
+                { refresh_token: this._rawRefreshToken }).then(json => {
                     this._rawAccessToken = json.access_token;
                     if (json.refresh_token !== undefined) {
                         this._rawRefreshToken = json.refresh_token;
@@ -172,7 +174,7 @@ export class SessionService {
             this._familyName = idTokenClaims.family_name;
             this._email = idTokenClaims.email;
             this._sid = idTokenClaims.sid;
-            this._thumbnailPhoto = "";
+            this._lazyloadUserInfo = undefined;
             return true;
         } else {
             this.errorlistService.showErrorMessage("Invalid ID token given!");
@@ -180,12 +182,8 @@ export class SessionService {
         return false;
     }
 
-    parseUserInfo(rawDetails: any): boolean {
-        if ('thumbnail' in rawDetails && typeof (rawDetails['thumbnail']) == 'string') {
-            this._thumbnailPhoto = "data:image/jpg;base64," + rawDetails["thumbnail"];
-            return true;
-        }
-        return false;
+    parseUserInfo(rawDetails: UserInfo) {
+        this._lazyloadUserInfo = rawDetails;
     }
 
     exchangeCodeForToken(code: string, state: string): Promise<void> {
@@ -214,10 +212,7 @@ export class SessionService {
         return new Promise((res, rej) => {
             this.backend.authorizedBackendCall<ApiInterfaceEmptyIn, ApiInterfaceUserInfoOut>(SessionService.USERINFO_URL).then(json => {
                 this._rawUserInfo = json.userinfo;
-                if (!this.parseUserInfo(json.userinfo)) {
-                    this.errorlistService.showErrorMessage("Error parsing user details!");
-                    console.error("Error parsing user details: ", json);
-                }
+                this.parseUserInfo(json.userinfo);
                 res();
             }).catch(err => {
                 rej(err);

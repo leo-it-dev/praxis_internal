@@ -1,5 +1,6 @@
-import { NgFor } from '@angular/common';
-import { Component, ElementRef, EventEmitter, Input, Output, QueryList, Signal, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
+import { CommonModule, NgFor } from '@angular/common';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, QueryList, Signal, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
+import { FormControl, NgControl, ReactiveFormsModule } from '@angular/forms';
 
 export type Hint = {
 	color: string | undefined;
@@ -21,11 +22,11 @@ export interface IStringify<T> {
 
 @Component({
 	selector: 'app-search-dropdown',
-	imports: [NgFor],
+	imports: [NgFor, CommonModule, ReactiveFormsModule],
 	templateUrl: './search-dropdown.component.html',
 	styleUrl: './search-dropdown.component.scss'
 })
-export class SearchDropdownComponent<TItem> {
+export class SearchDropdownComponent<TItem> implements AfterViewInit{
 	private _items?: Array<TItem>;
 	private _placeholder: string = "<unset>";
 
@@ -55,11 +56,14 @@ export class SearchDropdownComponent<TItem> {
 			}
 			this.updateUIAfterInputValueChange();
 		}
+		this.updateEnableFlag();
 
 		if (items.length == 1) {
 			this.itemSelectedEvent.emit(items[0]);
+			this.forceInvalidate(false);
 		} else {
 			this.itemSelectedEvent.emit(undefined);
+			this.forceInvalidate(true);
 		}
 	}
 
@@ -77,7 +81,36 @@ export class SearchDropdownComponent<TItem> {
 	@ViewChild("searchTooltip") searchTooltip?: ElementRef;
 	@ViewChildren('optionItems') optionItems!: QueryList<ElementRef>;
 
-	constructor(private elRef: ElementRef) {}
+	constructor(private elRef: ElementRef,
+				private controlDir: NgControl
+	) {
+		this.controlDir.valueAccessor = this;
+	}
+
+	updateEnableFlag() {
+		if (this.control) {
+			if (this.hasMultipleItems()) {
+				this.control.enable();
+			} else {
+				this.control.disable();
+			}
+		}
+	}
+
+	forceInvalidate(invalid: boolean) {
+		if (this.control) {
+			if (invalid) {
+				this.control.setErrors({'incorrect': true});
+			} else {
+				this.control.setErrors(null);
+			}
+		}
+	}
+
+	ngAfterViewInit(): void {
+		this.updateEnableFlag();
+		this.forceInvalidate(true);
+	}
 
 	handleTextChangeFinished: Function | undefined;
 	hoveredItem: WritableSignal<number> = signal(-1);
@@ -90,6 +123,7 @@ export class SearchDropdownComponent<TItem> {
 			this.lastItemSelectedEventItem = item;
 			this.itemSelectedEvent.emit(item);
 		}
+		this.forceInvalidate(item === undefined);
 	}
 
 	hasMultipleItems(): boolean {
@@ -123,12 +157,17 @@ export class SearchDropdownComponent<TItem> {
 			if (this.handleTextChangeFinished !== undefined) {
 				this.handleTextChangeFinished();
 				this.handleTextChangeFinished = undefined;
-			}	
+			}
+
+			if (this.onChangeValidationCallback) {
+				this.onChangeValidationCallback((this.inputElement.nativeElement as HTMLInputElement).value);
+			}
 		}
 	}
 
 	handleTextChange(event: Event) {
 		this.updateUIAfterInputValueChange();
+		this.forceInvalidate(this.lastItemSelectedEventItem === undefined);
 	}
 
 	hoveredItemChanged(autoScroll: boolean) {
@@ -152,8 +191,8 @@ export class SearchDropdownComponent<TItem> {
 					this.hoveredItem.set(this.hoveredItem() + 1);
 					this.hoveredItemChanged(true);
 				}
-				event.preventDefault();
 			}
+			event.preventDefault();
 		}
 		if (event.key == "ArrowUp") {
 			if (this.hoveredItem() != -1) {
@@ -163,6 +202,7 @@ export class SearchDropdownComponent<TItem> {
 					this.hoveredItemChanged(true);
 				}
 			}
+			event.preventDefault();
 		}
 		if (event.key == "Enter") {
 			let selectedItem = undefined;
@@ -174,6 +214,7 @@ export class SearchDropdownComponent<TItem> {
 			if (selectedItem) {
 				this.selectItemExt(selectedItem);
 			}
+			event.preventDefault();
 		}
 		if (event.key == "PageUp") {
 			let selected = this.hoveredItem() == -1 ? 0 : this.hoveredItem();
@@ -189,6 +230,7 @@ export class SearchDropdownComponent<TItem> {
 				}
 				selected--;
 			}
+			event.preventDefault();
 		}
 		if (event.key == "PageDown") {
 			let selected = this.hoveredItem() == -1 ? 0 : this.hoveredItem();
@@ -204,14 +246,17 @@ export class SearchDropdownComponent<TItem> {
 				}
 				selected++;
 			}
+			event.preventDefault();
 		}
 		if (event.key == "Home") {
 			this.hoveredItem.set(0);
 			this.hoveredItemChanged(true);
+			event.preventDefault();
 		}
 		if (event.key == "End") {
 			this.hoveredItem.set(this.optionItems.length - 1);
 			this.hoveredItemChanged(true);
+			event.preventDefault();
 		}
 	}
 
@@ -260,18 +305,19 @@ export class SearchDropdownComponent<TItem> {
 	}
 
 	lostFocus(_: Event) {
+		let searchString = (this.inputElement!.nativeElement as HTMLInputElement).value;
+		let inputIsEmpty = searchString.length == 0;
+
 		if (this.recommendedItems().length == 1) {
 			let item = this.recommendedItems()[0];
 			this.inputElement!.nativeElement.value = this.serial.display(item).text;
 			this.emitEvent(item);
-		} else if (this.hoveredItem() !== -1) {
+		}/* else if (this.hoveredItem() !== -1) {
 			let item = this.recommendedItems()[this.hoveredItem()];
 			this.inputElement!.nativeElement.value = this.serial.display(item).text;
 			this.emitEvent(item);
-		}
+		}*/ // Dont! This also fires when hovering an item with the mouse and the text field is empty!
 		
-		let searchString = (this.inputElement!.nativeElement as HTMLInputElement).value;
-		let inputIsEmpty = searchString.length == 0;
 		if (inputIsEmpty || searchString !== this.hintText()) {
 			this.emitEvent(undefined);
 		}
@@ -285,6 +331,7 @@ export class SearchDropdownComponent<TItem> {
 
 	gainedFocus(event: Event) {
 		this.updateUIAfterInputValueChange();
+		this.forceInvalidate(this.lastItemSelectedEventItem === undefined);
 	}
 
 	inputScrolled(event: Event) {
@@ -303,5 +350,19 @@ export class SearchDropdownComponent<TItem> {
 			this.updateUIAfterInputValueChange();
 			this.inputElement.nativeElement.focus();
 		}
+	}
+
+
+	/* =========== Value Validation =========== */
+	private onChangeValidationCallback?: Function = undefined;
+
+	writeValue(obj: any): void {}
+	registerOnChange(fn: any): void {
+		this.onChangeValidationCallback = fn;
+	}
+	registerOnTouched(fn: any): void {}
+
+	get control(): FormControl {
+		return this.controlDir.control as FormControl;
 	}
 }

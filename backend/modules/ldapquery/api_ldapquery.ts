@@ -70,7 +70,8 @@ export class ApiModuleLdapQuery extends ApiModule {
                 } else {
                     // Append additional ActiveDirectory attributes needed here to add to the response
                     result = { statusCode: 200, responseObject: {userinfo: {
-                        thumbnail: ldapEntry.attributes.find(e => e.type == "thumbnailPhoto").buffers[0].toString('base64')
+                        thumbnail: "data:image/jpg;base64," + ldapEntry.attributes.find(e => e.type == "thumbnailPhoto").buffers[0].toString('base64'),
+                        vetproofVeterinaryName: ldapEntry.attributes.find(e => e.type == options.AD_ATTRIBUTE_QS_VETERINARY_ID).values[0]
                     }}, error: undefined};
                 }
             } catch(err) {

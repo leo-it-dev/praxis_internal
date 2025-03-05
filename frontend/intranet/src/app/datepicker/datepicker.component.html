@@ -1,2 +1,13 @@
-<input #dateinput type="text" name="datepicker" class="datepicker" (focusout)="lostFocus($event)" (change)="inputChanged($event)" (select)="inputSelected($event)" (keydown)="keyDownPressed($event)" [placeholder]="placeholder"/>
-<button #todayButton class="todayButton" (click)="setDateToToday()">Heute</button>
+<input #dateinput type="text" name="datepicker"
+    [value]="value"
+    (input)="onChange($event)"
+    (blur)="lostFocus($event)"
+
+    (keydown)="keyDownPressed($event)"
+    [placeholder]="placeholder"
+
+    class="datepicker form-control touched"
+    [formControl]="control"
+    />
+<button type="button" #todayButton class="todayButton" (click)="setDateToToday()">Heute</button>
+<!-- button type=button, because html would use it to submit forms otherwise -->

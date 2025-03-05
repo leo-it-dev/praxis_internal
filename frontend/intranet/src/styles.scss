@@ -24,6 +24,7 @@ html {
     --shelfGradientLight: #fff;
     --shelfGradientDark: #ddd;
     --shadeLevel2: #bbb;
+    --shadeLevel3: #999;
     --action-button-gradient-left: #ef709b;
     --action-button-gradient-right: #fa9372;
     --account-property: #eee;
@@ -59,8 +60,8 @@ body {
     filter: brightness(1.0);
     transition: box-shadow .1s ease-out, filter .1s ease-out;
 }
-.actionButton:hover,
-.basicButton:hover {
+.actionButton:active:hover,
+.basicButton:active:hover {
     box-shadow: 0px 0px 5px gray;
     filter: brightness(1.1);
 }
@@ -108,4 +109,15 @@ body {
 
 *::selection {
     background-color: var(--action-button-gradient-right);
+}
+
+.actionButton:disabled,
+.smallActionButton:disabled,
+.basicButton:disabled {
+    background: linear-gradient( 90deg, var(--shadeLevel2), var(--shadeLevel3)) !important;
+}
+
+
+input.ng-invalid:not(form) {
+    border-left: 2px solid red !important;
 }

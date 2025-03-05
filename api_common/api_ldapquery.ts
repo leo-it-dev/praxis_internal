@@ -2,6 +2,7 @@ import { ApiModuleInterfaceB2F } from "./backend_call"
 
 export type UserInfo = {
     thumbnail: string
+    vetproofVeterinaryName: string
 }
 
 /* Api endpoints */

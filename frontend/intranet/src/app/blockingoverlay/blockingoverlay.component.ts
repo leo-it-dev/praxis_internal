@@ -46,6 +46,7 @@ export class BlockingoverlayComponent implements AfterViewInit, OnDestroy {
 		const buttons = natElement.getElementsByTagName("button");
 		if (buttons.length >= 1) {
 			this.lastFocus = document.activeElement;
+			console.log(this.lastFocus);
 			buttons[0].focus();
 		}
 	}

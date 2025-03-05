@@ -17,5 +17,5 @@ export interface ApiInterfaceGenerateTokenOut extends ApiModuleInterfaceB2F { id
 
 export interface ApiInterfaceRevokeTokenIn extends ApiModuleInterfaceF2B { id_token: string };
 
-export interface ApiInterfaceRefreshTokenIn extends ApiModuleInterfaceF2B { refresh_token: string; id_token: string };
+export interface ApiInterfaceRefreshTokenIn extends ApiModuleInterfaceF2B { refresh_token: string };
 export interface ApiInterfaceRefreshTokenOut extends ApiModuleInterfaceB2F { access_token: string; refresh_token: string; id_token: string };

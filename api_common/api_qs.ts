@@ -1,4 +1,4 @@
-import { ApiModuleInterfaceB2F } from "./backend_call";
+import { ApiModuleInterfaceB2F, ApiModuleInterfaceF2B } from "./backend_call";
 
 export type DrugUnit = {
 	id: number;
@@ -49,11 +49,32 @@ export type Farmer = {
 	vpId: number; // Eindeutige Identifikation des Tierhalters in VetProof
 };
 
+export type DrugReport = {
+	locationNumber: string; // VVVO-Nummer Farmer
+	documentNumber: number; // Belegnummer
+	deliveryDate: Date; // Abgabedatum
+	veterinary: string; // Nachname,Vorname Tierarzt
+	prescriptionRows: [
+		{
+			animalGroup: number;
+			animalCount: number;
+			drugs: [
+				{
+					approvalNumber: string;
+					packageId: number;
+					amount: number;
+					amountUnit: DrugUnits,
+					applicationDuration: number;
+				}
+			];
+		}
+	];
+};
 
 
 /* Api endpoints */
-// drugs
-export interface ApiInterfaceDrugsOut   extends ApiModuleInterfaceB2F { prefered: ReportableDrug[]; fallback: ReportableDrug[] }
+export interface ApiInterfaceDrugsOut   extends ApiModuleInterfaceB2F { prefered: ReportableDrug[]; fallback: ReportableDrug[] };
 export interface ApiInterfaceFarmersOut extends ApiModuleInterfaceB2F { farmers: Farmer[] };
 export interface ApiInterfacePingOut    extends ApiModuleInterfaceB2F {};
 export interface ApiInterfaceAuthOut    extends ApiModuleInterfaceB2F {};
+export interface ApiInterfacePutPrescriptionRowsIn extends ApiModuleInterfaceF2B { drugReport: DrugReport };

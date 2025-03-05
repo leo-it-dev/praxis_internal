@@ -5,7 +5,12 @@
     box-sizing: border-box;
 }
 
-#content {
+content {
+    width: 100%;
+    height: 100%;
+}
+
+#qsForm {
     box-sizing: border-box;
     width: 100%;
     height: 100%;
@@ -16,7 +21,11 @@
     column-gap: 10px;
 }
 
-#content > div {
+#qsForm {
+    width: 100%;
+}
+
+#qsForm > div {
     min-width: 90%;
     max-width: 90%;
     padding: 0px;
@@ -29,17 +38,17 @@
     column-gap: 10px;
 }
 
-#content > div > label {
+#qsForm > div > label {
     height: min-content;
 }
 
-#content > div > div {
+#qsForm > div > div {
     display: flex;
     width: 100%;
     column-gap: 10px;
 }
 
-#content > div > div > * {
+#qsForm > div > div > * {
     flex: 1;
 }
 

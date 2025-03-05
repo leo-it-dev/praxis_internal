@@ -81,20 +81,6 @@ export class ApiModuleAuth extends ApiModule {
         this.postJson<ApiInterfaceRefreshTokenIn, ApiInterfaceRefreshTokenOut>("refreshToken", async (req, _) => {
             const bodyContent = "grant_type=refresh_token&refresh_token=" + req.body.refresh_token;
             
-            let adfsToken: AdfsSessionToken|undefined = undefined;
-
-            try {
-                await AdfsOidc.getOidcProvider().validateJWTtoken(req.body.id_token);
-                adfsToken = new AdfsSessionToken(req.body.id_token);
-            } catch(err) {
-                let errTyped = err as JwtError;
-                if (errTyped.error == JwtErrorType.EXPIRED) {
-                    return {statusCode: 401, responseObject: {access_token: undefined, id_token: undefined, refresh_token: undefined}, error: "ID Token expired!"};
-                } else {
-                    return {statusCode: 500, responseObject: {access_token: undefined, id_token: undefined, refresh_token: undefined}, error: "Error validating ID Token!"};
-                }
-            }
-
             try {
                 let res = await ssl.httpsRequest(
                     options.HOSTNAME_ADFS, options.ADFS_URL_TOKEN,
@@ -118,7 +104,7 @@ export class ApiModuleAuth extends ApiModule {
                         responseObject.id_token = body["id_token"];
                     }
 
-                    console.log("User refreshed it's access token: ", adfsToken.userPrincipalName);
+                    console.log("User successfully refreshed it's access token!");
                     return {statusCode: 200, responseObject: responseObject, error: undefined};
                 } else {
                     throw new Error("Server returned invalid response while user is trying to refresh it's access token!: " + res.statusCode + ", " + res.data);

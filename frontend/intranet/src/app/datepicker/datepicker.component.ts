@@ -1,8 +1,10 @@
+import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, Input, ViewChild } from '@angular/core';
+import { FormControl, NgControl, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
 	selector: 'app-datepicker',
-	imports: [],
+	imports: [CommonModule, ReactiveFormsModule],
 	templateUrl: './datepicker.component.html',
 	styleUrl: './datepicker.component.scss'
 })
@@ -11,7 +13,12 @@ export class DatepickerComponent implements AfterViewInit {
 	@ViewChild("dateinput") input: ElementRef | undefined;
 	@ViewChild("todayButton") todayButton: ElementRef | undefined;
 
-	@Input({required: true}) placeholder: string = "Choose date...";
+	@Input({ required: true }) placeholder: string = "Choose date...";
+
+	constructor(private controlDir: NgControl
+	) {
+		this.controlDir.valueAccessor = this;
+	}
 
 	ngAfterViewInit() {
 		this.setDateToToday();
@@ -23,13 +30,12 @@ export class DatepickerComponent implements AfterViewInit {
 	}
 
 	setDate(date: Date) {
-		if (this.input) {
-			(this.input.nativeElement as HTMLInputElement).value = 
-			new String(date.getDate()).padStart(2, '0') + "." + 
-			new String(date.getMonth() + 1).padStart(2, '0') + "." + 
+		this.value =
+			new String(date.getDate()).padStart(2, '0') + "." +
+			new String(date.getMonth() + 1).padStart(2, '0') + "." +
 			new String(date.getFullYear()).padStart(2, '0');
-			this.updateTodayButtonVisibility();
-		}
+		this.updateTodayButtonVisibility();
+		this.onChangeValidationCallback(this.value);
 	}
 
 	updateTodayButtonVisibility() {
@@ -66,7 +72,7 @@ export class DatepickerComponent implements AfterViewInit {
 			} else {
 				this.setDateToToday();
 			}
-		} else if(event.key == 'Enter') {
+		} else if (event.key == 'Enter') {
 			if (currentEnteredDate) {
 				this.setDate(currentEnteredDate);
 			}
@@ -77,20 +83,15 @@ export class DatepickerComponent implements AfterViewInit {
 		}, 0);
 	}
 
-	inputSelected(event: Event) {
-		// let el = event.target as HTMLInputElement;
-		// el.selectionStart = el.selectionEnd;
-	}
-
 	setDateToToday() {
 		this.setDate(new Date());
 	}
 
-	inputChanged(event: Event) {
+	parseDate(): Date | undefined {
+		return DatepickerComponent.parseDateGerman((this.input!.nativeElement as HTMLInputElement).value);
 	}
 
-	parseDate(): Date | undefined {
-		let searchString = (this.input!.nativeElement as HTMLInputElement).value;
+	static parseDateGerman(searchString: string): Date | undefined {
 		let dateParts = searchString.split(".");
 		let date = undefined;
 
@@ -120,5 +121,30 @@ export class DatepickerComponent implements AfterViewInit {
 		if (currentEnteredDate) {
 			this.setDate(currentEnteredDate);
 		}
+		this.onTouched();
+	}
+
+
+	/* =========== Value Validation =========== */
+	value: string = "";
+	onChangeValidationCallback: (val: string) => void = (_) => {};
+	onTouched: () => void = () => {};
+
+	onChange(fn: Event) {
+		this.onChangeValidationCallback((fn.target as HTMLInputElement).value);
+	}
+
+	writeValue(obj: any): void {
+		this.value = this.value;
+	}
+	registerOnChange(fn: (val: string) => void): void {
+		this.onChangeValidationCallback = fn;
+	}
+	registerOnTouched(fn: any): void {
+		this.onTouched = fn;
+	}
+
+	get control(): FormControl {
+		return this.controlDir.control as FormControl;
 	}
 }

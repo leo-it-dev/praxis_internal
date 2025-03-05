@@ -2,11 +2,12 @@ import { ApiModule } from '../../api_module';
 import { Farmer, QsApiHandler } from './qsapi_handler';
 import { options } from '../../options';
 import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
-import { ApiInterfaceAuthOut, ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePingOut, ReportableDrug } from '../../../api_common/api_qs';
+import { ApiInterfaceAuthOut, ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePingOut, ApiInterfacePutPrescriptionRowsIn, ReportableDrug } from '../../../api_common/api_qs';
 import { readReportableDrugListFromHIT } from './hit_drug_crawler';
 import { sum } from '../../utilities/utilities';
-import { ApiInterfaceEmptyIn } from '../../../api_common/backend_call';
+import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
 // import { readReportableDrugListFromMovetaDB, ReportableDrug } from './moveta_drug_crawler';
+const util = require('util');
 
 /*
 ✔️ ZNR 6500578.00.00
@@ -58,8 +59,8 @@ export class ApiModuleQs extends ApiModule {
                     database.store(drug.value);
                     logStr += " - " + database.logname + ": " + drug.value.length + " Drugs / " + sum(drug.value.map(d => d.forms.length)) + " Packaging Forms\n";
                 } else {
-                    logStr += " - " + database.logname + ": error: " + drug.reason + "\n";
-                    console.error("Error receiving drug list from " + database.logname + " db: " + drug.reason);
+                    logStr += " - " + database.logname + ": error: " + drug.reason.trim("\n") + "\n";
+                    console.error("Error receiving drug list from " + database.logname + " db: " + drug.reason.trim("\n"));
                 }
             })
             console.log(logStr);
@@ -116,6 +117,10 @@ export class ApiModuleQs extends ApiModule {
         });
         this.get<ApiInterfaceEmptyIn, ApiInterfaceFarmersOut>("farmers", async (req, user) => {
             return { statusCode: 200, responseObject: {farmers: this.farmers}, error: undefined };
+        });
+        this.postJson<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>("report", async (req, user) => {
+            console.log(util.inspect(req.body.drugReport, {showHidden: false, depth: null, colors: true}));
+            return { statusCode: 200, responseObject: undefined, error: undefined };
         });
     }
 }
