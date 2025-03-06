@@ -6,6 +6,8 @@ import { ApiInterfaceAuthOut, ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiI
 import { readReportableDrugListFromHIT } from './hit_drug_crawler';
 import { sum } from '../../utilities/utilities';
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
+import { getApiModule } from '../../index';
+import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
 // import { readReportableDrugListFromMovetaDB, ReportableDrug } from './moveta_drug_crawler';
 const util = require('util');
 
@@ -26,7 +28,7 @@ Farmer -> productionType must be split up into it's elements: e.g.: 1005 -> Mas
 
 export class ApiModuleQs extends ApiModule {
 
-    // TODO: Muxes
+    // TODO: Mutexes
 
     private qsApiHandler: QsApiHandler;
     private reportableDrugsPrefered: Array<ReportableDrug> = []; // List of drugs that *should* cover all drugs we use.
@@ -78,10 +80,6 @@ export class ApiModuleQs extends ApiModule {
         });
     }
 
-    updateVeterinaryIDs() {
-        this.qsApiHandler.readVeterinaryIDs();
-    }
-
     async initialize() {
         this.qsApiHandler = new QsApiHandler();
 
@@ -99,8 +97,6 @@ export class ApiModuleQs extends ApiModule {
 
         setInterval(this.updateQsDatabase.bind(this), options.QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS * 24 * 60 * 60 * 1000);
         this.updateQsDatabase();
-
-        this.updateVeterinaryIDs();
     }
 
     registerEndpoints() {
@@ -119,8 +115,21 @@ export class ApiModuleQs extends ApiModule {
             return { statusCode: 200, responseObject: {farmers: this.farmers}, error: undefined };
         });
         this.postJson<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>("report", async (req, user) => {
-            console.log(util.inspect(req.body.drugReport, {showHidden: false, depth: null, colors: true}));
-            return { statusCode: 200, responseObject: undefined, error: undefined };
+            try {
+                let userInfo = await getApiModule(ApiModuleLdapQuery).readUserInfo(user.sid);
+                let expectedVetName = userInfo.vetproofVeterinaryName;
+                let readVetName = req.body.drugReport.veterinary;
+
+                if (expectedVetName == readVetName) {
+                    let response = await this.qsApiHandler.postDrugReport(req.body.drugReport);
+                    return { statusCode: 200, responseObject: response, error: undefined };
+                } else {
+                    throw new Error("Stated veterinary name of drug report does not match vet name registered for user in LDAP!");                    
+                }
+            } catch(err) {
+                console.error("Error processing QS veterinary document post request: ", err);
+                return { statusCode: 500, responseObject: undefined, error: "Error posting veterinary document to API! See server logs for details..." };
+            }
         });
     }
 }

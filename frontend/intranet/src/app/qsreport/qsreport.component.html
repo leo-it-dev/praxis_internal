@@ -38,6 +38,8 @@
             <label for="animal-count">Tieranzahl</label>
             <input type="number" id="animal-count" min="1" max="500000" formControlName="animalCount" />
         </div>
+        
+        <!-- Only one ZNR per perscription row allowed! -->
         <div>
             <label for="drug">Arzneimittel</label>
             <app-search-dropdown placeholder="Arzneimittel suchen..." [items]="this.reportableDrugList()" [serial]="this.drugSerializer" (itemSelectedEvent)="this.drugSelected($event)" [formControl]="qsFormGroup.controls['drugZNR']"></app-search-dropdown>
@@ -52,6 +54,8 @@
             <label for="application-days">Anwendungstage</label>
             <input type="number" id="application-days" min="1" max="99" formControlName="applicationDuration" />
         </div>
+        <!-- ------------------------------------------ -->
+
         <button class="actionButton" id="submit-form" [disabled]="!qsFormGroup.valid">Abgabebeleg speichern</button>
     </form>
 </div>

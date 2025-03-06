@@ -1,6 +1,6 @@
 import { ApiModule } from "../../api_module";
 import { options } from "../../options";
-import { ApiInterfaceUserInfoOut } from "../../../api_common/api_ldapquery";
+import { ApiInterfaceUserInfoOut, UserInfo } from "../../../api_common/api_ldapquery";
 import { ApiInterfaceEmptyIn, ApiModuleResponse } from "../../../api_common/backend_call";
 import ldapjs = require('ldapjs');
 import { Mutex } from "async-mutex";
@@ -55,25 +55,36 @@ export class ApiModuleLdapQuery extends ApiModule {
         return true;
     }
 
-    registerEndpoints(): void {
-        this.get<ApiInterfaceEmptyIn, ApiInterfaceUserInfoOut>("userinfo", async (req, user) => {
-            let result: ApiModuleResponse<ApiInterfaceUserInfoOut>;
+    readUserInfo(userSID): Promise<UserInfo> {
+        return new Promise(async (res, rej) => {
             try {
                 let ldapEntry = await this.performLdapSearch(options.LDAP_USER_DN_BASE, {
-                    filter: "(&(objectClass=user)(objectsid=" + user.sid + "))",
+                    filter: "(&(objectClass=user)(objectsid=" + userSID + "))",
                     scope: "sub",
                     attributes: '*'
                 });
 
                 if (ldapEntry == undefined) {
-                    result = { statusCode: 400, responseObject: {userinfo: undefined}, error: "no user with such sid found!" };
-                } else {
-                    // Append additional ActiveDirectory attributes needed here to add to the response
-                    result = { statusCode: 200, responseObject: {userinfo: {
-                        thumbnail: "data:image/jpg;base64," + ldapEntry.attributes.find(e => e.type == "thumbnailPhoto").buffers[0].toString('base64'),
-                        vetproofVeterinaryName: ldapEntry.attributes.find(e => e.type == options.AD_ATTRIBUTE_QS_VETERINARY_ID).values[0]
-                    }}, error: undefined};
+                    rej("no user with such sid found!");
+                    return;
                 }
+                res({
+                    // Append additional ActiveDirectory attributes needed here to add to the response
+                    thumbnail: "data:image/jpg;base64," + ldapEntry.attributes.find(e => e.type == "thumbnailPhoto").buffers[0].toString('base64'),
+                    vetproofVeterinaryName: ldapEntry.attributes.find(e => e.type == options.AD_ATTRIBUTE_QS_VETERINARY_ID).values[0]
+                });
+            } catch(err) {
+                rej(err);
+            }
+        });
+    }
+
+    registerEndpoints(): void {
+        this.get<ApiInterfaceEmptyIn, ApiInterfaceUserInfoOut>("userinfo", async (req, user) => {
+            let result: ApiModuleResponse<ApiInterfaceUserInfoOut>;
+            try {
+                let userInfo = await this.readUserInfo(user.sid);
+                result = { statusCode: 200, responseObject: {userinfo: userInfo}, error: undefined};
             } catch(err) {
                 result = { statusCode: 400, responseObject: {userinfo: undefined}, error: err };
             }

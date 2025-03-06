@@ -7,7 +7,7 @@ import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from './qs-farmer-p
 import { CategorizedItem, CategorizedList } from '../utilities/categorized-list';
 import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
 import { BackendService } from '../api/backend.service';
-import { DrugUnit, ReportableDrug, DrugUnits, Farmer, DrugPackage, ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn } from "../../../../../api_common/api_qs";
+import { DrugUnit, ReportableDrug, DrugUnits, Farmer, DrugPackage, ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, DrugUnitApi } from "../../../../../api_common/api_qs";
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../../../api_common/backend_call';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { SessionService } from '../shared-service/session.service';
@@ -71,7 +71,7 @@ export class QsreportComponent {
 	});
 	selectedUsageGroup: WritableSignal<ProductionUsageGroup | undefined> = signal(undefined);
 
-	drugUnits: Signal<DrugUnit[]> = signal(DrugUnits.values());
+	drugUnits: Signal<DrugUnit[]> = signal(Object.values(DrugUnits));
 	selectedDrugUnit: WritableSignal<DrugUnit | undefined> = signal(undefined);
 
 	farmerSerializer: IStringify<Farmer> = { display: (farmer) => ({ text: farmer.name.replaceAll("  ", " "), hint: NO_HINT }) };
@@ -157,7 +157,7 @@ export class QsreportComponent {
 		if (drugPacking) {
 			console.log("Drug packing type selected: " + drugPacking.package);
 			if (drugPacking.unitSuggestion) {
-				let unitQS = DrugUnits.values().find(u => u.id == drugPacking.unitSuggestion.id && u.name == drugPacking.unitSuggestion.name);
+				let unitQS = Object.values(DrugUnits).find(u => u.id == drugPacking.unitSuggestion.id && u.name == drugPacking.unitSuggestion.name);
 				this.drugUnitDOM?.selectItemExt(unitQS);
 				console.log(unitQS);
 			}
@@ -168,25 +168,29 @@ export class QsreportComponent {
 		this.selectedPackingForm.set(drugPacking);
 	}
 
+	toDateString(date: Date) {
+		return date.getFullYear() + "-" + String(date.getMonth()+1).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0');
+	}
+
 	submitForm() {
 		if (this.qsFormGroup.valid) {
 			this.backendService.authorizedBackendCall<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>(QsreportComponent.API_URL_POST_REPORT, {
 				drugReport: {
-					veterinary: this.qsFormGroup.controls["vetName"].value ?? "",
-					deliveryDate: DatepickerComponent.parseDateGerman(this.qsFormGroup.controls["deliveryDate"].value ?? "") ?? new Date(),
-					documentNumber: parseInt(this.qsFormGroup.controls["documentNumber"].value ?? "-1"),
-					locationNumber: this.selectedFarmer()?.locationNumber ?? "",
+					veterinary: this.qsFormGroup.controls["vetName"].value!,
+					deliveryDate: this.toDateString(DatepickerComponent.parseDateGerman(this.qsFormGroup.controls["deliveryDate"].value!)!),
+					documentNumber: parseInt(this.qsFormGroup.controls["documentNumber"].value!),
+					locationNumber: this.selectedFarmer()?.locationNumber!,
 					prescriptionRows: [
 						{
-							animalCount: this.qsFormGroup.controls["animalCount"].value ?? -1,
-							animalGroup: this.selectedUsageGroup()?.usageGroup ?? -1,
+							animalCount: this.qsFormGroup.controls["animalCount"].value!,
+							animalGroup: this.selectedUsageGroup()?.usageGroup!,
 							drugs: [
 								{
-									amount: this.qsFormGroup.controls["amount"].value ?? -1,
-									amountUnit: this.selectedDrugUnit()?.id ?? -1,
-									applicationDuration: this.qsFormGroup.controls["applicationDuration"].value ?? -1,
-									approvalNumber: this.selectedDrug()?.item.znr ?? "",
-									packageId: this.selectedPackingForm()?.pid ?? -1
+									amount: this.qsFormGroup.controls["amount"].value!,
+									amountUnit: this.selectedDrugUnit()!.id,
+									applicationDuration: this.qsFormGroup.controls["applicationDuration"].value!,
+									approvalNumber: this.selectedDrug()!.item.znr,
+									packageId: this.selectedPackingForm()!.pid
 								}
 							]
 						}

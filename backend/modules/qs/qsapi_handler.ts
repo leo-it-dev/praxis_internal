@@ -1,6 +1,8 @@
 import vetproof = require('vet_proof_external_tools_api');
 import {QsAccessToken} from './qs_accesstoken'
 import {options} from '../../options'
+import { DrugReport } from '../../../api_common/api_qs';
+const util = require('util');
 
 export type Farmer = {
     name: string; // Eindeutige Identifikation des Tierhalters in VetProof
@@ -13,11 +15,14 @@ export type Farmer = {
 export class QsApiHandler {
     private client: vetproof.ApiClient;
     private authApi: vetproof.AuthenticationApi;
+    private vetDocumentsApi: vetproof.TierarztBelegeApi;
+
     private accessToken: QsAccessToken | undefined = undefined;
     
     constructor() {
         this.client = new vetproof.ApiClient(options.QS_API_SYSTEM);
         this.authApi = new vetproof.AuthenticationApi(this.client);
+        this.vetDocumentsApi = new vetproof.TierarztBelegeApi(this.client);
     }
 
     requestVersionInformation(): Promise<string> {
@@ -70,20 +75,6 @@ export class QsApiHandler {
         });
     }
 
-    readVeterinaryIDs(): string[] {
-        /*new vetproof.TierarztIDApi(this.client).veterinaryIdGet(84559, {
-            veterinaryName: "",
-            veterinaryMedicalPractice: "Tierarzt Dr. Peter Mittermeier",
-            country: 276,
-            offset: 0,
-            limit: 20
-        }, (error, data, response) => {
-            console.log(error, data, response);
-        });*/
-
-        return [];
-    }
-
     readFarmers(): Promise<Array<Farmer>> {
         return new Promise<Array<Farmer>>((res, rej) => {
             let farmers: Array<Farmer> = [];
@@ -134,6 +125,36 @@ export class QsApiHandler {
                     }
                 });
             }
+        });
+    }
+
+    postDrugReport(drugReport: DrugReport): Promise<string> {
+        return new Promise<string>((res, rej) => {
+            let drugReportStr = util.inspect(drugReport, {showHidden: false, depth: null, colors: true});
+            this.vetDocumentsApi.veterinaryDocumentsPost(drugReport, (error, data, response) => {
+                if (error) {
+                    console.error("Error posting prescription-row to API (early error): sent data:", drugReportStr, "got error", error.message, response.text);
+                    rej(error);
+                } else {
+                    if (response.statusCode == 200) { // OK
+                        let rowID = data[0];
+                        console.log("Successfully posted prescription-row to API! Resulting row ID:", rowID);
+                        res(rowID);
+                    } else if(response.statusCode == 400) { // Content is invalid or too short
+                        console.error("Error posting prescription-row to API (400): sent data:", drugReportStr, "got error", data);
+                        rej(data);
+                    } else if(response.statusCode == 403) { // Our access token is not allowed to perform this operation
+                        console.error("Error posting prescription-row to API (403): sent data:", drugReportStr, "got error", data);
+                        rej(data);
+                    } else if(response.statusCode == 404) { // The given data could not be found
+                        console.error("Error posting prescription-row to API (404): sent data:", drugReportStr, "got error", data);
+                        rej(data);
+                    } else {
+                        console.error("Error posting prescription-row to API (unknown status: " + response.statusCode + "): sent data:", drugReportStr, "got error", data);
+                        rej(data);
+                    }
+                }
+            });
         });
     }
 }

@@ -1,6 +1,7 @@
 import { Request } from "express";
 import { AdfsOicdConfiguration } from "../options";
 import { OidcInstance } from "./oidc_instance";
+const util = require('util');
 
 export abstract class AdfsOidc {
     private static adfsOidcInstance: OidcInstance;
@@ -25,7 +26,7 @@ export abstract class AdfsOidc {
                     AdfsOidc.adfsOidcInstance.validateJWTtoken(authToken).then(user => {
                         resolve(user);
                     }).catch(err => {
-                        resolve("could not validate user token! error: " + String(err));
+                        resolve("could not validate user token! error: " + util.inspect(err, {showHidden: false, depth: undefined, colors: false}));
                     });
                 } else {
                     resolve("could not validate user token! No token found or invalid type!");

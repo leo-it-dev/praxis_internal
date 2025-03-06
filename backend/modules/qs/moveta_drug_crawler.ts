@@ -10,7 +10,7 @@ const movetaDrugUnitMapping = {
     "Pack.": undefined,
     "Stck": undefined,
     "Stck.": undefined,
-    "Tabl.": DrugUnits.tablet,
+    "Tabl.": DrugUnits.baton,
     "g": DrugUnits.gram,
     "Tube": undefined,
 };

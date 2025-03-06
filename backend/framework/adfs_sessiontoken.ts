@@ -3,7 +3,7 @@ import * as utils from '../utilities/utilities'
 import {options} from '../options'
 
 // https://learn.microsoft.com/de-de/entra/identity-platform/id-token-claims-reference
-export class AdfsSessionToken {
+export class AdfsSessionToken { // ID-Token
     tokenRaw : string;
     authorizationInitiatedTimestamp: number;
     notBeforeTimestamp: number;

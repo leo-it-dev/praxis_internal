@@ -56,7 +56,7 @@ startup();
 
 export function getApiModule<T = ApiModule>(apiModuleClass: { new (...args: any[]): T }): T | undefined {
     for (let apiModule of apiModulesInstances) {
-        if (apiModule == apiModuleClass) {
+        if (apiModule instanceof apiModuleClass) {
             return apiModule;
         }
     }

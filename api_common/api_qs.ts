@@ -1,32 +1,32 @@
 import { ApiModuleInterfaceB2F, ApiModuleInterfaceF2B } from "./backend_call";
 
+export enum DrugUnitApi {
+	GRAM = "GRAM",
+	MILLILITER = "MILLILITER",
+	INJECTOR = "INJECTOR",
+	PILL = "PILL",
+	BATON = "BATON",
+	SPRAY = "SPRAY",
+	KILOGRAM = "KILOGRAM",
+	LITER = "LITER",
+}
+
 export type DrugUnit = {
-	id: number;
+	id: DrugUnitApi;
 	name: string;
 	abbrev?: string;
 }
 
-export class DrugUnits {
-	static gram = { id: 1, name: "Gramm", abbrev: "g" }
-	static milliliter = { id: 2, name: "Milliliter", abbrev: "ml" }
-	static injector = { id: 3, name: "Injektor" }
-	static tablet = { id: 4, name: "Tablette" }
-	static stick = { id: 5, name: "Stab" }
-	static spray = { id: 6, name: "Spraydose" }
-	static kilogram = { id: 11, name: "Kilogramm", abbrev: "kg" }
-	static liter = { id: 12, name: "Liter", abbrev: "l" }
-
-	static values() {
-		return [DrugUnits.gram,
-		DrugUnits.milliliter,
-		DrugUnits.injector,
-		DrugUnits.tablet,
-		DrugUnits.stick,
-		DrugUnits.spray,
-		DrugUnits.kilogram,
-		DrugUnits.liter]
-	}
-}
+export const DrugUnits = {
+	gram: { id: DrugUnitApi.GRAM, name: "Gramm", abbrev: "g" },
+	milliliter: { id: DrugUnitApi.MILLILITER, name: "Milliliter", abbrev: "ml" },
+	injector: { id: DrugUnitApi.INJECTOR, name: "Injektor" },
+	pill: { id: DrugUnitApi.PILL, name: "Tablette" },
+	baton: { id: DrugUnitApi.BATON, name: "Stab" },
+	spray: { id: DrugUnitApi.SPRAY, name: "Spraydose" },
+	kilogram: { id: DrugUnitApi.KILOGRAM, name: "Kilogramm", abbrev: "kg" },
+	liter: { id: DrugUnitApi.LITER, name: "Liter", abbrev: "l" }
+};
 
 export type DrugPackage = {
 	package: string;
@@ -52,7 +52,7 @@ export type Farmer = {
 export type DrugReport = {
 	locationNumber: string; // VVVO-Nummer Farmer
 	documentNumber: number; // Belegnummer
-	deliveryDate: Date; // Abgabedatum
+	deliveryDate: string; // Abgabedatum
 	veterinary: string; // Nachname,Vorname Tierarzt
 	prescriptionRows: [
 		{
@@ -63,7 +63,7 @@ export type DrugReport = {
 					approvalNumber: string;
 					packageId: number;
 					amount: number;
-					amountUnit: DrugUnits,
+					amountUnit: DrugUnitApi,
 					applicationDuration: number;
 				}
 			];
