@@ -112,7 +112,7 @@ export class ApiModuleQs extends ApiModule {
                 }
             } catch(err) {
                 console.error("Error processing QS veterinary document post request: ", err);
-                return { statusCode: 500, responseObject: undefined, error: "Error posting veterinary document to API! See server logs for details..." };
+                return { statusCode: 500, responseObject: undefined, error: "Error posting veterinary document to API! " + err };
             }
         });
     }

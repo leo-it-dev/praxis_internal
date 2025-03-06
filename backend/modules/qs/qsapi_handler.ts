@@ -128,13 +128,23 @@ export class QsApiHandler {
         });
     }
 
+    parseErrors(errorObj: JsonObject): string {
+        let listErrors = [];
+        for(let errorField of Object.keys(errorObj)) {
+            if (errorObj[errorField].localizedMessage) {
+                listErrors.push(errorField + ": " + errorObj[errorField].localizedMessage);
+            }
+        }
+        return listErrors.join(',');
+    }
+
     postDrugReport(drugReport: DrugReport): Promise<string> {
         return new Promise<string>((res, rej) => {
             let drugReportStr = util.inspect(drugReport, {showHidden: false, depth: null, colors: true});
             this.vetDocumentsApi.veterinaryDocumentsPost(drugReport, (error, data, response) => {
                 if (error) {
                     console.error("Error posting prescription-row to API (early error): sent data:", drugReportStr, "got error", error.message, response.text);
-                    rej(error);
+                    rej(this.parseErrors(JSON.parse(response.text)));
                 } else {
                     if (response.statusCode == 200) { // OK
                         let rowID = data[0];
@@ -142,16 +152,16 @@ export class QsApiHandler {
                         res(rowID);
                     } else if(response.statusCode == 400) { // Content is invalid or too short
                         console.error("Error posting prescription-row to API (400): sent data:", drugReportStr, "got error", data);
-                        rej(data);
+                        rej(this.parseErrors(JSON.parse(response.text)));
                     } else if(response.statusCode == 403) { // Our access token is not allowed to perform this operation
                         console.error("Error posting prescription-row to API (403): sent data:", drugReportStr, "got error", data);
-                        rej(data);
+                        rej(this.parseErrors(JSON.parse(response.text)));
                     } else if(response.statusCode == 404) { // The given data could not be found
                         console.error("Error posting prescription-row to API (404): sent data:", drugReportStr, "got error", data);
-                        rej(data);
+                        rej(this.parseErrors(JSON.parse(response.text)));
                     } else {
                         console.error("Error posting prescription-row to API (unknown status: " + response.statusCode + "): sent data:", drugReportStr, "got error", data);
-                        rej(data);
+                        rej(this.parseErrors(JSON.parse(response.text)));
                     }
                 }
             });
