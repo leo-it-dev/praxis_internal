@@ -12,10 +12,10 @@ export type JwtError = {
 
 /* Api endpoint generateToken */
 
-export interface ApiInterfaceGenerateTokenIn extends ApiModuleInterfaceF2B { code: string, state: string }
-export interface ApiInterfaceGenerateTokenOut extends ApiModuleInterfaceB2F { id_token: string; access_token: string; refresh_token: string }
+export interface ApiInterfaceGenerateTokenIn extends ApiModuleInterfaceF2B { code: string; state: string; cacheTillOnline: false};
+export interface ApiInterfaceGenerateTokenOut extends ApiModuleInterfaceB2F { id_token: string; access_token: string; refresh_token: string; cacheForOfflineUse: false};
 
-export interface ApiInterfaceRevokeTokenIn extends ApiModuleInterfaceF2B { id_token: string };
+export interface ApiInterfaceRevokeTokenIn extends ApiModuleInterfaceF2B { id_token: string; cacheTillOnline: false};
 
-export interface ApiInterfaceRefreshTokenIn extends ApiModuleInterfaceF2B { refresh_token: string };
-export interface ApiInterfaceRefreshTokenOut extends ApiModuleInterfaceB2F { access_token: string; refresh_token: string; id_token: string };
+export interface ApiInterfaceRefreshTokenIn extends ApiModuleInterfaceF2B { refresh_token: string; cacheTillOnline: false};
+export interface ApiInterfaceRefreshTokenOut extends ApiModuleInterfaceB2F { access_token: string; refresh_token: string; id_token: string; cacheForOfflineUse: false};

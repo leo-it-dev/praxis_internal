@@ -175,6 +175,7 @@ export class QsreportComponent {
 	submitForm() {
 		if (this.qsFormGroup.valid) {
 			this.backendService.authorizedBackendCall<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>(QsreportComponent.API_URL_POST_REPORT, {
+				cacheTillOnline: true,
 				drugReport: {
 					veterinary: this.qsFormGroup.controls["vetName"].value!,
 					deliveryDate: this.toDateString(DatepickerComponent.parseDateGerman(this.qsFormGroup.controls["deliveryDate"].value!)!),

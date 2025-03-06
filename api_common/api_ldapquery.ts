@@ -6,4 +6,4 @@ export type UserInfo = {
 }
 
 /* Api endpoints */
-export interface ApiInterfaceUserInfoOut extends ApiModuleInterfaceB2F { userinfo: UserInfo };
+export interface ApiInterfaceUserInfoOut extends ApiModuleInterfaceB2F { userinfo: UserInfo; cacheForOfflineUse: false};

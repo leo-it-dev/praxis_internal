@@ -1,0 +1,18 @@
+:host {
+    width: 100%;
+    z-index: 1000;
+}
+
+div {
+    background-color: var(--error);
+    height: 30px;
+    line-height: 30px;
+    width: 100%;
+    color: var(--background);
+    text-align: center;
+    border-bottom: 1px solid black;
+}
+
+.hideIndicator {
+    display: none;
+}

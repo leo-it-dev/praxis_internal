@@ -97,7 +97,7 @@ export class SessionService {
                 return;
             }
             this.backend.anonymousBackendCall<ApiInterfaceRefreshTokenIn, ApiInterfaceRefreshTokenOut>(SessionService.REFRESH_TOKEN_URL,
-                { refresh_token: this._rawRefreshToken }).then(json => {
+                { cacheTillOnline: false, refresh_token: this._rawRefreshToken }).then(json => {
                     this._rawAccessToken = json.access_token;
                     if (json.refresh_token !== undefined) {
                         this._rawRefreshToken = json.refresh_token;
@@ -189,7 +189,7 @@ export class SessionService {
     exchangeCodeForToken(code: string, state: string): Promise<void> {
         return new Promise((res, rej) => {
             this.backend.anonymousBackendCall<ApiInterfaceGenerateTokenIn, ApiInterfaceGenerateTokenOut>(SessionService.EXCHANGE_TOKEN_URL,
-                { 'code': code, 'state': state }).then(async json => {
+                { cacheTillOnline: false, 'code': code, 'state': state }).then(async json => {
                     this._rawIdToken = json.id_token;
                     this._rawAccessToken = json.access_token;
                     this._rawRefreshToken = json.refresh_token;
@@ -229,7 +229,7 @@ export class SessionService {
             }
 
             this.backend.anonymousBackendCall<ApiInterfaceRevokeTokenIn, ApiInterfaceEmptyOut>(SessionService.REVOKE_TOKEN_URL,
-                { id_token: this._rawIdToken }
+                { cacheTillOnline: false, id_token: this._rawIdToken }
             ).then(json => {
                 sessionStorage.removeItem("id");
                 sessionStorage.removeItem("access");
