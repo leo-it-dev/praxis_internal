@@ -356,7 +356,12 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 	/* =========== Value Validation =========== */
 	private onChangeValidationCallback?: Function = undefined;
 
-	writeValue(obj: any): void {}
+	writeValue(obj: any): void {
+		if (this.inputElement) {
+			this.inputElement.nativeElement.value = obj;
+			this.updateUIAfterInputValueChange();
+		}
+	}
 	registerOnChange(fn: any): void {
 		this.onChangeValidationCallback = fn;
 	}

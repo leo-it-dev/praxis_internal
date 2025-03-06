@@ -173,8 +173,6 @@ export class QsreportComponent {
 	}
 
 	submitForm() {
-		this.errorlistService.showErrorMessage("Test error messsage");
-
 		if (this.qsFormGroup.valid) {
 			this.backendService.authorizedBackendCall<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>(QsreportComponent.API_URL_POST_REPORT, {
 				drugReport: {
@@ -198,6 +196,13 @@ export class QsreportComponent {
 						}
 					]
 				}
+			}).then(dat => {
+				this.errorlistService.showErrorMessage("Abgabebeleg erfolgreich übermittelt!");
+				this.qsFormGroup.controls.amount.setValue(0);
+				this.qsFormGroup.controls.amountUnit.setValue("");
+				this.qsFormGroup.controls.applicationDuration.setValue(0);
+				this.qsFormGroup.controls.drugZNR.setValue("");
+				this.qsFormGroup.controls.drugPID.setValue("");
 			});
 		}
 	}
