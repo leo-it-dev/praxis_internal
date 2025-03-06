@@ -8,23 +8,7 @@ import { sum } from '../../utilities/utilities';
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
 import { getApiModule } from '../../index';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
-// import { readReportableDrugListFromMovetaDB, ReportableDrug } from './moveta_drug_crawler';
 const util = require('util');
-
-/*
-✔️ ZNR 6500578.00.00
-✔️ Arzneimittelname  Aciphen Kompaktat (VetProof: Präparat)
-✔️ Vetproof Packungs-ID:
-✔️    Packungsmenge 250g
-✔️    Packungsbeschreibung OP250g; Schachtel
-
-amount
-amountUnit
-applicationDuration
-
-POST /veterinary-documents/prescriptionRows/animalGroup?? Händtisch oder automatisch auswerten irgendwie??
-Farmer -> productionType must be split up into it's elements: e.g.: 1005 -> Mas
-*/
 
 export class ApiModuleQs extends ApiModule {
 

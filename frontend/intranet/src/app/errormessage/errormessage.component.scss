@@ -1,12 +1,12 @@
 @keyframes unload {
     0% {
         --progress: 100%;
-        transform: translateX(-50%);
+        transform: translateX(0%);
     }
     98% {
         --progress: 0%;
         opacity: 1;
-        transform: translateX(-50%);
+        transform: translateX(0%);
     }
     100% {
         opacity: 0;
@@ -23,46 +23,41 @@
 
 :host {
     --progress: 100%;
-    background-color: var(--shelfGradientDark);
+    background-color: var(--background);
     font-size: 6pt;
     color: black;
     display: flex;
     flex-direction: row;
     text-align: center;
     align-items: center;
-    width: 100%;
-    position: fixed;
+    width: 300px;
+    max-width: 300px;
     position: relative;
-    border-bottom: 2px solid transparent;
-    border-image: linear-gradient(to right, var(--error) var(--progress), transparent calc(var(--progress) + 1px));
+    border-left: 4px solid transparent;
+    border-image: linear-gradient(to bottom, var(--error) var(--progress), transparent calc(var(--progress) + 1px));
     border-image-slice: 1;
     margin-bottom: 10px;
-    animation: unload 15s ease-out;
+    animation: unload 30s ease-out;
+    box-shadow: 0px 0px 5px gray;
+    padding: 20px;
 }
 
 #closemsg {
     display: block;
     height: auto;
-    width: 50px;
-    background-color: var(--shadeLevel2);
+    width: max-content;
+    height: 0px;
+    line-height: 10px;
+    background-color: transparent;
     cursor: pointer;
-    position: relative;
-    padding: 5px;
-    box-sizing: border-box;
-    color: transparent;
-    font-size: 18pt;
-}
-#closemsg:after {
-    display: block;
-    content: '×';
-    font-size: 18pt;
-    color: black;
-    top: 50%;
-    left: 50%;
     position: absolute;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    width: 100%;
+    top: 0;
+    right: 0;
+    box-sizing: border-box;
+    color: black;
+    font-size: 15pt;
+    text-align: left;
+    padding: 5px;
 }
 
 h1 {

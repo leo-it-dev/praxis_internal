@@ -173,6 +173,8 @@ export class QsreportComponent {
 	}
 
 	submitForm() {
+		this.errorlistService.showErrorMessage("Test error messsage");
+
 		if (this.qsFormGroup.valid) {
 			this.backendService.authorizedBackendCall<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>(QsreportComponent.API_URL_POST_REPORT, {
 				drugReport: {
