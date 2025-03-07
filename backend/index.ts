@@ -43,18 +43,33 @@ async function startup() {
     }
     console.log("Finished module loader ---");
 
-    app.use("/", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
+    app.use(express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
+
+    app.use((req, res, next) => {
+        if (req.url.includes("ngsw.json") || req.url.includes("worker-basic.min.js")) {
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+            res.setHeader("Pragma", "no-cache");
+            res.setHeader("Expires", "0");
+        }
+        next();
+    });
+
+    /*app.use("/", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
     app.use("/login", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
     app.use("/qs", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
     app.use("/datepicker", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
     app.use("/Books", express.static(path.join(__dirname, '../frontend/intranet/public/Books')));
-    app.use("/block", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
+    app.use("/block", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));*/
+
+    app.get("*", (req, res) => {
+        res.sendFile(path.join(__dirname, '../frontend/intranet/dist/intranet/browser/index.html'));
+    });
 
     https.createServer(ssl.SSL_OPTIONS, app).listen(443);
 }
 startup();
 
-export function getApiModule<T = ApiModule>(apiModuleClass: { new (...args: any[]): T }): T | undefined {
+export function getApiModule<T = ApiModule>(apiModuleClass: { new(...args: any[]): T }): T | undefined {
     for (let apiModule of apiModulesInstances) {
         if (apiModule instanceof apiModuleClass) {
             return apiModule;
