@@ -75,8 +75,29 @@ export class QsApiHandler {
         });
     }
 
+    async syncFarmerGet(api: vetproof.FreigeschalteteTierhalterApi, branchName: string, offset: number, limit: number): Promise<{ error: string | undefined; response: vetproof.FarmerLinkList | undefined; }> {
+        try {
+            let data = await new Promise<any>((res, rej) => {
+                api.farmerLinkGet(branchName, {'offset': offset, 'limit': limit}, (error, data, response) => {
+                    if (error) {
+                        rej(response.text);
+                    } else {
+                        if (data instanceof vetproof.FarmerLinkList) {
+                            res(data);
+                        } else {
+                            rej("farmerLinkGet returned invalid type object!");
+                        }
+                    }
+                });
+            });
+            return { error: undefined, response: data };
+        } catch(err) {
+            return { error: err, response: undefined };
+        }
+    }
+
     readFarmers(): Promise<Array<Farmer>> {
-        return new Promise<Array<Farmer>>((res, rej) => {
+        return new Promise<Array<Farmer>>(async (res, rej) => {
             let farmers: Array<Farmer> = [];
 
             const farmerLinkApi = new vetproof.FreigeschalteteTierhalterApi(this.client);
@@ -84,47 +105,40 @@ export class QsApiHandler {
             let branches = ["CATTLE_BRANCH", "PIG_BRANCH"];
 
             for (let branch of branches) {
-                farmerLinkApi.farmerLinkGet(branch, {'offset': 0, 'limit': 100}, (error, data, response) => {
-                    if (error) {
-                        rej(response.text);
-                    } else {
-                        if (data instanceof vetproof.FarmerLinkList) {
-                            for (let farmer of data.farmers) {
-                                let farmerAlreadyFound = farmers.find(f => f.locationNumber === farmer["locationNumber"]);
+                let data = await this.syncFarmerGet(farmerLinkApi, branch, 0, 100);
+                if (data.error === undefined) {
+                    for (let farmer of data.response.farmers) {
+                        let farmerAlreadyFound = farmers.find(f => f.locationNumber === farmer["locationNumber"]);
 
-                                if (farmerAlreadyFound !== undefined) {
-                                    // Append production type if farmer is already found in a previous branch
-                                    farmerAlreadyFound.productionType.push(farmer["productionType"]);
-                                } else {
-                                    let name = farmer["farmerDisplayName"] as string;
-                                    let locationNumber = farmer["locationNumber"] as string;
-                                    let productionType = farmer["productionType"] as number;
-                                    let qsNumber = farmer["qsNumber"] as string;
-                                    let vpId = farmer["vpId"] as number;
-
-                                    // Add a new instance otherwise
-                                    let farmInst: Farmer = {
-                                        name: name,
-                                        locationNumber: locationNumber,
-                                        productionType: [productionType],
-                                        qsNumber: qsNumber,
-                                        vpId: vpId
-                                    };
-                                    farmers.push(farmInst);
-                                }
-                            }
+                        if (farmerAlreadyFound !== undefined) {
+                            // Append production type if farmer is already found in a previous branch
+                            farmerAlreadyFound.productionType.push(farmer["productionType"]);
                         } else {
-                            rej("farmerLinkGet returned invalid type object!");
+                            let name = farmer["farmerDisplayName"] as string;
+                            let locationNumber = farmer["locationNumber"] as string;
+                            let productionType = farmer["productionType"] as number;
+                            let qsNumber = farmer["qsNumber"] as string;
+                            let vpId = farmer["vpId"] as number;
+
+                            // Add a new instance otherwise
+                            let farmInst: Farmer = {
+                                name: name,
+                                locationNumber: locationNumber,
+                                productionType: [productionType],
+                                qsNumber: qsNumber,
+                                vpId: vpId
+                            };
+                            farmers.push(farmInst);
                         }
                     }
-
-                    // Last branch handled. We are async, so handle res() here and not at end of branch loop.
-                    if (branch == branches[branches.length - 1]) {
-                        farmers = farmers.sort((a, b) => a.name.localeCompare(b.name));
-                        res(farmers);
-                    }
-                });
+                } else {
+                    rej(data.error);
+                }
             }
+
+            // Last branch handled. Sort all found farmers.
+            farmers = farmers.sort((a, b) => a.name.localeCompare(b.name));
+            res(farmers);
         });
     }
 

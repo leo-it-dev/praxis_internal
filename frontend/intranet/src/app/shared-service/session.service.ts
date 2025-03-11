@@ -14,13 +14,24 @@ type TokenClaims = {
     sid: string
 };
 
-function isTokenClaims(object: any): object is TokenClaims {
-    return 'given_name' in object && typeof object['given_name'] == 'string'
-        && 'family_name' in object && typeof object['family_name'] == 'string'
-        && 'family_name' in object && typeof object['family_name'] == 'string'
-        && 'email' in object && typeof object['email'] == 'string'
-        && 'sid' in object && typeof object['sid'] == 'string'
+function assertIDTokenClaims(object: any): asserts object is TokenClaims {
+    if (typeof object !== "object" || object === null) {
+        throw new Error("Input is not a valid object.");
+    }
+    if (!('given_name' in object) || typeof object['given_name'] != 'string') {
+        throw new Error("given_name is invalid: " + (object['given_name'] ?? "<undefined>"));
+    }
+    if (!('family_name' in object) || typeof object['family_name'] != 'string') {
+        throw new Error("family_name is invalid: " + (object['family_name'] ?? "<undefined>"));
+    }
+    if (!('email' in object) || typeof object['email'] != 'string') {
+        throw new Error("email is invalid: " + (object['email'] ?? "<undefined>"));
+    }
+    if (!('sid' in object) || typeof object['sid'] != 'string') {
+        throw new Error("sid is invalid: " + (object['sid'] ?? "<undefined>"));
+    }
 }
+
 
 @Injectable({
     providedIn: 'root'
@@ -43,7 +54,7 @@ export class SessionService {
     private _sid: string | undefined = undefined;
     private _rawUserInfo: UserInfo | undefined = undefined;
     private _isLoggedIn: WritableSignal<boolean> = signal(false);
-    
+
     private _lazyloadUserInfo?: UserInfo = undefined;
 
     constructor(private jwtHelperService: JwtHelperService,
@@ -169,17 +180,18 @@ export class SessionService {
         const idToken = this.jwtHelperService.parseJWTtoken(rawToken);
         const idTokenClaims = idToken.content;
 
-        if (isTokenClaims(idTokenClaims)) {
+        try {
+            assertIDTokenClaims(idTokenClaims);
             this._givenName = idTokenClaims.given_name;
             this._familyName = idTokenClaims.family_name;
             this._email = idTokenClaims.email;
             this._sid = idTokenClaims.sid;
             this._lazyloadUserInfo = undefined;
             return true;
-        } else {
-            this.errorlistService.showErrorMessage("Invalid ID token given!");
+        } catch(err) {
+            this.errorlistService.showErrorMessage("Invalid ID token given! " + err);
+            return false;
         }
-        return false;
     }
 
     parseUserInfo(rawDetails: UserInfo) {

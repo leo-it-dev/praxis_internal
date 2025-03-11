@@ -55,6 +55,16 @@ export class ApiModuleLdapQuery extends ApiModule {
         return true;
     }
 
+    findAttr(userSID: string, attributes: ldapjs.Attribute[], attrName: string) {
+        let attr = attributes.find(e => e.type == attrName);
+        if (attr) {
+            return attr;
+        } else {
+            console.error("Error looking up ldap entry for user: " + userSID + " " + attrName);
+            return undefined;
+        }
+    }
+
     readUserInfo(userSID): Promise<UserInfo> {
         return new Promise(async (res, rej) => {
             try {
@@ -68,10 +78,11 @@ export class ApiModuleLdapQuery extends ApiModule {
                     rej("no user with such sid found!");
                     return;
                 }
+
                 res({
                     // Append additional ActiveDirectory attributes needed here to add to the response
-                    thumbnail: "data:image/jpg;base64," + ldapEntry.attributes.find(e => e.type == "thumbnailPhoto").buffers[0].toString('base64'),
-                    vetproofVeterinaryName: ldapEntry.attributes.find(e => e.type == options.AD_ATTRIBUTE_QS_VETERINARY_ID).values[0]
+                    thumbnail: "data:image/jpg;base64," + (this.findAttr(userSID, ldapEntry.attributes, "thumbnailPhoto")?.buffers[0].toString('base64') ?? "<default>"),
+                    vetproofVeterinaryName: this.findAttr(userSID, ldapEntry.attributes, options.AD_ATTRIBUTE_QS_VETERINARY_ID)?.values[0] ?? "<default>"
                 });
             } catch(err) {
                 rej(err);
