@@ -28,7 +28,7 @@ export class ApiModuleLdapQuery extends ApiModule {
 
                 this.ldapClient = ldapjs.createClient(this.ldapConfig);
                 this.ldapClient.on('error', (err) => {
-                    console.log("LDAP client disconnected. Next access will try to reconnect.", err);
+                    console.log("LDAP client disconnected. Next access will try to reconnect.", err.code);
                     this.ldapClient.unbind();
                     this.ldapClient.destroy();
                     this.ldapClient = undefined;
@@ -95,9 +95,9 @@ export class ApiModuleLdapQuery extends ApiModule {
             let result: ApiModuleResponse<ApiInterfaceUserInfoOut>;
             try {
                 let userInfo = await this.readUserInfo(user.sid);
-                result = { statusCode: 200, responseObject: {cacheForOfflineUse: false, userinfo: userInfo}, error: undefined};
+                result = { statusCode: 200, responseObject: {userinfo: userInfo}, error: undefined};
             } catch(err) {
-                result = { statusCode: 400, responseObject: {cacheForOfflineUse: false, userinfo: undefined}, error: err };
+                result = { statusCode: 400, responseObject: {userinfo: undefined}, error: err };
             }
             return result;
         });

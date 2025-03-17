@@ -85,10 +85,10 @@ export class ApiModuleQs extends ApiModule {
 
     registerEndpoints() {
         this.get<ApiInterfaceEmptyIn, ApiInterfaceDrugsOut>("drugs", async (req, user) => {
-            return { statusCode: 200, responseObject: {cacheForOfflineUse:true, prefered: this.reportableDrugsPrefered, fallback: this.reportableDrugsFallback}, error: undefined };
+            return { statusCode: 200, responseObject: {prefered: this.reportableDrugsPrefered, fallback: this.reportableDrugsFallback}, error: undefined };
         });
         this.get<ApiInterfaceEmptyIn, ApiInterfaceFarmersOut>("farmers", async (req, user) => {
-            return { statusCode: 200, responseObject: {cacheForOfflineUse:true, farmers: this.farmers}, error: undefined };
+            return { statusCode: 200, responseObject: {farmers: this.farmers}, error: undefined };
         });
         this.postJson<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>("report", async (req, user) => {
             try {
@@ -98,13 +98,13 @@ export class ApiModuleQs extends ApiModule {
 
                 if (expectedVetName == readVetName) {
                     let response = await this.qsApiHandler.postDrugReport(req.body.drugReport);
-                    return { statusCode: 200, responseObject: {cacheForOfflineUse:false}, error: undefined };
+                    return { statusCode: 200, responseObject: {}, error: undefined };
                 } else {
                     throw new Error("Stated veterinary name of drug report does not match vet name registered for user in LDAP!");                    
                 }
             } catch(err) {
                 console.error("Error processing QS veterinary document post request: ", err);
-                return { statusCode: 500, responseObject: {cacheForOfflineUse: false}, error: "Error posting veterinary document to API! " + err };
+                return { statusCode: 500, responseObject: {}, error: "Error posting veterinary document to API! " + err };
             }
         });
     }

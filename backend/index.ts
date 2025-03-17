@@ -46,20 +46,13 @@ async function startup() {
     app.use(express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
 
     app.use((req, res, next) => {
-        if (req.url.includes("ngsw.json") || req.url.includes("worker-basic.min.js")) {
+        if (req.url.includes("ngsw.json") || req.url.includes("nsgw-worker.js")) {
             res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
             res.setHeader("Pragma", "no-cache");
             res.setHeader("Expires", "0");
         }
         next();
     });
-
-    /*app.use("/", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
-    app.use("/login", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
-    app.use("/qs", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
-    app.use("/datepicker", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
-    app.use("/Books", express.static(path.join(__dirname, '../frontend/intranet/public/Books')));
-    app.use("/block", express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));*/
 
     app.get("*", (req, res) => {
         res.sendFile(path.join(__dirname, '../frontend/intranet/dist/intranet/browser/index.html'));

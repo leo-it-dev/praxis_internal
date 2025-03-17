@@ -105,6 +105,7 @@ export class QsApiHandler {
             let branches = ["CATTLE_BRANCH", "PIG_BRANCH"];
 
             for (let branch of branches) {
+                console.log("Reading in QS-Farmers for branch " + branch);
                 let data = await this.syncFarmerGet(farmerLinkApi, branch, 0, 100);
                 if (data.error === undefined) {
                     for (let farmer of data.response.farmers) {

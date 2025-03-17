@@ -72,6 +72,6 @@ export type DrugReport = {
 };
 
 /* Api endpoints */
-export interface ApiInterfaceDrugsOut   extends ApiModuleInterfaceB2F { prefered: ReportableDrug[]; fallback: ReportableDrug[]; cacheForOfflineUse: true};
-export interface ApiInterfaceFarmersOut extends ApiModuleInterfaceB2F { farmers: Farmer[]; cacheForOfflineUse: true};
+export interface ApiInterfaceDrugsOut   extends ApiModuleInterfaceB2F { prefered: ReportableDrug[]; fallback: ReportableDrug[] };
+export interface ApiInterfaceFarmersOut extends ApiModuleInterfaceB2F { farmers: Farmer[] };
 export interface ApiInterfacePutPrescriptionRowsIn extends ApiModuleInterfaceF2B { drugReport: DrugReport; cacheTillOnline: true};

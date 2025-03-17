@@ -1,0 +1,59 @@
+@keyframes slide-in {
+    0% {
+        display: none;
+        transform: translateX(100%);
+        opacity: 0;
+        right: 0px;
+    }
+    1% {
+        display: block;
+    }
+    100% {
+        transform: translateX(0%);
+        opacity: 1;
+        right: 30px;
+    }
+}
+
+:host {}
+
+div {
+    display: block;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    transform: translateX(100%);
+    z-index: 1000;
+    opacity: 0;
+    box-shadow: 0px 0px 5px gray;
+    padding: 15px;
+    background: var(--background);
+    border-right: 4px solid var(--notification);
+}
+
+.visible {
+    animation: slide-in .3s ease-out;
+    animation-fill-mode: both;
+}
+
+h4, button {
+    font-weight: initial;
+    margin: 0px;
+}
+
+button {
+    margin-top: 5px;
+    appearance: none;
+    cursor: pointer;
+    font-weight: bolder;
+
+    width: max-content;
+    background-image: linear-gradient(to right, var(--action-button-gradient-left), var(--action-button-gradient-right));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+button::selection {
+    color: black;
+}

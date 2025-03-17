@@ -41,17 +41,17 @@ export class ApiModuleAuth extends ApiModule {
                             const adfsToken = new AdfsSessionToken(idToken);
                             console.log("User authenticated: ", adfsToken.userPrincipalName);
 
-                            return {statusCode: 200, responseObject: { cacheForOfflineUse: false, id_token: idToken, access_token: accessToken, refresh_token: refreshToken }, error: undefined};
+                            return {statusCode: 200, responseObject: { id_token: idToken, access_token: accessToken, refresh_token: refreshToken }, error: undefined};
                         } else {
                             throw new Error("Client sent invalid request body to /generateToken");
                         }
                     } catch (e) {
                         console.log("Error validating ID token while user tries to log in: ", e);
-                        return {statusCode: 500, responseObject: {cacheForOfflineUse: false, id_token: undefined, access_token: undefined, refresh_token: undefined}, error: 'Signature check failed on ADFS returned ID Token!'};
+                        return {statusCode: 500, responseObject: {id_token: undefined, access_token: undefined, refresh_token: undefined}, error: 'Signature check failed on ADFS returned ID Token!'};
                     }
             } catch(err) {
                 console.error(err);
-                return {statusCode: 500, responseObject: {cacheForOfflineUse: false, access_token: undefined, id_token: undefined, refresh_token: undefined}, error: 'An internal error occurred!'};
+                return {statusCode: 500, responseObject: {access_token: undefined, id_token: undefined, refresh_token: undefined}, error: 'An internal error occurred!'};
             }
         });
 
@@ -67,14 +67,14 @@ export class ApiModuleAuth extends ApiModule {
                 if (resp.statusCode == 200) {
                     const adfsToken = new AdfsSessionToken(req.body.id_token);
                     console.log("User logged out: ", adfsToken.userPrincipalName);
-                    return {statusCode: 200, responseObject: {cacheForOfflineUse: false}, error: undefined};
+                    return {statusCode: 200, responseObject: {}, error: undefined};
                 } else {
                     console.error("User log out failed! ADFS returned invalid status code: " + resp.statusCode + " data: " + resp.data);
-                    return {statusCode: 500, responseObject: {cacheForOfflineUse: false}, error: 'An internal error occurred! ADFS returned invalid status code ' + resp.statusCode};
+                    return {statusCode: 500, responseObject: {}, error: 'An internal error occurred! ADFS returned invalid status code ' + resp.statusCode};
                 }
             } catch(err) {
                 console.error("An internal error occurred trying to log out user: ", err);
-                return {statusCode: 500, responseObject: {cacheForOfflineUse: false}, error: 'An internal error occurred!'};
+                return {statusCode: 500, responseObject: {}, error: 'An internal error occurred!'};
             }
         });
 
@@ -105,13 +105,13 @@ export class ApiModuleAuth extends ApiModule {
                     }
 
                     console.log("User successfully refreshed it's access token!");
-                    return {statusCode: 200, responseObject: {...responseObject, cacheForOfflineUse: false}, error: undefined};
+                    return {statusCode: 200, responseObject: responseObject, error: undefined};
                 } else {
                     throw new Error("Server returned invalid response while user is trying to refresh it's access token!: " + res.statusCode + ", " + res.data);
                 }
             } catch(err) {
                 console.error("An internal error occurred trying to refresh access token: ", err);
-                return {statusCode: 500, responseObject: {cacheForOfflineUse: false, access_token: undefined, id_token: undefined, refresh_token: undefined}, error: 'An internal error occurred!'};
+                return {statusCode: 500, responseObject: {access_token: undefined, id_token: undefined, refresh_token: undefined}, error: 'An internal error occurred!'};
             }
         });
     }

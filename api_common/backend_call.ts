@@ -2,15 +2,12 @@ export interface ApiModuleInterfaceF2B {
     cacheTillOnline: boolean;
 } // Frontend to backend (request)
 export interface ApiModuleInterfaceB2F {
-    cacheForOfflineUse: boolean;
 } // Backend to frontend (response)
 
 export interface ApiInterfaceEmptyIn extends ApiModuleInterfaceF2B {
     cacheTillOnline: false;
 }
-export interface ApiInterfaceEmptyOut extends ApiModuleInterfaceB2F {
-    cacheForOfflineUse: false;
-}
+export interface ApiInterfaceEmptyOut extends ApiModuleInterfaceB2F {}
 
 export interface ApiModuleResponse<T extends ApiModuleInterfaceB2F> {
     statusCode: number,
