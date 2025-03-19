@@ -1,34 +1,34 @@
-import { Component, computed, Signal, signal } from '@angular/core';
-import { SessionService } from '../shared-service/session.service';
+import { Component, computed } from '@angular/core';
 import { LoggedInSvgComponent } from '../logged-in-svg/logged-in-svg.component';
 import { LoggedOutSvgComponent } from '../logged-out-svg/logged-out-svg.component';
+import { SessionProviderService } from '../shared-service/session/session-provider.service';
 
 @Component({
-  selector: 'app-user-account',
-  imports: [LoggedInSvgComponent, LoggedOutSvgComponent],
-  templateUrl: './user-account.component.html',
-  styleUrl: './user-account.component.scss'
+	selector: 'app-user-account',
+	imports: [LoggedInSvgComponent, LoggedOutSvgComponent],
+	templateUrl: './user-account.component.html',
+	styleUrl: './user-account.component.scss'
 })
 export class UserAccountComponent {
-  isLoggedIn = computed(() => this.sessionService.isLoggedIn);
-  profileMail = computed(() => this.sessionService.email);
-  profileName = computed(() => this.sessionService.givenName + " " + this.sessionService.familyName);
-  profilePhoto = computed(() => this.sessionService.thumbnailPhoto || "");
-  hasProfilePhoto = computed(() => this.sessionService.thumbnailPhoto != null);
+	isLoggedIn = computed(() => this.sessionService.store.isLoggedIn);
+	profileMail = computed(() => this.sessionService.store.email);
+	profileName = computed(() => this.sessionService.store.givenName + " " + this.sessionService.store.familyName);
+	profilePhoto = computed(() => this.sessionService.store.thumbnailPhoto || "");
+	hasProfilePhoto = computed(() => this.sessionService.store.thumbnailPhoto !== null && this.sessionService.store.thumbnailPhoto !== "");
 
-  constructor(private sessionService: SessionService) {
-    this.sessionService.restoreSessionFromStore().then(() => {
-      console.log("User is logged in!");
-    }).catch(() => {
-      console.log("User is logged out!");
-    });
-  }
+	constructor(private sessionService: SessionProviderService) { }
 
-  handleLogoutClick() {
-    this.sessionService.unauthorizeSession("You have been logged out");
-  }
+	handleLogoutClick() {
+		this.sessionService.unauthorizeSession("You have been logged out");
+	}
 
-  handleLoginClick() {
-    this.sessionService.authorizeSession();
-  }
+	handleLoginClick() {
+		this.sessionService.selectOnlineSessionProvider();
+		this.sessionService.authorizeSession();
+	}
+
+	handleLoginOfflineClick() {
+		this.sessionService.selectOfflineSessionProvider();
+		this.sessionService.authorizeSession();
+	}
 }

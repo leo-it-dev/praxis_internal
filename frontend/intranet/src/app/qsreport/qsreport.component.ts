@@ -1,16 +1,16 @@
-import { Component, computed, ElementRef, EventEmitter, inject, signal, Signal, ViewChild, WritableSignal } from '@angular/core';
+import { Component, computed, inject, signal, Signal, ViewChild, WritableSignal } from '@angular/core';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, DrugPackage, DrugUnit, DrugUnits, Farmer, ReportableDrug } from "../../../../../api_common/api_qs";
+import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../../../api_common/backend_call';
+import { BackendService } from '../api/backend.service';
+import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
+import { DatepickerComponent } from '../datepicker/datepicker.component';
 import { ErrorlistService } from '../errorlist/errorlist.service';
 import { IStringify, NO_HINT, SearchDropdownComponent } from '../search-dropdown/search-dropdown.component';
-import { DatepickerComponent } from '../datepicker/datepicker.component';
-import { ApiCompatibleProductionType, QsFarmerProductionCombination } from './qs-farmer-production-combinations';
-import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from './qs-farmer-production-age-mapping';
+import { SessionProviderService } from '../shared-service/session/session-provider.service';
 import { CategorizedItem, CategorizedList } from '../utilities/categorized-list';
-import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
-import { BackendService } from '../api/backend.service';
-import { DrugUnit, ReportableDrug, DrugUnits, Farmer, DrugPackage, ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, DrugUnitApi } from "../../../../../api_common/api_qs";
-import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../../../api_common/backend_call';
-import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { SessionService } from '../shared-service/session.service';
+import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from './qs-farmer-production-age-mapping';
+import { ApiCompatibleProductionType, QsFarmerProductionCombination } from './qs-farmer-production-combinations';
 
 @Component({
 	selector: 'app-qsreport',
@@ -104,9 +104,9 @@ export class QsreportComponent {
 			this.errorlistService.showErrorMessage("Error receiving list of reportable drugs: " + e);
 		});
 
-		if (this.sessionService.qsVeterinaryName) {
+		if (this.sessionService.store.qsVeterinaryName) {
 			let control = this.qsFormGroup.controls["vetName"];
-			control.setValue(this.sessionService.qsVeterinaryName || "<unknown>");
+			control.setValue(this.sessionService.store.qsVeterinaryName || "<unknown>");
 			control.disable();
 		}
 	}
@@ -141,7 +141,7 @@ export class QsreportComponent {
 	constructor(
 		private errorlistService: ErrorlistService,
 		private backendService: BackendService,
-		private sessionService: SessionService
+		private sessionService: SessionProviderService
 	) {
 		this.loadApiData();
 	}

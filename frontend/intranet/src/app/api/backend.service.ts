@@ -1,8 +1,7 @@
-import { Injectable } from '@angular/core';
-import { SessionService } from '../shared-service/session.service';
+import { Injectable, Injector } from '@angular/core';
+import { ApiModuleBody, ApiModuleInterfaceB2F, ApiModuleInterfaceF2B } from '../../../../../api_common/backend_call';
 import { ErrorlistService } from '../errorlist/errorlist.service';
-import { ApiModuleBody, ApiModuleInterfaceB2F, ApiModuleInterfaceF2B } from '../../../../../api_common/backend_call'
-import { Injector } from '@angular/core';
+import { SessionProviderService } from '../shared-service/session/session-provider.service';
 
 @Injectable({
 	providedIn: 'root'
@@ -14,11 +13,11 @@ export class BackendService {
 		private injector: Injector
 	) { };
 
-	private sessionService!: SessionService;
+	private sessionService!: SessionProviderService;
 
 	getSessionService() {
 		if (!this.sessionService) {
-			this.sessionService = this.injector.get(SessionService);
+			this.sessionService = this.injector.get(SessionProviderService);
 		}
 		return this.sessionService;
 	}
@@ -48,7 +47,7 @@ export class BackendService {
 
 	authorizedBackendCall<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(url: string, body: REQ|undefined = undefined): Promise<RES> {
 		return new Promise((res, rej) => {
-			this.getSessionService().accessToken.then((accessToken) => {
+			this.getSessionService().store.accessToken.then((accessToken) => {
 				fetch(url, {
 					method: body === undefined ? "GET" : "POST",
 					body: JSON.stringify(body),
@@ -70,7 +69,7 @@ export class BackendService {
 					this.errorlistService.showErrorMessage("Error performing backend call: " + e);
 					rej(e);
 				});
-			});
+			});	
 		});
 	}
 }

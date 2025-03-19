@@ -1,9 +1,8 @@
-import { Component } from '@angular/core';
-import { UserAccountComponent } from '../user-account/user-account.component';
-import { ActionbarComponent } from '../actionbar/actionbar.component';
-import { SessionService } from '../shared-service/session.service';
-import { ErrorlistService } from '../errorlist/errorlist.service';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { ErrorlistService } from '../errorlist/errorlist.service';
+import { SessionProviderService } from '../shared-service/session/session-provider.service';
+import { UserAccountComponent } from '../user-account/user-account.component';
 
 @Component({
 	selector: 'app-login',
@@ -11,17 +10,19 @@ import { Router } from '@angular/router';
 	templateUrl: './login.component.html',
 	styleUrl: './login.component.scss'
 })
-export class LoginComponent {
-	constructor(private sessionService: SessionService,
+export class LoginComponent implements OnInit {
+	constructor(private sessionService: SessionProviderService,
 		private errorlistService: ErrorlistService,
 		private router: Router) {
+	}
 
+	ngOnInit(): void {
 		if (window.location.search.includes("?code")) {
 			const callbackParams = document.location.search.split("&");
 			const code = callbackParams[0].split("code=")[1];
 			const state = callbackParams[1].split("state=")[1];
-			console.log("Code: ", code);
-			console.log("State: ", state);
+
+			this.sessionService.selectOnlineSessionProvider();
 			this.sessionService.exchangeCodeForToken(code, state).then(() => {
 				this.router.navigateByUrl("/login");
 			});

@@ -46,7 +46,7 @@ async function startup() {
     app.use(express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
 
     app.use((req, res, next) => {
-        if (req.url.includes("ngsw.json") || req.url.includes("nsgw-worker.js")) {
+        if (req.url.includes("ngsw.json") || req.url.includes("worker-basic.min.js")) {
             res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
             res.setHeader("Pragma", "no-cache");
             res.setHeader("Expires", "0");

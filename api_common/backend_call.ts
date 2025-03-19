@@ -1,5 +1,9 @@
 export interface ApiModuleInterfaceF2B {
-    cacheTillOnline: boolean;
+    cacheTillOnline: boolean; // True: the request won't be sent directly if offline session is used.
+                                // False: the request is sent out even if an offline session is used. We expect the service-worker to respond in the offline case!
+                                // Note: This request may be access restricted. In that case, if we are using an offline session but do have a network connection, the request will
+                                //       fail with an 401 Unauthorized error, which sends the user straight to the login page. Unsaved content may be lost! Still, this is the only
+                                //       plausible reaction we can do in this case.
 } // Frontend to backend (request)
 export interface ApiModuleInterfaceB2F {
 } // Backend to frontend (response)

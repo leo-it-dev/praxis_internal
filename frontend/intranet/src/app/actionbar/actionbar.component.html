@@ -9,11 +9,11 @@
             <img class="action-item" id="profileThumbnailPhoto" src="{{profilePhoto()}}" />
         }
         @else {
-            <logged-in-svg col="black" class="action-item"></logged-in-svg>
+            <logged-in-svg class="action-item"></logged-in-svg>
         }
     }
     @else {
-        <logged-out-svg col="black" class="action-item"></logged-out-svg>
+        <logged-out-svg class="action-item"></logged-out-svg>
     }
     @if(showAccountPopup) {
         <app-user-account-popup></app-user-account-popup>
