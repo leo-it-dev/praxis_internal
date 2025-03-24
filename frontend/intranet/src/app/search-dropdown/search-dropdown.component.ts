@@ -307,21 +307,27 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 	lostFocus(_: Event) {
 		let searchString = (this.inputElement!.nativeElement as HTMLInputElement).value;
 		let inputIsEmpty = searchString.length == 0;
+		let equalItem = this.recommendedItems().find(i => this.serial.display(i).text.toLowerCase() === searchString.toLowerCase());
 
+		console.log(equalItem);
 		if (this.recommendedItems().length == 1) {
 			let item = this.recommendedItems()[0];
 			this.inputElement!.nativeElement.value = this.serial.display(item).text;
 			this.emitEvent(item);
-		}/* else if (this.hoveredItem() !== -1) {
+		}
+		else if (equalItem != undefined) {
+			this.inputElement!.nativeElement.value = this.serial.display(equalItem).text;
+			this.emitEvent(equalItem);
+		} else if (inputIsEmpty || searchString !== this.hintText()) {
+			this.emitEvent(undefined);
+		}
+
+		/* else if (this.hoveredItem() !== -1) {
 			let item = this.recommendedItems()[this.hoveredItem()];
 			this.inputElement!.nativeElement.value = this.serial.display(item).text;
 			this.emitEvent(item);
 		}*/ // Dont! This also fires when hovering an item with the mouse and the text field is empty!
 		
-		if (inputIsEmpty || searchString !== this.hintText()) {
-			this.emitEvent(undefined);
-		}
-
 		if (inputIsEmpty) {
 			this.hintText.set(this.placeholder);
 		} else {

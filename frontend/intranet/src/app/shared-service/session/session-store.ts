@@ -1,4 +1,4 @@
-import { Signal, signal, WritableSignal } from "@angular/core";
+import { signal, WritableSignal } from "@angular/core";
 import { UserInfo } from "../../../../../../api_common/api_ldapquery";
 import { SessionProviderService } from "./session-provider.service";
 
@@ -27,6 +27,7 @@ export class SessionStore {
     public get sid(): string|undefined { return this._sid() };
     public get qsVeterinaryName() { return this._lazyloadUserInfo()?.vetproofVeterinaryName };
     public get refreshToken(): string|undefined { return this._rawRefreshToken(); }
+    public get lazyloadUserInfo(): UserInfo|undefined { return this._lazyloadUserInfo(); };
     public get accessToken(): Promise<string> {
         console.log("User app requested access token...");
         if (this._rawAccessToken() == undefined) {
