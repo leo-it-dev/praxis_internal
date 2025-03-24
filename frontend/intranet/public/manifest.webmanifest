@@ -1,7 +1,7 @@
 {
   "name": "intranet",
   "short_name": "intranet",
-  "theme_color": "#1976d2",
+  "theme_color": "#fa9372",
   "background_color": "#fafafa",
   "display": "standalone",
   "scope": "./",
