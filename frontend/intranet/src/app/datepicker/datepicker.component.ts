@@ -88,7 +88,7 @@ export class DatepickerComponent implements AfterViewInit {
 	}
 
 	parseDate(): Date | undefined {
-		return DatepickerComponent.parseDateGerman((this.input!.nativeElement as HTMLInputElement).value);
+		return DatepickerComponent.parseDateGerman(this.value);
 	}
 
 	static parseDateGerman(searchString: string): Date | undefined {
@@ -105,7 +105,6 @@ export class DatepickerComponent implements AfterViewInit {
 			if (dateParts.length == 3) {
 				let yearStr = dateParts[2];
 				let yearNowStr = String(new Date().getFullYear());
-				console.log(yearNowStr);
 				if (yearStr.length < yearNowStr.length) {
 					yearStr = yearNowStr.substring(0, yearNowStr.length - yearStr.length) + yearStr;
 				}
@@ -114,6 +113,10 @@ export class DatepickerComponent implements AfterViewInit {
 			date = new Date(year, parseInt(monthStr) - 1, parseInt(dayStr));
 		}
 		return date;
+	}
+
+	static serializeDateGerman(date: Date) {
+		return String(date.getDate()).padStart(2, '0') + "." + String(date.getMonth()+1).padStart(2, '0') + "." + date.getFullYear();
 	}
 
 	lostFocus(event: Event) {
@@ -135,7 +138,9 @@ export class DatepickerComponent implements AfterViewInit {
 	}
 
 	writeValue(obj: any): void {
-		this.value = this.value;
+		this.value = obj as string;
+		this.updateTodayButtonVisibility();
+		this.onChangeValidationCallback(this.value);
 	}
 	registerOnChange(fn: (val: string) => void): void {
 		this.onChangeValidationCallback = fn;

@@ -1,0 +1,32 @@
+<div class="section">
+    <h5>Online-Synchronisation</h5>
+</div>
+<div class="section">
+    <h5 class="colourful">{{offlineStore?.entryCount() || 0}}</h5>
+    <h5>Elemente verbleibend</h5>
+</div>
+
+@if(isSyncMode()) {
+<div class="section">
+    <h5>Aktuelles Element</h5>
+    <span class="updown">
+        <button (click)="selectNextItem()"
+            [disabled]="selectedItemIdx() == (offlineStore?.entryCount() || 1) - 1">▲</button>
+        <h5>{{selectedItemIdx()+1}}</h5>
+        <button (click)="selectPreviousItem()" [disabled]="selectedItemIdx() == 0">▼</button>
+    </span>
+</div>
+}
+
+<div class="spreader"></div>
+
+<div class="section">
+    @if(isSyncMode()) {
+    <button [disabled]="!this.isOnlineSession()" class="smallActionButton">Alle Absenden</button>
+    }
+    @if(isSyncMode()) {
+        <button class="smallActionButtonUnimportant" (click)="exisSynchronizationMode()">Synchronisationsmodus verlassen</button>
+    } @else {
+        <button class="smallActionButton" [disabled]="!syncModeCanBeEntered()" (click)="enterSynchronizationMode()">Synchronisationsmodus starten</button>
+    }
+</div>

@@ -3,7 +3,16 @@
 <span class="action-item">Lorem</span>
 <span class="action-item">Ipsum</span>
 <span class="spreader"></span>
-<span class="action-item" id="account" (click)="showAccountPopup = !showAccountPopup">
+
+<span class="action-item" id="sync" (click)="updatePopup('sync')">
+    <img id="sync-svg" class="action-item" src="../../../images/sync.svg" />
+    <span id="sync-count">{{this.totalUnsyncCount()}}</span>
+    @if(activePopup == 'sync') {
+        <app-sync-popup></app-sync-popup>
+    }
+</span>
+
+<span class="action-item" id="account" (click)="this.updatePopup('account')">
     @if(isLoggedIn()) {
         @if(hasProfilePhoto()) {
             <img class="action-item" id="profileThumbnailPhoto" src="{{profilePhoto()}}" />
@@ -15,7 +24,7 @@
     @else {
         <logged-out-svg class="action-item"></logged-out-svg>
     }
-    @if(showAccountPopup) {
+    @if(activePopup == 'account') {
         <app-user-account-popup></app-user-account-popup>
     }
 </span>

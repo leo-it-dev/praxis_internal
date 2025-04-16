@@ -14,9 +14,9 @@
 			"label": "tsc: watch - backend"
 		},
 		{
-			"label": "angular: watch - frontend",
+			"label": "angular: watch - frontend (debug)",
 			"type": "npm",
-			"script": "watch",
+			"script": "watch-debug",
 			"group": "build",
 			"problemMatcher": {
 				"owner": "typescript",
@@ -36,9 +36,9 @@
 			"path": "frontend/intranet/",
 		},
 		{
-			"label": "angular: build - frontend",
+			"label": "angular: watch - frontend (prod)",
 			"type": "npm",
-			"script": "build",
+			"script": "watch-prod",
 			"group": "build",
 			"problemMatcher": {
 				"owner": "typescript",

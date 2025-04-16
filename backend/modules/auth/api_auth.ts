@@ -106,6 +106,9 @@ export class ApiModuleAuth extends ApiModule {
 
                     console.log("User successfully refreshed it's access token!");
                     return {statusCode: 200, responseObject: responseObject, error: undefined};
+                } else if(res.statusCode == 400) {
+                    console.log("Server returned 400 while refreshing token: " + res.data);
+                    return {statusCode: 401, responseObject: undefined, error: "Invalid grant! Refresh token may be expired!"};
                 } else {
                     throw new Error("Server returned invalid response while user is trying to refresh it's access token!: " + res.statusCode + ", " + res.data);
                 }

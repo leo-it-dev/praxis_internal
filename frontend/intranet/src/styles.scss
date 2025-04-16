@@ -13,6 +13,9 @@ input, button {
     border-radius: 2px;
     padding: var(--input-padding);
 }
+button:hover {
+    filter: brightness(0.9);
+}
 
 input:focus {
     outline: none !important;
@@ -23,6 +26,7 @@ html {
     --background: #fff;
     --shelfGradientLight: #fff;
     --shelfGradientDark: #ddd;
+    --shadeLevel1: #eee;
     --shadeLevel2: #bbb;
     --shadeLevel3: #999;
     --action-button-gradient-left: #ef709b;
@@ -71,7 +75,7 @@ body {
     appearance: none;
     -webkit-appearance: none;
     border: 0px;
-    border-radius: 5px;
+    border-radius: 2px;
     padding: 5px;
     font-size: 9pt;
     font-weight: bold;
@@ -80,6 +84,21 @@ body {
     cursor: pointer;
     text-wrap: nowrap;
     background: linear-gradient(90deg, var(--action-button-gradient-left), var(--action-button-gradient-right));
+}
+
+.smallActionButtonUnimportant {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0px;
+    border-radius: 2px;
+    padding: 5px;
+    font-size: 9pt;
+    font-weight: bold;
+    color: black;
+    width: 100%;
+    cursor: pointer;
+    text-wrap: nowrap;
+    background-color: rgb(220, 220, 220);
 }
 
 .basicButton {

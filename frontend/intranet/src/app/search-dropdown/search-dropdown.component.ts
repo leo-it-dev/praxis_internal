@@ -29,6 +29,7 @@ export interface IStringify<T> {
 export class SearchDropdownComponent<TItem> implements AfterViewInit{
 	private _items?: Array<TItem>;
 	private _placeholder: string = "<unset>";
+	private _preventNextSelectEventEmit = false;
 
 	@Input({required: true}) 
 	get placeholder() {
@@ -37,6 +38,10 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 	set placeholder(placeholder: string) {
 		this._placeholder = placeholder;
 		this.hintText.set(placeholder);
+	}
+
+	preventNextSelectEventEmit() {
+		this._preventNextSelectEventEmit = true;
 	}
 
 	@Input({required: true}) 
@@ -59,10 +64,10 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 		this.updateEnableFlag();
 
 		if (items.length == 1) {
-			this.itemSelectedEvent.emit(items[0]);
+			this.sendEvent(items[0]);
 			this.forceInvalidate(false);
 		} else {
-			this.itemSelectedEvent.emit(undefined);
+			this.sendEvent(undefined);
 			this.forceInvalidate(true);
 		}
 	}
@@ -118,10 +123,18 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 
 	recommendedItems: WritableSignal<Array<TItem>> = signal([] as TItem[]);
 
+	sendEvent(item: TItem | undefined) {
+		if (!this._preventNextSelectEventEmit) {
+			this.itemSelectedEvent.emit(item);
+		} else {
+			this._preventNextSelectEventEmit = false;
+		}
+	}
+
 	emitEvent(item: TItem | undefined) {
 		if (this.lastItemSelectedEventItem !== item || item == undefined) {
 			this.lastItemSelectedEventItem = item;
-			this.itemSelectedEvent.emit(item);
+			this.sendEvent(item);
 		}
 		this.forceInvalidate(item === undefined);
 	}

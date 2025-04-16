@@ -1,0 +1,37 @@
+:host {
+    padding: 10px 15px;
+    box-shadow: 0px 0px 10px gray;
+    box-sizing: border-box;
+    background-color: var(--background);
+    position: relative;
+    cursor: pointer;
+    z-index: 100;
+}
+
+.header1 {
+    color: black;
+    margin: 0px;
+    line-height: initial;
+    white-space: nowrap;
+    font-size: 12pt;
+    margin-top: 5px;
+}
+
+td {
+    font-size: 10pt;
+    color: black;
+    line-height: initial !important;
+    white-space: nowrap;
+}
+
+hr {
+    border: none;
+    border-bottom: 1px solid var(--shelfGradientDark);
+}
+
+.sync-sub-count {
+    color: var(--action-button-gradient-left);
+    font-weight: bold;
+    padding-left: 10px;
+    padding-right: 10px;
+}

@@ -1,0 +1,16 @@
+<div class="header1">Nicht synchronisierte Änderungen:</div>
+<hr />
+
+<table style="width: 100%">
+    <tr>
+        <th width="100%"></th>
+        <th></th>
+        <th></th>
+    </tr>
+
+    <tr class="sync-entry" *ngFor="let item of _syncController.moduleStores; trackBy:trackByFn">
+        <td>{{item.displayName}}</td>
+        <td class="sync-sub-count">{{item.entryCount()}}</td>
+        <td><button class="sync-sub-button" (click)="openModuleByPath(item.path)">Anzeigen</button></td>
+    </tr>
+</table>

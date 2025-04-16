@@ -89,4 +89,17 @@ export abstract class QsFarmerAnimalAgeUsageGroup {
         }
         return usageGroupsOut;
     }
+
+    static getProductionTypeBasedOnUsageGroup(usageGroup: number): number {
+        let animalTypeInt = Math.floor(usageGroup / 1000) * 1000;
+        let animalTypes = [QsFarmerAnimalAgeUsageGroup.mappingBeef, QsFarmerAnimalAgeUsageGroup.mappingPork];
+        for(let animalType of animalTypes) {
+            for(let [productionType, specUsageGroups] of Object.entries(animalType)) {
+                if (Object.keys(specUsageGroups).includes(String(usageGroup))) {
+                    return animalTypeInt + parseInt(productionType);
+                }
+            }
+        }
+        return -1;
+    }
 }

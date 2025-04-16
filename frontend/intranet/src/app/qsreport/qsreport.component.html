@@ -12,6 +12,7 @@
         (selectionMade)="this.drugErrorOverlayShown.set(false)"></app-blockingoverlay>
     }
 
+    <app-sync-online-controller #syncController [offlineStore]="offlineModuleStore" (applyOfflineEntry)="applyOfflineEntry($event)" (unloadOfflineEntry)="unloadOfflineEntry()"></app-sync-online-controller>
     <form [formGroup]="qsFormGroup" #qsForm id="qsForm" (submit)="submitForm()">
         <div>
             <label for="vet-name">Tierarztname</label>
@@ -29,9 +30,9 @@
             <!-- One holder-name may have multiple VVVO-Numbers -->
             <label for="holder-name">Halterbetrieb</label>
             <div>
-                <app-search-dropdown placeholder="Betrieb suchen..." [items]="this.farmers()" [serial]="this.farmerSerializer" (itemSelectedEvent)="this.selectedFarmer.set($event)" [formControl]="qsFormGroup.controls['locationNumber']"></app-search-dropdown>
-                <app-search-dropdown placeholder="Haltungsart auswählen..." [items]="this.selectedFarmerProductionTypes()" [serial]="this.farmerProductionTypeSerializer" (itemSelectedEvent)="this.selectedProductionType.set($event)" [formControl]="qsFormGroup.controls['productionType']"></app-search-dropdown>
-                <app-search-dropdown placeholder="Gruppe auswählen..." [items]="this.selectedProductionUsageGroups()" [serial]="this.usageGroupSerializer" (itemSelectedEvent)="this.selectedUsageGroup.set($event)" [formControl]="qsFormGroup.controls['usageGroup']"></app-search-dropdown>
+                <app-search-dropdown #farmerDropdown placeholder="Betrieb suchen..." [items]="this.farmers()" [serial]="this.farmerSerializer" (itemSelectedEvent)="this.selectedFarmer.set($event)" [formControl]="qsFormGroup.controls['locationNumber']"></app-search-dropdown>
+                <app-search-dropdown #productionDropdown placeholder="Haltungsart auswählen..." [items]="this.selectedFarmerProductionTypes()" [serial]="this.farmerProductionTypeSerializer" (itemSelectedEvent)="this.selectedProductionType.set($event)" [formControl]="qsFormGroup.controls['productionType']"></app-search-dropdown>
+                <app-search-dropdown #usageDropdown placeholder="Gruppe auswählen..." [items]="this.selectedProductionUsageGroups()" [serial]="this.usageGroupSerializer" (itemSelectedEvent)="this.selectedUsageGroup.set($event)" [formControl]="qsFormGroup.controls['usageGroup']"></app-search-dropdown>
             </div>
         </div>
         <div>
@@ -42,8 +43,8 @@
         <!-- Only one ZNR per perscription row allowed! -->
         <div>
             <label for="drug">Arzneimittel</label>
-            <app-search-dropdown placeholder="Arzneimittel suchen..." [items]="this.reportableDrugList()" [serial]="this.drugSerializer" (itemSelectedEvent)="this.drugSelected($event)" [formControl]="qsFormGroup.controls['drugZNR']"></app-search-dropdown>
-            <app-search-dropdown placeholder="Packungform auswählen..." [items]="this.selectedDrugPackingForms()" [serial]="this.drugPackingSerializer" (itemSelectedEvent)="drugPackingFormSelected($event)"  [formControl]="qsFormGroup.controls['drugPID']"></app-search-dropdown>
+            <app-search-dropdown #drugDropdown placeholder="Arzneimittel suchen..." [items]="this.reportableDrugList()" [serial]="this.drugSerializer" (itemSelectedEvent)="this.drugSelected($event)" [formControl]="qsFormGroup.controls['drugZNR']"></app-search-dropdown>
+            <app-search-dropdown #packingDropdown placeholder="Packungform auswählen..." [items]="this.selectedDrugPackingForms()" [serial]="this.drugPackingSerializer" (itemSelectedEvent)="drugPackingFormSelected($event)"  [formControl]="qsFormGroup.controls['drugPID']"></app-search-dropdown>
         </div>
         <div>
             <label for="drug-amount">Menge</label>
