@@ -19,6 +19,9 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
     let idxPg = headers.indexOf("TAMA_PG");     // Packaging amount (total amount of drugs packed in one distributed package. Result of OP(...) inside TAMA_PBE)
     let idxVon = headers.indexOf("TAMA_VON");   // When was this drug licensed? Date format: dd.mm.yyyy
 
+    let idxCattle = headers.indexOf("TAMA_RIND"); // Is the drug allowed to be used on cattle
+    let idxPork = headers.indexOf("TAMA_SCHW"); // Is the drug allowed to be used on pork
+
     // Parse columns with correct types as object attributes
     let parsedVals = valpairs.map(line => {
         let values = line.split(";");
@@ -29,8 +32,15 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
             pg: parseFloat(values[idxPg].replace(/"/g, "")),
             pid: parseInt(values[idxPid].replace(/"/g, "")),
             von: parseSimpleDate(values[idxVon].replace(/"/g, "")),
+            cattle: parseInt(values[idxCattle].replace(/"/g, "")),
+            pork: parseInt(values[idxPork].replace(/"/g, "")),
         };
     }); // Map the strings to parsed values
+
+    // Filter out those medications that are not allowed to be used on the type of animal qs is interested in.
+    // let totalAmountDrugs = parsedVals.length;
+    parsedVals = parsedVals.filter(v => v.cattle || v.pork);
+    // let amountDrugsApplicableFiltered = totalAmountDrugs - parsedVals.length;
 
     // Sort the drugs based on ZNR, then PID, then registration time
     parsedVals.sort((parsedA, parsedB) => {
