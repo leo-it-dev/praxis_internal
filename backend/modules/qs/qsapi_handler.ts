@@ -122,41 +122,50 @@ export class QsApiHandler {
 
             for (let branch of branches) {
                 console.log("Reading in QS-Farmers for branch " + branch);
-                let data = await this.syncFarmerGet(farmerLinkApi, branch, 0, 100);
-                if (data.error === undefined) {
-                    for (let farmer of data.response.farmers) {
-                        let farmerAlreadyFound = farmers.find(f => f.locationNumber === farmer["locationNumber"]);
-                        if (farmerAlreadyFound !== undefined) {
-                            // Append production type if farmer is already found in a previous branch
-                            farmerAlreadyFound.productionType.push(farmer["productionType"]);
-                        } else {
-                            let name = farmer["farmerDisplayName"] as string;
-                            let locationNumber = farmer["locationNumber"] as string;
-                            let productionType = farmer["productionType"] as number;
-                            let qsNumber = farmer["qsNumber"] as string;
-                            let vpId = farmer["vpId"] as number;
+                let offset = 0;
+                let data;
 
-                            // Based on an analysis and comparison between data and the Vetproof Webpage,
-                            // it seems as the QS-Webpage doesn't list farmers which have no qsNumber.
-                            // Therefore we also filter them out at this point, to prevent confusion.
-                            if (!qsNumber || qsNumber.trim().length == 0) {
-                                continue;
+                do {
+                    data = await this.syncFarmerGet(farmerLinkApi, branch, offset, 100);
+                    offset += 100;
+
+                    if (data.error === undefined) {
+                        for (let farmer of data.response.farmers) {
+                            let farmerAlreadyFound = farmers.find(f => f.locationNumber === farmer["locationNumber"]);
+                            if (farmerAlreadyFound !== undefined) {
+                                // Append production type if farmer is already found in a previous branch
+                                farmerAlreadyFound.productionType.push(farmer["productionType"]);
+                            } else {
+                                let name = farmer["farmerDisplayName"] as string;
+                                let locationNumber = farmer["locationNumber"] as string;
+                                let productionType = farmer["productionType"] as number;
+                                let qsNumber = farmer["qsNumber"] as string;
+                                let vpId = farmer["vpId"] as number;
+    
+                                // Based on an analysis and comparison between data and the Vetproof Webpage,
+                                // it seems as the QS-Webpage doesn't list farmers which have no qsNumber.
+                                // Therefore we also filter them out at this point, to prevent confusion.
+                                if (!qsNumber || qsNumber.trim().length == 0) {
+                                    continue;
+                                }
+    
+                                // Add a new instance otherwise
+                                let farmInst: Farmer = {
+                                    name: name,
+                                    locationNumber: locationNumber,
+                                    productionType: [productionType],
+                                    qsNumber: qsNumber,
+                                    vpId: vpId
+                                };
+                                farmers.push(farmInst);
                             }
-
-                            // Add a new instance otherwise
-                            let farmInst: Farmer = {
-                                name: name,
-                                locationNumber: locationNumber,
-                                productionType: [productionType],
-                                qsNumber: qsNumber,
-                                vpId: vpId
-                            };
-                            farmers.push(farmInst);
                         }
+    
+                    } else {
+                        rej(data.error);
+                        return;
                     }
-                } else {
-                    rej(data.error);
-                }
+                } while(data.response.moreData);
             }
 
             // Last branch handled. Sort all found farmers.
