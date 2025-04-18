@@ -11,10 +11,11 @@ import { SessionProviderService, SessionType } from '../shared-service/session/s
 import { CategorizedItem, CategorizedList } from '../utilities/categorized-list';
 import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from './qs-farmer-production-age-mapping';
 import { ApiCompatibleProductionType, QsFarmerProductionCombination } from './qs-farmer-production-combinations';
-import { SyncOnlineControllerComponent } from "../sync-online-controller/sync-online-controller.component";
+import { ApplyEntryEvent, CommitSynchronizeEntryEvent, SyncOnlineControllerComponent } from "../sync-online-controller/sync-online-controller.component";
 import { OfflineStoreService } from '../shared-service/offline-sync/offline-store.service';
 import { OfflineModuleStore } from '../shared-service/offline-sync/offline-module-store';
 import { OfflineEntry } from '../shared-service/offline-sync/offline-entry';
+import { Router } from '@angular/router';
 
 @Component({
 	selector: 'app-qsreport',
@@ -29,6 +30,7 @@ export class QsreportComponent {
 	static API_URL_POST_REPORT = "https://internal.mittermeier-kraiburg.vet/module/qs/report"
 
 	offlineModuleStore: OfflineModuleStore;
+	currentSyncEntry: OfflineEntry|undefined = undefined;
 
 	DRUG_CATEGORY_OK = "moveta";
 	DRUG_CATEGORY_WARN = "hit";
@@ -40,8 +42,6 @@ export class QsreportComponent {
 	@ViewChild('drugDropdown') drugDropdown?: SearchDropdownComponent<ReportableDrug>;
 	@ViewChild('packingDropdown') packingDropdown?: SearchDropdownComponent<DrugPackage>;
 	@ViewChild('syncController') syncController?: SyncOnlineControllerComponent;
-
-	currentSyncEntry: OfflineEntry|undefined = undefined;
 
 	drugErrorOverlayShown: WritableSignal<boolean> = signal(false);
 	readonly OverlayButtonDesign: typeof OverlayButtonDesign = OverlayButtonDesign;
@@ -157,11 +157,16 @@ export class QsreportComponent {
 		private backendService: BackendService,
 		private sessionService: SessionProviderService,
 		private offlineStore: OfflineStoreService,
-		private injector: Injector
+		private injector: Injector,
+		private router: Router
 	) {
 		this.loadApiData();
 		this.offlineModuleStore = this.offlineStore.getStore("qs")!;
 		this.offlineModuleStore.recall();
+
+		if(!sessionService.store.isLoggedIn) {
+			sessionService.redirectClientToLoginPage("This service requires you to be logged in!");
+		}
 	}
 
 	drugSelected(drug: CategorizedItem<ReportableDrug> | undefined) {
@@ -177,7 +182,6 @@ export class QsreportComponent {
 			if (drugPacking.unitSuggestion) {
 				let unitQS = Object.values(DrugUnits).find(u => u.id == drugPacking.unitSuggestion.id && u.name == drugPacking.unitSuggestion.name);
 				this.drugUnitDOM?.selectItemExt(unitQS);
-				console.log(unitQS);
 			}
 		} else {
 			this.drugUnitDOM?.selectItemExt(undefined);
@@ -307,10 +311,13 @@ export class QsreportComponent {
 		this.qsFormGroup.controls["amountUnit"].setValue(this.drugUnitSerializer.display(this.selectedDrugUnit()!).text);
 	}
 
-	applyOfflineEntry(offlineEntry: OfflineEntry|undefined) {
+	applyOfflineEntry(offlineEntry: ApplyEntryEvent) {
 		if (offlineEntry) {
-			this.deserializeObjectToForm(offlineEntry.item);
-			this.currentSyncEntry = offlineEntry;
+			offlineEntry.applyFinished = new Promise(async (res, _) => {
+				await this.deserializeObjectToForm(offlineEntry.entry.item);
+				this.currentSyncEntry = offlineEntry.entry;
+				res();
+			});
 		}
 	}
 
@@ -319,29 +326,48 @@ export class QsreportComponent {
 		this.currentSyncEntry = undefined;
 	}
 
-	submitForm() {
-		if (this.qsFormGroup.valid) {
-			let putRequest = this.serializeFormToObject();
-			if (this.sessionService.getSessionType() == SessionType.ONLINE) {
-				this.backendService.authorizedBackendCall<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>(QsreportComponent.API_URL_POST_REPORT, 
-					putRequest
-				).then(dat => {
-					this.errorlistService.showErrorMessage("Abgabebeleg erfolgreich übermittelt!");
+	submitForm(): Promise<void> {
+		return new Promise((res, rej) => {
+			this.qsFormGroup.updateValueAndValidity(); // Ensure the valid attribute is up-to-date.
+			if (this.qsFormGroup.valid) {
+				let putRequest = this.serializeFormToObject();
+				if (this.sessionService.getSessionType() == SessionType.ONLINE) {
+					this.backendService.authorizedBackendCall<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>(QsreportComponent.API_URL_POST_REPORT, putRequest
+					).then(dat => {
+						this.errorlistService.showErrorMessage("Abgabebeleg erfolgreich übermittelt!");
+						if (this.syncController?.isSyncMode() && this.currentSyncEntry) {
+							this.resetForm(true);
+							this.syncController.deleteEntry(this.currentSyncEntry);
+						} else {
+							this.resetForm(false);
+						}
+						res();
+					}).catch(e => {
+						rej();
+					});
+				}
+				else if(this.sessionService.getSessionType() == SessionType.OFFLINE) {
+					let offlineEntry = new OfflineEntry(putRequest);
+					this.offlineModuleStore.appendEntry(offlineEntry);
+					this.errorlistService.showErrorMessage("Element als Offline-Synchronisierungseintrag gespeichert!");
+					this.resetForm(false);
+					res();
+				}
+			} else {
+				rej();
+			}
+		});
+	}
 
-					if (this.syncController?.isSyncMode() && this.currentSyncEntry) {
-						this.resetForm(true);
-						this.syncController.deleteEntry(this.currentSyncEntry);
-					} else {
-						this.resetForm(false);
-					}
-				});
-			}
-			else if(this.sessionService.getSessionType() == SessionType.OFFLINE) {
-				let offlineEntry = new OfflineEntry(putRequest);
-				this.offlineModuleStore.appendEntry(offlineEntry);
-				this.errorlistService.showErrorMessage("Element als Offline-Synchronisierungseintrag gespeichert!");
-				this.resetForm(false);
-			}
+	commitSynchronizeEntry(entry: CommitSynchronizeEntryEvent) {
+		if (this.currentSyncEntry != entry.entry) {
+			this.errorlistService.showErrorMessage("Error in apply-commit-unload sequence! Commit entry does not match apply entry.");
+		} else {
+			entry.synchronizationSuccess = this.submitForm();
 		}
+	}
+
+	isOnlineSession() {
+		return this.sessionService.getSessionType() == SessionType.ONLINE;
 	}
 }

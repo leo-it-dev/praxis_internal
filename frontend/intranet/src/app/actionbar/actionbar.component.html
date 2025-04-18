@@ -1,7 +1,7 @@
-<a routerLink="/"><img class="action-item" id="logo" src="/images/logo_tiere.svg" /></a>
-<a routerLink="/qs"><span class="action-item">QS-Meldung</span></a>
-<span class="action-item">Lorem</span>
-<span class="action-item">Ipsum</span>
+<a [routerLink]="isLoggedIn() ? '/' : null"><img class="action-item" id="logo" src="/images/logo_tiere.svg" /></a>
+<span class="action-item lockedItem"><a [routerLink]="isLoggedIn() ? '/qs' : null">QS-Meldung</a></span>
+<span class="action-item lockedItem">Lorem</span>
+<span class="action-item lockedItem">Ipsum</span>
 <span class="spreader"></span>
 
 <span class="action-item" id="sync" (click)="updatePopup('sync')">

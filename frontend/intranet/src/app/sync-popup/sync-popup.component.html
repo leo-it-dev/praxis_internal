@@ -11,6 +11,6 @@
     <tr class="sync-entry" *ngFor="let item of _syncController.moduleStores; trackBy:trackByFn">
         <td>{{item.displayName}}</td>
         <td class="sync-sub-count">{{item.entryCount()}}</td>
-        <td><button class="sync-sub-button" (click)="openModuleByPath(item.path)">Anzeigen</button></td>
+        <td><button class="sync-sub-button" (click)="openModuleByPath(item.path)" [disabled]="item.entryCount() == 0 || !_sessionService.store.isLoggedIn">Anzeigen</button></td>
     </tr>
 </table>

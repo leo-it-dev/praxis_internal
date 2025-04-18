@@ -12,7 +12,7 @@
         (selectionMade)="this.drugErrorOverlayShown.set(false)"></app-blockingoverlay>
     }
 
-    <app-sync-online-controller #syncController [offlineStore]="offlineModuleStore" (applyOfflineEntry)="applyOfflineEntry($event)" (unloadOfflineEntry)="unloadOfflineEntry()"></app-sync-online-controller>
+    <app-sync-online-controller #syncController [offlineStore]="offlineModuleStore" (applyOfflineEntry)="applyOfflineEntry($event)" (unloadOfflineEntry)="unloadOfflineEntry()" (commitSynchronizeEntry)="commitSynchronizeEntry($event)"></app-sync-online-controller>
     <form [formGroup]="qsFormGroup" #qsForm id="qsForm" (submit)="submitForm()">
         <div>
             <label for="vet-name">Tierarztname</label>
@@ -57,6 +57,6 @@
         </div>
         <!-- ------------------------------------------ -->
 
-        <button class="actionButton" id="submit-form" [disabled]="!qsFormGroup.valid">Abgabebeleg speichern</button>
+        <button class="actionButton" id="submit-form" [disabled]="!qsFormGroup.valid">Abgabebeleg {{this.isOnlineSession() ? "absenden" : "lokal speichern"}}</button>
     </form>
 </div>

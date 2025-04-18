@@ -19,7 +19,7 @@
     },
     {
       "name": "assets",
-      "installMode": "lazy",
+      "installMode": "prefetch",
       "updateMode": "prefetch",
       "resources": {
         "files": [
@@ -34,9 +34,9 @@
       "name": "qs",
       "cacheConfig": {
         "strategy": "freshness",
-        "timeout": "3s",
+        "timeout": "5s",
         "maxAge": "14d",
-        "maxSize": 1
+        "maxSize": 100
       },
       "urls": [
         "/module/qs/farmers",

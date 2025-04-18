@@ -8,7 +8,7 @@
                         [ngClass]="control.touched ? (control.invalid ? 'is-invalid' : 'is-valid') : null"
                         class="form-control touched"
                         [formControl]="control" 
-                        autocomplete="false"/>
+                        autocomplete="off"/>
     <span #searchTooltip id="inputTooltip">{{hintText()}}</span>
     <button id="quickDelete" tabindex="-1" (click)="performQuickDelete($event)"></button>
 </div>
