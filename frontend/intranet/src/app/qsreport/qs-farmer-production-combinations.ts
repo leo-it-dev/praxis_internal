@@ -28,8 +28,10 @@ export abstract class QsFarmerProductionCombination {
 
     private static productionIDCombinationsPossibleBeef = [
         // See documents/image2.png   These combinations are simply bitmasks of 1000 + multiple of productionIDsApiCompatibleBeef
-        1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 
-        1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1320
+        // Yes, these are simply all numbers from 1001 to 1031, but if there should be combinations that are not allowed anymore they
+        // can simply be removed from this list.
+        1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 
+        1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025, 1026, 1027, 1028, 1029, 1030, 1031
     ];
     private static productionIDCombinationsPossiblePork = [
         2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015
@@ -49,6 +51,8 @@ export abstract class QsFarmerProductionCombination {
                 allowedIDsLookup = this.productionIDCombinationsPossibleBeef;
                 productionIDsLookup = this.productionIDsApiCompatibleBeef;
                 productionIDBase = this.PRODUCTION_IDS_BEEF_BASE;
+
+                console.log(allowedIDsLookup, productionIDsLookup, productionIDBase);
                 break;
             case this.PRODUCTION_IDS_PORK_BASE:
                 allowedIDsLookup = this.productionIDCombinationsPossiblePork;

@@ -27,17 +27,21 @@ export class QsApiHandler {
 
     requestVersionInformation(): Promise<string> {
         return new Promise((res, rej) => {
-            new vetproof.VersionApi(this.client).versionGet((error, data, response) => {
-                if (error) {
-                    rej(error);
-                } else {
-                    res(JSON.parse(data));
-                }
+            this.checkAndRenewAccessToken().then(() => {
+                new vetproof.VersionApi(this.client).versionGet((error, data, response) => {
+                    if (error) {
+                        rej(error);
+                    } else {
+                        res(JSON.parse(data));
+                    }
+                });
+            }).catch(() => {
+                rej("Error refreshing QS access token!");
             });
         });
     }
 
-    renewAccessToken(): Promise<void> {
+    renewAccessToken(): Promise<string> {
         return new Promise((res, rej) => {
             this.authApi.accessTokenPost({'accessTokenInput': {'id': options.GATEWAY_ID, 'alias': options.USER_ALIAS, 'password': options.USER_PASSWORD}}, (error, data, response) => {
                 if (error) {
@@ -54,29 +58,41 @@ export class QsApiHandler {
         });
     }
 
-    checkAndRenewAccessToken() {
-        const accessTokenStillValid = this.accessToken && this.accessToken.isTokenStillValid();
-        if (accessTokenStillValid) {
-            console.log("Checked QS access token. Still valid until: " + this.accessToken.getExpirationTimeString());
-        } else {
-            if (this.accessToken)
-                console.log("Checked QS access token. Token expired " + this.accessToken.getExpirationTimeString() + ". We now request a new token!");
-            else
-                console.log("Requesting initial access token!");
-
-            this.renewAccessToken();
-        }
+    checkAndRenewAccessToken(): Promise<void> {
+        return new Promise((res, rej) => {
+            const accessTokenStillValid = this.accessToken && this.accessToken.isTokenStillValid();
+            if (accessTokenStillValid) {
+                console.log("Checked QS access token. Still valid until: " + this.accessToken.getExpirationTimeString());
+                res();
+            } else {
+                if (this.accessToken)
+                    console.log("Checked QS access token. Token expired " + this.accessToken.getExpirationTimeString() + ". We now request a new token!");
+                else
+                    console.log("Requesting initial access token!");
+    
+                this.renewAccessToken().then(() => res).catch((err) => {
+                    console.log("There was an error refreshing our access token of QS!:", err);
+                    rej();
+                });
+            }
+        });
     }
 
     sendAuthenticatedPing() {
         const pingApi = new vetproof.PingApi(this.client);
-        pingApi.pingGet({}, (error, data, response) => {
-            console.log(error, data, response);
+        this.checkAndRenewAccessToken().then(() => {
+            pingApi.pingGet({}, (error, data, response) => {
+                console.log(error, data, response);
+            });
+        }).catch(() => {
+            console.error("Error refreshing QS access token!");
         });
     }
 
     async syncFarmerGet(api: vetproof.FreigeschalteteTierhalterApi, branchName: string, offset: number, limit: number): Promise<{ error: string | undefined; response: vetproof.FarmerLinkList | undefined; }> {
         try {
+            await this.checkAndRenewAccessToken();
+
             let data = await new Promise<any>((res, rej) => {
                 api.farmerLinkGet(branchName, {'offset': offset, 'limit': limit}, (error, data, response) => {
                     if (error) {
@@ -110,7 +126,6 @@ export class QsApiHandler {
                 if (data.error === undefined) {
                     for (let farmer of data.response.farmers) {
                         let farmerAlreadyFound = farmers.find(f => f.locationNumber === farmer["locationNumber"]);
-
                         if (farmerAlreadyFound !== undefined) {
                             // Append production type if farmer is already found in a previous branch
                             farmerAlreadyFound.productionType.push(farmer["productionType"]);
@@ -120,6 +135,13 @@ export class QsApiHandler {
                             let productionType = farmer["productionType"] as number;
                             let qsNumber = farmer["qsNumber"] as string;
                             let vpId = farmer["vpId"] as number;
+
+                            // Based on an analysis and comparison between data and the Vetproof Webpage,
+                            // it seems as the QS-Webpage doesn't list farmers which have no qsNumber.
+                            // Therefore we also filter them out at this point, to prevent confusion.
+                            if (!qsNumber || qsNumber.trim().length == 0) {
+                                continue;
+                            }
 
                             // Add a new instance otherwise
                             let farmInst: Farmer = {
@@ -155,30 +177,35 @@ export class QsApiHandler {
 
     postDrugReport(drugReport: DrugReport): Promise<string> {
         return new Promise<string>((res, rej) => {
-            let drugReportStr = util.inspect(drugReport, {showHidden: false, depth: null, colors: true});
-            this.vetDocumentsApi.veterinaryDocumentsPost(drugReport, (error, data, response) => {
-                if (error) {
-                    console.error("Error posting prescription-row to API (early error): sent data:", drugReportStr, "got error", error.message, response.text);
-                    rej(this.parseErrors(JSON.parse(response.text)));
-                } else {
-                    if (response.statusCode == 200) { // OK
-                        let rowID = data[0];
-                        console.log("Successfully posted prescription-row to API! Resulting row ID:", rowID);
-                        res(rowID);
-                    } else if(response.statusCode == 400) { // Content is invalid or too short
-                        console.error("Error posting prescription-row to API (400): sent data:", drugReportStr, "got error", data);
-                        rej(this.parseErrors(JSON.parse(response.text)));
-                    } else if(response.statusCode == 403) { // Our access token is not allowed to perform this operation
-                        console.error("Error posting prescription-row to API (403): sent data:", drugReportStr, "got error", data);
-                        rej(this.parseErrors(JSON.parse(response.text)));
-                    } else if(response.statusCode == 404) { // The given data could not be found
-                        console.error("Error posting prescription-row to API (404): sent data:", drugReportStr, "got error", data);
+            this.checkAndRenewAccessToken().then(() => {
+                let drugReportStr = util.inspect(drugReport, {showHidden: false, depth: null, colors: true});
+                this.vetDocumentsApi.veterinaryDocumentsPost(drugReport, (error, data, response) => {
+                    if (error) {
+                        console.error("Error posting prescription-row to API (early error): sent data:", drugReportStr, "got error", error.message, response.text);
                         rej(this.parseErrors(JSON.parse(response.text)));
                     } else {
-                        console.error("Error posting prescription-row to API (unknown status: " + response.statusCode + "): sent data:", drugReportStr, "got error", data);
-                        rej(this.parseErrors(JSON.parse(response.text)));
+                        if (response.statusCode == 200) { // OK
+                            let rowID = data[0];
+                            console.log("Successfully posted prescription-row to API! Resulting row ID:", rowID);
+                            res(rowID);
+                        } else if(response.statusCode == 400) { // Content is invalid or too short
+                            console.error("Error posting prescription-row to API (400): sent data:", drugReportStr, "got error", data);
+                            rej(this.parseErrors(JSON.parse(response.text)));
+                        } else if(response.statusCode == 403) { // Our access token is not allowed to perform this operation
+                            console.error("Error posting prescription-row to API (403): sent data:", drugReportStr, "got error", data);
+                            rej(this.parseErrors(JSON.parse(response.text)));
+                        } else if(response.statusCode == 404) { // The given data could not be found
+                            console.error("Error posting prescription-row to API (404): sent data:", drugReportStr, "got error", data);
+                            rej(this.parseErrors(JSON.parse(response.text)));
+                        } else {
+                            console.error("Error posting prescription-row to API (unknown status: " + response.statusCode + "): sent data:", drugReportStr, "got error", data);
+                            rej(this.parseErrors(JSON.parse(response.text)));
+                        }
                     }
-                }
+                });
+            }).catch(() => {
+                console.error("Error posting prescription-row to API (error renewing QS access token!)");
+                rej("Error renewing QS Access-Token!");
             });
         });
     }
