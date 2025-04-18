@@ -8,7 +8,6 @@ import { sum } from '../../utilities/utilities';
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
 import { getApiModule } from '../../index';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
-const util = require('util');
 
 export class ApiModuleQs extends ApiModule {
 
