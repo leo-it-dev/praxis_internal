@@ -1,6 +1,6 @@
 <div id="blockingContainer">
     <h2 id="blockingContTitle">{{overlayTitle}}</h2>
-    <h4 id="blockingContainerContent">{{overlayContent}}</h4>
+    <h4 id="blockingContainerContent"><ng-content></ng-content></h4>
 
     <div id="blockingContainerButtons">
         <button *ngFor="let btn of this.buttons" [class.actionButton]="btn.design == 0" [class.basicButton]="btn.design == 1" [attr.answerId]="btn.id" (click)="buttonClicked($event)" [innerHTML]="btn.text"></button>

@@ -6,7 +6,7 @@ import { BackendService } from '../api/backend.service';
 import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
 import { DatepickerComponent } from '../datepicker/datepicker.component';
 import { ErrorlistService } from '../errorlist/errorlist.service';
-import { IStringify, NO_HINT, SearchDropdownComponent } from '../search-dropdown/search-dropdown.component';
+import { Hint, IStringify, NO_HINT, SearchDropdownComponent } from '../search-dropdown/search-dropdown.component';
 import { SessionProviderService, SessionType } from '../shared-service/session/session-provider.service';
 import { CategorizedItem, CategorizedList } from '../utilities/categorized-list';
 import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from './qs-farmer-production-age-mapping';
@@ -16,10 +16,11 @@ import { OfflineStoreService } from '../shared-service/offline-sync/offline-stor
 import { OfflineModuleStore } from '../shared-service/offline-sync/offline-module-store';
 import { OfflineEntry } from '../shared-service/offline-sync/offline-entry';
 import { Router } from '@angular/router';
+import { HintComponent } from "../hint-ok/hint.component";
 
 @Component({
 	selector: 'app-qsreport',
-	imports: [SearchDropdownComponent, DatepickerComponent, BlockingoverlayComponent, ReactiveFormsModule, SyncOnlineControllerComponent],
+	imports: [SearchDropdownComponent, DatepickerComponent, BlockingoverlayComponent, ReactiveFormsModule, SyncOnlineControllerComponent, HintComponent],
 	templateUrl: './qsreport.component.html',
 	styleUrl: './qsreport.component.scss'
 })
@@ -34,6 +35,9 @@ export class QsreportComponent {
 
 	DRUG_CATEGORY_OK = "moveta";
 	DRUG_CATEGORY_WARN = "hit";
+
+	HINT_OK: Hint = { color: 'lightgreen', text: 'OK' }
+	HINT_WARN: Hint = { color: 'orange', text: 'WARN' }
 
 	@ViewChild('drugUnitDOM') drugUnitDOM?: SearchDropdownComponent<DrugUnit>;
 	@ViewChild('farmerDropdown') farmerDropdown?: SearchDropdownComponent<Farmer>;

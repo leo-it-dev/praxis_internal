@@ -1,15 +1,16 @@
 <div id="content">
     @if(this.drugErrorOverlayShown()) {
-        <app-blockingoverlay overlayTitle="Achtung!" overlayContent="Dieses Medikament gehört nicht zu unserer Moveta-Datenbank!
-        Handelt es sich um ein bereits länger verwendetes Medikament? Bitte alternatives Medikament mit &lt;OK&gt; Markierung selektieren!
-        Neues Medikament? Hier kann es einige Tage dauern, bis das Medikament in der Pegasus Datenbank aufgenommen wurde und die Markierung &lt;OK&gt; erhält.
-        In diesem Falle darf ein &lt;WARN&gt; Medikament der HIT Datenbank selektiert werden!"
-        [buttons] = '[{
-            text: "Meldung verstanden",
-            id: 1,
-            design: OverlayButtonDesign.PRIMARY_COLORED
-        }]'
-        (selectionMade)="this.drugErrorOverlayShown.set(false)"></app-blockingoverlay>
+        <app-blockingoverlay overlayTitle="Achtung!" [buttons] = '[{
+                text: "Meldung verstanden",
+                id: 1,
+                design: OverlayButtonDesign.PRIMARY_COLORED
+            }]'
+            (selectionMade)="this.drugErrorOverlayShown.set(false)">
+            Dieses Medikament gehört nicht zu unserer Moveta-Datenbank!
+            Handelt es sich um ein bereits länger verwendetes Medikament? Bitte alternatives Medikament mit <app-hint [hintColor]='this.HINT_OK.color' [hintText]="this.HINT_OK.text" /> Markierung selektieren!<br>
+            Neues Medikament? Hier kann es einige Tage dauern, bis das Medikament in der Pegasus Datenbank aufgenommen wurde und die Markierung <app-hint [hintColor]='this.HINT_OK.color' [hintText]="this.HINT_OK.text" /> erhält.
+            In diesem Falle darf ein <app-hint [hintColor]='HINT_WARN.color' [hintText]="HINT_WARN.text" /> Medikament der HIT Datenbank selektiert werden!
+        </app-blockingoverlay>
     }
 
     <app-sync-online-controller #syncController [offlineStore]="offlineModuleStore" (applyOfflineEntry)="applyOfflineEntry($event)" (unloadOfflineEntry)="unloadOfflineEntry()" (commitSynchronizeEntry)="commitSynchronizeEntry($event)"></app-sync-online-controller>

@@ -1,14 +1,15 @@
 import { CommonModule, NgFor } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, QueryList, Signal, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
 import { FormControl, NgControl, ReactiveFormsModule } from '@angular/forms';
+import { HintComponent } from "../hint-ok/hint.component";
 
 export type Hint = {
-	color: string | undefined;
-	text: string | undefined;
+	color: string;
+	text: string;
 };
 export const NO_HINT: Hint = {
-	color: undefined,
-	text: undefined
+	color: 'black',
+	text: ''
 };
 
 export type RowDisplay = {
@@ -22,7 +23,7 @@ export interface IStringify<T> {
 
 @Component({
 	selector: 'app-search-dropdown',
-	imports: [NgFor, CommonModule, ReactiveFormsModule],
+	imports: [NgFor, CommonModule, ReactiveFormsModule, HintComponent],
 	templateUrl: './search-dropdown.component.html',
 	styleUrl: './search-dropdown.component.scss'
 })

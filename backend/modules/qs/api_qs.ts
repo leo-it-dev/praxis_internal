@@ -8,16 +8,17 @@ import { sum } from '../../utilities/utilities';
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
 import { getApiModule } from '../../index';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
+import { Mutex } from 'async-mutex';
 
 export class ApiModuleQs extends ApiModule {
-
-    // TODO: Mutexes
 
     private qsApiHandler: QsApiHandler;
     private reportableDrugsPrefered: Array<ReportableDrug> = []; // List of drugs that *should* cover all drugs we use.
     private reportableDrugsFallback: Array<ReportableDrug> = []; // If there are drugs missing though, a vet may also use drugs from the fallback list.
-
     private farmers: Array<Farmer> = [];
+
+    private updateDrugsMutex = new Mutex();
+    private updateFarmersMutex = new Mutex();
 
     modname(): string {
         return "qs";
@@ -27,10 +28,11 @@ export class ApiModuleQs extends ApiModule {
         return true;
     }
 
-    updateDrugs() {
+    async updateDrugs() {
         const inst = this;
         console.log("Scheduled update of internal databases of reportable drugs...");
 
+        await this.updateDrugsMutex.acquire();
         let databases = [
             {logname: "Moveta", promise: readReportableDrugListFromMovetaDB(), store: (drugs) => inst.reportableDrugsPrefered = drugs},
             {logname: "HIT",    promise: readReportableDrugListFromHIT(),      store: (drugs) => inst.reportableDrugsFallback = drugs}
@@ -47,19 +49,25 @@ export class ApiModuleQs extends ApiModule {
                     logStr += " - " + database.logname + ": error: " + drug.reason.trim("\n") + "\n";
                     console.error("Error receiving drug list from " + database.logname + " db: " + drug.reason.trim("\n"));
                 }
-            })
+            });
+            this.updateDrugsMutex.release();
             console.log(logStr);
         });
     }
 
-    updateQsDatabase() {
+    async updateQsDatabase() {
         const inst = this;
         console.log("Scheduled update of internal database of QS informations...");
+
+        await this.updateFarmersMutex.acquire();
+
         this.qsApiHandler.readFarmers().then(farmers => {
             inst.farmers = farmers;
             console.log("Successfully updated list of registered farmers: " + this.farmers.length + " entries!");
         }).catch(e => {
             console.error("Error updating internal database of registered farmers: ", e);
+        }).finally(() => {
+            this.updateFarmersMutex.release();
         });
     }
 
@@ -84,9 +92,11 @@ export class ApiModuleQs extends ApiModule {
 
     registerEndpoints() {
         this.get<ApiInterfaceEmptyIn, ApiInterfaceDrugsOut>("drugs", async (req, user) => {
+            await this.updateDrugsMutex.waitForUnlock();
             return { statusCode: 200, responseObject: {prefered: this.reportableDrugsPrefered, fallback: this.reportableDrugsFallback}, error: undefined };
         });
         this.get<ApiInterfaceEmptyIn, ApiInterfaceFarmersOut>("farmers", async (req, user) => {
+            await this.updateFarmersMutex.waitForUnlock();
             return { statusCode: 200, responseObject: {farmers: this.farmers}, error: undefined };
         });
         this.postJson<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>("report", async (req, user) => {

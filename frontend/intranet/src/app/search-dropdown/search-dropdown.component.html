@@ -26,7 +26,7 @@
 
         <div class="dropdownRowText">{{this.serial.display(item).text}}</div>
         @if(this.serial.display(item).hint.text != "") {
-            <div [style.background-color]="this.serial.display(item).hint.color" class="dropdownRowHint">{{this.serial.display(item).hint.text}}</div>
+            <app-hint [hintColor]="this.serial.display(item).hint.color!" [hintText]="this.serial.display(item).hint.text!" ></app-hint>
         }
     </div>
 </div>
