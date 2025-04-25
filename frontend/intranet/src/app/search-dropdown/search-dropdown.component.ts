@@ -1,6 +1,6 @@
 import { CommonModule, NgFor } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, QueryList, Signal, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
-import { FormControl, NgControl, ReactiveFormsModule } from '@angular/forms';
+import { AfterViewInit, Component, computed, ElementRef, EventEmitter, Input, Output, QueryList, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
+import { ControlValueAccessor, FormControl, NgControl, ReactiveFormsModule } from '@angular/forms';
 import { HintComponent } from "../hint-ok/hint.component";
 
 export type Hint = {
@@ -27,15 +27,24 @@ export interface IStringify<T> {
 	templateUrl: './search-dropdown.component.html',
 	styleUrl: './search-dropdown.component.scss'
 })
-export class SearchDropdownComponent<TItem> implements AfterViewInit{
+export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlValueAccessor {
 	private _items?: Array<TItem>;
 	private _placeholder: string = "<unset>";
 	private _preventNextSelectEventEmit = false;
+
+	private _selectItemAfterInit: TItem|undefined = undefined;
+
+	currentItemRowDisplay = computed(() => this.lastItemSelectedEventItem() ? this.serial.display(this.lastItemSelectedEventItem()!) : {text: '', hint: {color: '', text: ''}});
+
+	constructor(private controlDir: NgControl) {
+		this.controlDir.valueAccessor = this;
+	}
 
 	@Input({required: true}) 
 	get placeholder() {
 		return this._placeholder;
 	}
+
 	set placeholder(placeholder: string) {
 		this._placeholder = placeholder;
 		this.hintText.set(placeholder);
@@ -55,11 +64,9 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 		this.recommendedItems.set(this._items);
 
 		if (this.inputElement) {
-			if (items.length == 1) {
-				this.inputElement.nativeElement.value = this.serial.display(items[0]).text;
-			} else {
-				this.inputElement.nativeElement.value = "";
-			}
+			let value = items.length == 1 ? this.serial.display(items[0]).text : "";
+			this.inputElement.nativeElement.value = value;
+
 			this.updateUIAfterInputValueChange();
 		}
 		this.updateEnableFlag();
@@ -81,17 +88,11 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 	};
 
 	@Output() itemSelectedEvent = new EventEmitter<TItem | undefined>();
-	lastItemSelectedEventItem: TItem | undefined = undefined;
+	lastItemSelectedEventItem: WritableSignal<TItem | undefined> = signal(undefined);
 
 	@ViewChild("searchInput") inputElement?: ElementRef;
 	@ViewChild("searchTooltip") searchTooltip?: ElementRef;
 	@ViewChildren('optionItems') optionItems!: QueryList<ElementRef>;
-
-	constructor(private elRef: ElementRef,
-				private controlDir: NgControl
-	) {
-		this.controlDir.valueAccessor = this;
-	}
 
 	updateEnableFlag() {
 		if (this.control) {
@@ -105,17 +106,24 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 
 	forceInvalidate(invalid: boolean) {
 		if (this.control) {
-			if (invalid) {
-				this.control.setErrors({'incorrect': true});
-			} else {
-				this.control.setErrors(null);
-			}
+			setTimeout(() => {
+				if (invalid) {
+					this.control.setErrors({'incorrect': true});
+				} else {
+					this.control.setErrors(null);
+				}
+			}, 1);
 		}
 	}
 
 	ngAfterViewInit(): void {
 		this.updateEnableFlag();
-		this.forceInvalidate(true);
+		if (this._selectItemAfterInit !== undefined) {
+			this.selectItemExt(this._selectItemAfterInit as TItem);
+			this._selectItemAfterInit = undefined;
+		} else {
+			this.forceInvalidate(true);
+		}
 	}
 
 	handleTextChangeFinished: Function | undefined;
@@ -130,11 +138,14 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 		} else {
 			this._preventNextSelectEventEmit = false;
 		}
+		if (this.onChangeValidationCallback) {
+			this.onChangeValidationCallback(item);
+		}
 	}
 
 	emitEvent(item: TItem | undefined) {
-		if (this.lastItemSelectedEventItem !== item || item == undefined) {
-			this.lastItemSelectedEventItem = item;
+		if (this.lastItemSelectedEventItem() !== item || item == undefined) {
+			this.lastItemSelectedEventItem.set(item);
 			this.sendEvent(item);
 		}
 		this.forceInvalidate(item === undefined);
@@ -155,7 +166,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 				this.recommendedItems.set(filtered);
 			}
 			this.hoveredItem.set(-1);
-	
+
 			if (this.recommendedItems().length == 1) {
 				let recomText = this.serial!.display(this.recommendedItems()[0]).text;
 				recomText = search + recomText.substring(search.length);
@@ -172,16 +183,12 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 				this.handleTextChangeFinished();
 				this.handleTextChangeFinished = undefined;
 			}
-
-			if (this.onChangeValidationCallback) {
-				this.onChangeValidationCallback((this.inputElement.nativeElement as HTMLInputElement).value);
-			}
 		}
 	}
 
 	handleTextChange(event: Event) {
 		this.updateUIAfterInputValueChange();
-		this.forceInvalidate(this.lastItemSelectedEventItem === undefined);
+		this.forceInvalidate(this.lastItemSelectedEventItem() === undefined);
 	}
 
 	hoveredItemChanged(autoScroll: boolean) {
@@ -281,7 +288,9 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 	optionClicked(event: Event) {
 		let option = (event.target as HTMLElement);
 		let input = this.inputElement!.nativeElement as HTMLInputElement;
-		input.value = option.getElementsByClassName("dropdownRowText")[0].textContent || "";
+		let value = option.getElementsByClassName("dropdownRowText")[0].textContent || "";
+		input.value = value;
+
 		let selectedItem = this.getDropdownWrapperFromDOMElement(option);
 
 		new Promise((res, _) => {
@@ -296,13 +305,11 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 	selectItemExt(item?: TItem) {
 		if (this.inputElement) {
 			const input = (this.inputElement.nativeElement as HTMLInputElement);
-			if (item) {
-				if (this._items && this._items.includes(item)) {
-					input.value = this.serial!.display(item).text;
-					this.updateUIAfterInputValueChange();
-					//input.blur();
-					this.emitEvent(item);
-				}
+			if (item && this._items && this._items.includes(item)) {
+				input.value = this.serial!.display(item).text;
+				this.updateUIAfterInputValueChange();
+				//input.blur();
+				this.emitEvent(item);
 			} else {
 				input.value = "";
 				this.updateUIAfterInputValueChange();
@@ -318,19 +325,20 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 		this.hoveredItemChanged(false);
 	}
 
-	lostFocus(_: Event) {
+	reevaluateAndEmit() {
 		let searchString = (this.inputElement!.nativeElement as HTMLInputElement).value;
 		let inputIsEmpty = searchString.length == 0;
 		let equalItem = this.recommendedItems().find(i => this.serial.display(i).text.toLowerCase() === searchString.toLowerCase());
 
-		console.log(equalItem);
 		if (this.recommendedItems().length == 1) {
 			let item = this.recommendedItems()[0];
-			this.inputElement!.nativeElement.value = this.serial.display(item).text;
+			let value = this.serial.display(item).text;
+			this.inputElement!.nativeElement.value = value;
 			this.emitEvent(item);
 		}
 		else if (equalItem != undefined) {
-			this.inputElement!.nativeElement.value = this.serial.display(equalItem).text;
+			let value = this.serial.display(equalItem).text;
+			this.inputElement!.nativeElement.value = value;
 			this.emitEvent(equalItem);
 		} else if (inputIsEmpty || searchString !== this.hintText()) {
 			this.emitEvent(undefined);
@@ -349,9 +357,13 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 		}
 	}
 
+	lostFocus(_: Event) {
+		this.reevaluateAndEmit();
+	}
+
 	gainedFocus(event: Event) {
 		this.updateUIAfterInputValueChange();
-		this.forceInvalidate(this.lastItemSelectedEventItem === undefined);
+		this.forceInvalidate(this.lastItemSelectedEventItem() === undefined);
 	}
 
 	inputScrolled(event: Event) {
@@ -359,7 +371,6 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 			let pixelOffsetX = (this.inputElement.nativeElement as HTMLInputElement).scrollLeft;
 			let searchTooltip = this.searchTooltip.nativeElement as HTMLElement;
 			searchTooltip.style.marginLeft = String(-pixelOffsetX) + "px";
-			console.log(String.apply(-pixelOffsetX) + "px");
 		}
 	}
 
@@ -378,8 +389,9 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit{
 
 	writeValue(obj: any): void {
 		if (this.inputElement) {
-			this.inputElement.nativeElement.value = obj;
-			this.updateUIAfterInputValueChange();
+			this.selectItemExt(obj as TItem);
+		} else {
+			this._selectItemAfterInit = obj as TItem;
 		}
 	}
 	registerOnChange(fn: any): void {

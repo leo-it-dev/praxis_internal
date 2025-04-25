@@ -1,8 +1,10 @@
-import { Component, effect, EventEmitter, Input, OnInit, Output, signal, Signal, WritableSignal } from '@angular/core';
-import { SessionProviderService, SessionType } from '../shared-service/session/session-provider.service';
-import { OfflineModuleStore } from '../shared-service/offline-sync/offline-module-store';
-import { OfflineEntry } from '../shared-service/offline-sync/offline-entry';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, signal, WritableSignal } from '@angular/core';
+import { Observable, Subscription } from 'rxjs';
 import { ErrorlistService } from '../errorlist/errorlist.service';
+import { OfflineEntry } from '../shared-service/offline-sync/offline-entry';
+import { OfflineModuleStore } from '../shared-service/offline-sync/offline-module-store';
+import { SessionProviderService, SessionType } from '../shared-service/session/session-provider.service';
+import { OnlineSyncStaticService } from './online-sync-static.service';
 
 export class CommitSynchronizeEntryEvent {
 
@@ -40,7 +42,7 @@ export class ApplyEntryEvent {
 	templateUrl: './sync-online-controller.component.html',
 	styleUrl: './sync-online-controller.component.scss'
 })
-export class SyncOnlineControllerComponent {
+export class SyncOnlineControllerComponent implements OnInit, OnDestroy {
 
 	sessionProvider: SessionProviderService;
 	errorlistService: ErrorlistService;
@@ -54,16 +56,48 @@ export class SyncOnlineControllerComponent {
 	commitSynchronizeEntry: EventEmitter<CommitSynchronizeEntryEvent> = new EventEmitter<CommitSynchronizeEntryEvent>(false);
 	@Output("unloadOfflineEntry")
 	unloadOfflineEntry: EventEmitter<void> = new EventEmitter<void>(false);
+	@Input({required: true})
+	pageInitFinished: Observable<void> = new Observable();
+	private eventsSubscriptionPageLoad: Subscription|undefined = undefined;
+	private eventsSubscriptionSyncUpdate: Subscription|undefined = undefined;
+
+	pageInitIsFinished = false;
 
 	selectedItemIdx: WritableSignal<number> = signal(0);
 
 	_syncMode: WritableSignal<boolean> = signal(false);
 
 	constructor(sessionProvider: SessionProviderService,
-				errorlistService: ErrorlistService
+				errorlistService: ErrorlistService,
+				private syncOnlineStatic: OnlineSyncStaticService
 	) {
 		this.sessionProvider = sessionProvider;
 		this.errorlistService = errorlistService;
+		this.pageInitIsFinished = false;
+	}
+
+	ngOnInit(): void {
+		this.eventsSubscriptionPageLoad = this.pageInitFinished.subscribe(() => {
+			this.pageInitIsFinished = true;
+			if (this.syncOnlineStatic.currentSyncModeRequest) {
+				this.enterSynchronizationMode();
+				this.syncOnlineStatic.currentSyncModeRequest = false;
+			}
+		});
+		this.eventsSubscriptionSyncUpdate = this.syncOnlineStatic.synchModeChangeRequest.subscribe(beInSyncMode => {
+			if (this.pageInitIsFinished) {
+				if (beInSyncMode) {
+					this.enterSynchronizationMode();
+				} else {
+					this.exitSynchronizationMode();
+				}
+			}
+		});
+	}
+
+	ngOnDestroy(): void {
+		this.eventsSubscriptionPageLoad?.unsubscribe();
+		this.eventsSubscriptionSyncUpdate?.unsubscribe();
 	}
 
 	isOnlineSession(): boolean {
@@ -124,14 +158,20 @@ export class SyncOnlineControllerComponent {
 	}
 
 	enterSynchronizationMode(): Promise<OfflineEntry|undefined> {
-		this._syncMode.set(true);
-		let currentEntry = this.executeLoadItem();
-		return currentEntry;
+		if(!this._syncMode()) {
+			this._syncMode.set(true);
+			let currentEntry = this.executeLoadItem();
+			return currentEntry;
+		} else {
+			return Promise.resolve(undefined);
+		}
 	}
 
 	exitSynchronizationMode() {
-		this._syncMode.set(false);
-		this.clearUI();
+		if (this._syncMode()) {
+			this._syncMode.set(false);
+			this.clearUI();
+		}
 	}
 
 	isSyncMode() {

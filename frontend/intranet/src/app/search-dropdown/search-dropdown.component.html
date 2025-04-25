@@ -1,15 +1,26 @@
 <div id="inputContainer" (focusout)="lostFocus($event)" (focusin)="gainedFocus($event)">
-    <input #searchInput (input)="handleTextChange($event)" 
-                        (keydown)="handleKeyDown($event)" 
-                        type="text" 
-                        id="searchText" 
-                        (scroll)="inputScrolled($event)" 
-
-                        [ngClass]="control.touched ? (control.invalid ? 'is-invalid' : 'is-valid') : null"
-                        class="form-control touched"
-                        [formControl]="control" 
-                        autocomplete="off"/>
-    <span #searchTooltip id="inputTooltip">{{hintText()}}</span>
+    <div id="inputContainerLeft">
+        <input #searchInput (input)="handleTextChange($event)" 
+                            (keydown)="handleKeyDown($event)" 
+                            type="text" 
+                            id="searchText" 
+                            (scroll)="inputScrolled($event)" 
+    
+                            [ngClass]="{
+                                'ng-invalid': control.invalid && (control.touched || control.dirty),
+                                'ng-valid': control.valid,
+                                'ng-touched': control.touched,
+                                'ng-untouched': control.untouched,
+                                'ng-dirty': control.dirty,
+                                'ng-pristine': control.pristine
+                            }"
+                            autocomplete="off"
+    
+                            [disabled]="!this.control.enabled"
+                            /><!-- We fake the value of this control, therefore we must manually fix the disabled and error functions. !-->
+                            <span #searchTooltip id="inputTooltip">{{hintText()}}</span>
+        </div>
+    <app-hint id="inputHint" [hintColor]="currentItemRowDisplay().hint.color" [hintText]="currentItemRowDisplay().hint.text"></app-hint>
     <button id="quickDelete" tabindex="-1" (click)="performQuickDelete($event)"></button>
 </div>
 <span id="selected"></span>

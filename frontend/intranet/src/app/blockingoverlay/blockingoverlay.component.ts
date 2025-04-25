@@ -23,6 +23,7 @@ export class BlockingoverlayComponent implements AfterViewInit, OnDestroy {
 	constructor(private elRef: ElementRef) { }
 
 	@Input({ required: false }) overlayTitle: string = "Test title";
+	@Input({ required: false }) subtitle: string = "Test subtitle";
 	@Input({ required: false }) buttons: OverlayButton[] = [
 		{ design: OverlayButtonDesign.BASIC_BLANK, id: 1, text: "Ignorieren" },
 		{ design: OverlayButtonDesign.BASIC_BLANK, id: 2, text: "Schließen" },

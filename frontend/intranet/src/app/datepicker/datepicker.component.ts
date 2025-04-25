@@ -30,12 +30,12 @@ export class DatepickerComponent implements AfterViewInit {
 	}
 
 	setDate(date: Date) {
-		this.value =
+		this.control.setValue(
 			new String(date.getDate()).padStart(2, '0') + "." +
 			new String(date.getMonth() + 1).padStart(2, '0') + "." +
-			new String(date.getFullYear()).padStart(2, '0');
+			new String(date.getFullYear()).padStart(2, '0'));
 		this.updateTodayButtonVisibility();
-		this.onChangeValidationCallback(this.value);
+		this.onChangeValidationCallback(this.control.value);
 	}
 
 	updateTodayButtonVisibility() {
@@ -88,7 +88,7 @@ export class DatepickerComponent implements AfterViewInit {
 	}
 
 	parseDate(): Date | undefined {
-		return DatepickerComponent.parseDateGerman(this.value);
+		return DatepickerComponent.parseDateGerman(this.control.value);
 	}
 
 	static parseDateGerman(searchString: string): Date | undefined {
@@ -103,11 +103,17 @@ export class DatepickerComponent implements AfterViewInit {
 			if (monthStr.length == 1) monthStr = '0' + monthStr;
 
 			if (dateParts.length == 3) {
-				let yearStr = dateParts[2];
-				let yearNowStr = String(new Date().getFullYear());
-				if (yearStr.length < yearNowStr.length) {
-					yearStr = yearNowStr.substring(0, yearNowStr.length - yearStr.length) + yearStr;
+				let yearStr = String(new Date().getFullYear());
+				if (dateParts[2].length == 2) {
+					yearStr = yearStr.substring(0, 2) + dateParts[2];
 				}
+				else if (dateParts[2].length == 1) {
+					yearStr = yearStr.substring(0, 3) + dateParts[2];
+				}
+				else if (dateParts[2].length == 4) {
+					yearStr = dateParts[2];
+				}
+
 				year = parseInt(yearStr);
 			}
 			date = new Date(year, parseInt(monthStr) - 1, parseInt(dayStr));
@@ -129,7 +135,6 @@ export class DatepickerComponent implements AfterViewInit {
 
 
 	/* =========== Value Validation =========== */
-	value: string = "";
 	onChangeValidationCallback: (val: string) => void = (_) => {};
 	onTouched: () => void = () => {};
 
@@ -138,9 +143,8 @@ export class DatepickerComponent implements AfterViewInit {
 	}
 
 	writeValue(obj: any): void {
-		this.value = obj as string;
 		this.updateTodayButtonVisibility();
-		this.onChangeValidationCallback(this.value);
+		this.onChangeValidationCallback(this.control.value);
 	}
 	registerOnChange(fn: (val: string) => void): void {
 		this.onChangeValidationCallback = fn;

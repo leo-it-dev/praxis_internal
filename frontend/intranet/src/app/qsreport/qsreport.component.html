@@ -1,62 +1,50 @@
 <div id="content">
     @if(this.drugErrorOverlayShown()) {
-        <app-blockingoverlay overlayTitle="Achtung!" [buttons] = '[{
-                text: "Meldung verstanden",
+        <app-blockingoverlay overlayTitle="Achtung!" [subtitle]="this.drugErrorOverlayDrugName" [buttons] = '[{
+                text: "Verstanden und nicht mehr anzeigen",
                 id: 1,
                 design: OverlayButtonDesign.PRIMARY_COLORED
             }]'
             (selectionMade)="this.drugErrorOverlayShown.set(false)">
             Dieses Medikament gehört nicht zu unserer Moveta-Datenbank!
-            Handelt es sich um ein bereits länger verwendetes Medikament? Bitte alternatives Medikament mit <app-hint [hintColor]='this.HINT_OK.color' [hintText]="this.HINT_OK.text" /> Markierung selektieren!<br>
-            Neues Medikament? Hier kann es einige Tage dauern, bis das Medikament in der Pegasus Datenbank aufgenommen wurde und die Markierung <app-hint [hintColor]='this.HINT_OK.color' [hintText]="this.HINT_OK.text" /> erhält.
-            In diesem Falle darf ein <app-hint [hintColor]='HINT_WARN.color' [hintText]="HINT_WARN.text" /> Medikament der HIT Datenbank selektiert werden!
+            Handelt es sich um ein bereits länger verwendetes Medikament? Bitte alternatives Medikament mit <app-hint [hintColor]='this.HINT_OK_local.color' [hintText]="this.HINT_OK_local.text" /> Markierung selektieren!<br>
+            Neues Medikament? Hier kann es einige Tage dauern, bis das Medikament in der Pegasus Datenbank aufgenommen wurde und die Markierung <app-hint [hintColor]='this.HINT_OK_local.color' [hintText]="this.HINT_OK_local.text" /> erhält.
+            In diesem Falle darf ein <app-hint [hintColor]='HINT_WARN_local.color' [hintText]="HINT_WARN_local.text" /> Medikament der HIT Datenbank selektiert werden!
         </app-blockingoverlay>
     }
 
-    <app-sync-online-controller #syncController [offlineStore]="offlineModuleStore" (applyOfflineEntry)="applyOfflineEntry($event)" (unloadOfflineEntry)="unloadOfflineEntry()" (commitSynchronizeEntry)="commitSynchronizeEntry($event)"></app-sync-online-controller>
+    <app-sync-online-controller #syncController [offlineStore]="offlineModuleStore" (applyOfflineEntry)="applyOfflineEntry($event)" (unloadOfflineEntry)="unloadOfflineEntry()" (commitSynchronizeEntry)="commitSynchronizeEntry($event)" [pageInitFinished]="pageInitFinished.asObservable()"></app-sync-online-controller>
     <form [formGroup]="qsFormGroup" #qsForm id="qsForm" (submit)="submitForm()">
-        <div>
+        <div class="cont">
             <label for="vet-name">Tierarztname</label>
             <input name="vet-name" type="text" id="vet-name" formControlName="vetName" />
         </div>
-        <div>
+        <div class="cont">
             <label for="document-number">Abgabebeleg-Nummer</label>
             <input name="document-number" type="text" id="document-number" formControlName="documentNumber" />
         </div>
-        <div>
+        <div class="cont">
             <label for="delivery-date">Abgabedatum</label>
             <app-datepicker placeholder="Bitte Datum angeben" [formControl]="qsFormGroup.controls['deliveryDate']"></app-datepicker>
         </div>
-        <div>
-            <!-- One holder-name may have multiple VVVO-Numbers -->
-            <label for="holder-name">Halterbetrieb</label>
-            <div>
-                <app-search-dropdown #farmerDropdown placeholder="Betrieb suchen..." [items]="this.farmers()" [serial]="this.farmerSerializer" (itemSelectedEvent)="this.selectedFarmer.set($event)" [formControl]="qsFormGroup.controls['locationNumber']"></app-search-dropdown>
-                <app-search-dropdown #productionDropdown placeholder="Haltungsart auswählen..." [items]="this.selectedFarmerProductionTypes()" [serial]="this.farmerProductionTypeSerializer" (itemSelectedEvent)="this.selectedProductionType.set($event)" [formControl]="qsFormGroup.controls['productionType']"></app-search-dropdown>
-                <app-search-dropdown #usageDropdown placeholder="Gruppe auswählen..." [items]="this.selectedProductionUsageGroups()" [serial]="this.usageGroupSerializer" (itemSelectedEvent)="this.selectedUsageGroup.set($event)" [formControl]="qsFormGroup.controls['usageGroup']"></app-search-dropdown>
-            </div>
+
+        <div class="cont">
+            <label for="farmerDropdown">Halterbetrieb</label>
+            <app-search-dropdown name="farmerDropdown" #farmerDropdown placeholder="Betrieb suchen..." [items]="this.farmers()" [serial]="this.farmerSerializer" [formControl]="qsFormGroup.controls['locationNumber']"></app-search-dropdown>
         </div>
-        <div>
-            <label for="animal-count">Tieranzahl</label>
-            <input type="number" id="animal-count" min="1" max="500000" formControlName="animalCount" />
+
+        <div id="prescriptionRows" class="cont" formArrayName="prescriptionRows">
+            <app-prescription-row class="prescription-row" 
+                *ngFor="let row of this.prescriptionRows.controls; let i = index"    
+                [farmers]="this.farmers()" 
+                [reportableDrugList]="this.reportableDrugList()"
+                [selectedFarmer]="this.selectedFarmer"
+                (drugOverlayShown)="showDrugErrorOverlay($event)" 
+                (addRow)="this.addPrescriptionRow(i)"
+                (deleteRow)="this.removePrescriptionRow(i)"
+                [formControlName]="i"
+                ></app-prescription-row>
         </div>
-        
-        <!-- Only one ZNR per perscription row allowed! -->
-        <div>
-            <label for="drug">Arzneimittel</label>
-            <app-search-dropdown #drugDropdown placeholder="Arzneimittel suchen..." [items]="this.reportableDrugList()" [serial]="this.drugSerializer" (itemSelectedEvent)="this.drugSelected($event)" [formControl]="qsFormGroup.controls['drugZNR']"></app-search-dropdown>
-            <app-search-dropdown #packingDropdown placeholder="Packungform auswählen..." [items]="this.selectedDrugPackingForms()" [serial]="this.drugPackingSerializer" (itemSelectedEvent)="drugPackingFormSelected($event)"  [formControl]="qsFormGroup.controls['drugPID']"></app-search-dropdown>
-        </div>
-        <div>
-            <label for="drug-amount">Menge</label>
-            <input type="number" id="drug-amount" min="0" max="999999" formControlName="amount" />
-            <app-search-dropdown #drugUnitDOM placeholder="Einheit" [items]="this.drugUnits()" [serial]="this.drugUnitSerializer" (itemSelectedEvent)="this.selectedDrugUnit.set($event)" [formControl]="qsFormGroup.controls['amountUnit']"></app-search-dropdown>
-        </div>
-        <div>
-            <label for="application-days">Anwendungstage</label>
-            <input type="number" id="application-days" min="1" max="99" formControlName="applicationDuration" />
-        </div>
-        <!-- ------------------------------------------ -->
 
         <button class="actionButton" id="submit-form" [disabled]="!qsFormGroup.valid">Abgabebeleg {{this.isOnlineSession() ? "absenden" : "lokal speichern"}}</button>
     </form>

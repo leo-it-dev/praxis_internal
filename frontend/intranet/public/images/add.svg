@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   version="1.1"
+   viewBox="0 0 64 64">
+<g
+     id="g8"
+     style="fill:#000000;fill-opacity:1;stroke:none;stroke-opacity:1"
+     transform="rotate(0,32,32)"><g
+       id="Icon-Plus"
+       transform="translate(28,278)"
+       style="fill:#000000;fill-opacity:1;stroke:none;stroke-opacity:1"><path
+         class="st0"
+         d="m 4,-222.1 c -13.2,0 -23.9,-10.7 -23.9,-23.9 0,-13.2 10.7,-23.9 23.9,-23.9 13.2,0 23.9,10.7 23.9,23.9 0,13.2 -10.7,23.9 -23.9,23.9 z m 0,-45.2 c -11.7,0 -21.3,9.6 -21.3,21.3 0,11.7 9.6,21.3 21.3,21.3 11.7,0 21.3,-9.6 21.3,-21.3 0,-11.7 -9.6,-21.3 -21.3,-21.3 z"
+         id="Fill-38"
+         style="fill:#000000;fill-opacity:1;stroke:none;stroke-opacity:1" /><polygon
+         class="st0"
+         id="Fill-39"
+         points="16.7,-247.4 16.7,-244.6 -8.7,-244.6 -8.7,-247.4 "
+         style="fill:#000000;fill-opacity:1;stroke:none;stroke-opacity:1" /><polygon
+         class="st0"
+         id="Fill-40"
+         points="5.4,-258.7 5.4,-233.3 2.6,-233.3 2.6,-258.7 "
+         style="fill:#000000;fill-opacity:1;stroke:none;stroke-opacity:1" /></g></g></svg>

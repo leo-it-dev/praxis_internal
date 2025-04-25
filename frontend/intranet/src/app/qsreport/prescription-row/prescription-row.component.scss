@@ -1,23 +1,17 @@
-:host {
-    padding: 50px;
-    padding-bottom: 0px;
-    width: 100%;
+form {
+    position: relative;
     box-sizing: border-box;
-}
-
-content {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     width: 100%;
-    height: 100%;
+
+    border: 2px solid black;
+    border-image: linear-gradient(to right, var(--action-button-gradient-left), var(--action-button-gradient-right)) 1;
+    border-radius: 3px;
 }
 
-#prescriptionRows {
-    flex-direction: column;
-    row-gap: 10px;
-}
-
-#qsForm,
-.prescription-row {
-    box-sizing: border-box;
+form > div {
     width: 100%;
     height: 100%;
     display: flex;
@@ -25,16 +19,13 @@ content {
     flex-wrap: wrap;
     row-gap: 10px;
     column-gap: 10px;
-}
-
-#qsForm {
-    width: 100%;
+    padding: 20px 0px;
+    box-sizing: border-box;
 }
 
 .cont {
-    min-width: 90%;
-    max-width: 90%;
-    padding: 0px;
+    width: 100%;
+    padding: 0px 20px;
     margin: 0px auto;
     box-sizing: border-box;
     display: flex;
@@ -75,4 +66,24 @@ label {
     margin: 30px auto;
     width: 90% !important;
     padding: 10px;
+}
+
+.prescriptionControls {
+    width: 40px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+}
+.prescriptionControls > * {
+    cursor: pointer;
+}
+
+.valid {
+    border-image: linear-gradient( to right, var(--notification), var(--notification)) 1;
+}
+
+
+#right {
+    flex: 0;
+    padding: 0;
 }

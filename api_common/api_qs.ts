@@ -49,26 +49,26 @@ export type Farmer = {
 	vpId: number; // Eindeutige Identifikation des Tierhalters in VetProof
 };
 
+export type PrescriptionRow = {
+	animalGroup: number;
+	animalCount: number;
+	drugs: [
+		{
+			approvalNumber: string;
+			packageId: number;
+			amount: number;
+			amountUnit: DrugUnitApi,
+			applicationDuration: number;
+		}
+	];
+}
+
 export type DrugReport = {
 	locationNumber: string; // VVVO-Nummer Farmer
 	documentNumber: number; // Belegnummer
 	deliveryDate: string; // Abgabedatum
 	veterinary: string; // Nachname,Vorname Tierarzt
-	prescriptionRows: [
-		{
-			animalGroup: number;
-			animalCount: number;
-			drugs: [
-				{
-					approvalNumber: string;
-					packageId: number;
-					amount: number;
-					amountUnit: DrugUnitApi,
-					applicationDuration: number;
-				}
-			];
-		}
-	];
+	prescriptionRows: PrescriptionRow[];
 };
 
 /* Api endpoints */

@@ -1,0 +1,38 @@
+<form [formGroup]="qsFormGroup" #prescriptionForm [class.valid]="qsFormGroup.valid">
+    <div id="left">
+        <div class="cont">
+            <!-- One holder-name may have multiple VVVO-Numbers -->
+            <label for="holder-name">Nutzungsart</label>
+            <div class="flexRow">
+                <app-search-dropdown #productionDropdown placeholder="Haltungsart auswählen..." [items]="this.selectedFarmerProductionTypes()" [serial]="this.farmerProductionTypeSerializer" [formControl]="qsFormGroup.controls['productionType']"></app-search-dropdown>
+                <app-search-dropdown #usageDropdown placeholder="Gruppe auswählen..." [items]="this.selectedProductionUsageGroups()" [serial]="this.usageGroupSerializer" [formControl]="qsFormGroup.controls['usageGroup']"></app-search-dropdown>
+            </div>
+        </div>
+        <div class="cont">
+            <label for="animal-count">Tieranzahl</label>
+            <input type="number" id="animal-count" min="1" max="500000" formControlName="animalCount" />
+        </div>
+    
+        <!-- Only one ZNR per prescription row allowed! -->
+        <div class="cont">
+            <label for="drug">Arzneimittel</label>
+            <app-search-dropdown #drugDropdown placeholder="Arzneimittel suchen..." [items]="this.reportableDrugList" [serial]="this.drugSerializer" (itemSelectedEvent)="this.drugSelected($event)" [formControl]="qsFormGroup.controls['drugZNR']"></app-search-dropdown>
+            <app-search-dropdown #packingDropdown placeholder="Packungform auswählen..." [items]="this.selectedDrugPackingForms()" [serial]="this.drugPackingSerializer" (itemSelectedEvent)="drugPackingFormSelected($event)"  [formControl]="qsFormGroup.controls['drugPID']"></app-search-dropdown>
+        </div>
+        <div class="cont">
+            <label for="drug-amount">Menge</label>
+            <input type="number" id="drug-amount" min="0" max="999999" formControlName="amount" />
+            <app-search-dropdown #drugUnitDOM placeholder="Einheit" [items]="this.drugUnits" [serial]="this.drugUnitSerializer" [formControl]="qsFormGroup.controls['amountUnit']"></app-search-dropdown>
+        </div>
+        <div class="cont">
+            <label for="application-days">Anwendungstage</label>
+            <input type="number" id="application-days" min="1" max="99" formControlName="applicationDuration" />
+        </div>
+    </div>
+    <div id="right">
+        <div class="prescriptionControls">
+            <img src="/images/add.svg" (click)="addPrescriptionRow()" />
+            <img src="/images/remove.svg" (click)="removePrescriptionRow()" />
+        </div>
+    </div>
+</form>

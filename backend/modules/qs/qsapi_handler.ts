@@ -70,7 +70,10 @@ export class QsApiHandler {
                 else
                     console.log("Requesting initial access token!");
     
-                this.renewAccessToken().then(() => res).catch((err) => {
+                this.renewAccessToken().then(() => {
+                    console.log("We got a new QS access token!");
+                    res();
+                }).catch((err) => {
                     console.log("There was an error refreshing our access token of QS!:", err);
                     rej();
                 });
@@ -188,6 +191,7 @@ export class QsApiHandler {
         return new Promise<string>((res, rej) => {
             this.checkAndRenewAccessToken().then(() => {
                 let drugReportStr = util.inspect(drugReport, {showHidden: false, depth: null, colors: true});
+                console.log("Sending new drug report to QS: ", drugReportStr);
                 this.vetDocumentsApi.veterinaryDocumentsPost(drugReport, (error, data, response) => {
                     if (error) {
                         console.error("Error posting prescription-row to API (early error): sent data:", drugReportStr, "got error", error.message, response.text);

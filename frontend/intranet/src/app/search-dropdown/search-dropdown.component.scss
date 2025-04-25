@@ -4,9 +4,10 @@
 }
 
 input[type=text]:disabled {
-    background: transparent !important;
+    background-color: transparent !important;
 }
-input[type=text]:disabled + span {
+
+input[type=text]:disabled ~ span {
     background: var(--shelfGradientDark);
     color: var(--shadeLevel2) !important;
 }
@@ -23,7 +24,7 @@ input[type=text] {
     position: relative;
     background: transparent;
     z-index: 2;
-    border: 1px solid black;
+    border: none !important;
 }
 
 input[type=text]:focus {
@@ -52,12 +53,21 @@ input[type=text]:focus {
     border-left: 2px solid var(--action-button-gradient-right);
 }
 
+#inputContainerLeft {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+}
+
 #inputContainer {
     position: relative;
     // overflow: hidden;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
+    border: 1px solid var(--shadeLevel2);
+    border-radius: 2px;
 }
 
 #inputTooltip {
@@ -68,12 +78,10 @@ input[type=text]:focus {
     top: 0;
     display: block;
     box-sizing: border-box;
-    border: 0.8px solid transparent; // compensate for border of input
     pointer-events: none;
     color: var(--shadeLevel2);
     white-space: nowrap preserve;
     max-width: 100%;
-    overflow: hidden;
 }
 
 #options {
@@ -123,6 +131,10 @@ input[type=text]:focus {
 
 :host(:focus-within) input[type=text] {
     padding-right: 30px !important;
+}
+
+:host(:focus-within) #inputHint {
+    display: none;
 }
 
 .dropdownRowText {
