@@ -100,10 +100,6 @@ export class SyncOnlineControllerComponent implements OnInit, OnDestroy {
 		this.eventsSubscriptionSyncUpdate?.unsubscribe();
 	}
 
-	isOnlineSession(): boolean {
-		return this.sessionProvider.getSessionType() == SessionType.ONLINE;
-	}
-
 	selectPreviousItem(): Promise<OfflineEntry|undefined> {
 		let cur = this.selectedItemIdx();
 		this.selectedItemIdx.set(Math.max(0, cur - 1));
@@ -179,7 +175,7 @@ export class SyncOnlineControllerComponent implements OnInit, OnDestroy {
 	}
 
 	syncModeCanBeEntered() {
-		return (this.offlineStore?.entryCount() || 0) > 0 && this.isOnlineSession();
+		return (this.offlineStore?.entryCount() || 0) > 0 && this.sessionProvider.isOnlineSession();
 	}
 
 	async commitAllEntries() {

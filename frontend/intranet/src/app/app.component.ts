@@ -4,10 +4,11 @@ import { ErrorlistComponent } from './errorlist/errorlist.component';
 import { ActionbarComponent } from './actionbar/actionbar.component';
 import { OfflineIndicatorComponent } from "./offline-indicator/offline-indicator.component";
 import { SworkerUiComponent } from './sworker-ui/sworker-ui.component';
+import { CacheUpdatePopupComponent } from "./cache-update-popup/cache-update-popup.component";
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ErrorlistComponent, ActionbarComponent, OfflineIndicatorComponent, SworkerUiComponent],
+  imports: [RouterOutlet, ErrorlistComponent, ActionbarComponent, OfflineIndicatorComponent, SworkerUiComponent, CacheUpdatePopupComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

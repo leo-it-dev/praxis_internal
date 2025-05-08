@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ErrorlistService } from '../errorlist/errorlist.service';
 import { SessionProviderService } from '../shared-service/session/session-provider.service';
 import { UserAccountComponent } from '../user-account/user-account.component';
+import { ModuleService } from '../module/module.service';
 
 @Component({
 	selector: 'app-login',
@@ -13,7 +14,8 @@ import { UserAccountComponent } from '../user-account/user-account.component';
 export class LoginComponent implements OnInit {
 	constructor(private sessionService: SessionProviderService,
 		private errorlistService: ErrorlistService,
-		private router: Router) {
+		private router: Router,
+		private moduleService: ModuleService) {
 	}
 
 	ngOnInit(): void {
@@ -24,7 +26,9 @@ export class LoginComponent implements OnInit {
 
 			this.sessionService.selectOnlineSessionProvider();
 			this.sessionService.exchangeCodeForToken(code, state).then(() => {
-				this.router.navigateByUrl("/login");
+				this.router.navigateByUrl("/login").then(() => {
+					this.moduleService.updateBackendCaches();
+				});
 			});
 		}
 	}

@@ -1,5 +1,6 @@
 import { Injectable, Output } from '@angular/core';
 import { SwUpdate } from '@angular/service-worker';
+import { ModuleService } from '../module/module.service';
 
 @Injectable({
 	providedIn: 'root'
@@ -9,7 +10,9 @@ export class ServiceworkerService {
 	@Output()
 	newVersionReady: boolean = false;
 
-	constructor(updates: SwUpdate) {
+	constructor(updates: SwUpdate,
+		private moduleService: ModuleService
+	) {
 		updates.versionUpdates.subscribe((evt) => {
 			switch(evt.type) {
 				case 'VERSION_DETECTED':

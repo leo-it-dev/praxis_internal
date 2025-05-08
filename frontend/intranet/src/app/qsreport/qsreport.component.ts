@@ -3,8 +3,8 @@ import { AfterViewInit, ChangeDetectorRef, Component, inject, QueryList, Signal,
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
-import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, Farmer, PrescriptionRow, ReportableDrug } from "../../../../../api_common/api_qs";
-import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../../../api_common/backend_call';
+import { ApiInterfacePutPrescriptionRowsIn, Farmer, PrescriptionRow, ReportableDrug } from "../../../../../api_common/api_qs";
+import { ApiInterfaceEmptyOut } from '../../../../../api_common/backend_call';
 import { BackendService } from '../api/backend.service';
 import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
 import { DatepickerComponent } from '../datepicker/datepicker.component';
@@ -18,6 +18,7 @@ import { SessionProviderService, SessionType } from '../shared-service/session/s
 import { ApplyEntryEvent, CommitSynchronizeEntryEvent, SyncOnlineControllerComponent } from "../sync-online-controller/sync-online-controller.component";
 import { CategorizedList } from '../utilities/categorized-list';
 import { PrescriptionRowComponent } from "./prescription-row/prescription-row.component";
+import { QsreportBackendService } from './qsreport-backend.service';
 
 export const DRUG_CATEGORY_OK = "moveta";
 export const DRUG_CATEGORY_WARN = "hit";
@@ -40,8 +41,6 @@ export class QsreportComponent implements AfterViewInit {
 
 	pageInitFinished: Subject<void> = new Subject<void>();
 
-	static API_URL_DRUG = "https://internal.mittermeier-kraiburg.vet/module/qs/drugs"
-	static API_URL_FARMER = "https://internal.mittermeier-kraiburg.vet/module/qs/farmers"
 	static API_URL_POST_REPORT = "https://internal.mittermeier-kraiburg.vet/module/qs/report"
 
 	HINT_OK_local = HINT_OK;
@@ -69,35 +68,28 @@ export class QsreportComponent implements AfterViewInit {
 	reportableDrugList: WritableSignal<CategorizedList<ReportableDrug>> = signal(new CategorizedList<ReportableDrug>());
 	farmers: WritableSignal<Farmer[]> = signal([]);
 
+	_sessionService: SessionProviderService;
+
 	ngAfterViewInit(): void {
 		this.loadUiFinishedCallback();
 	}
 
 	async loadApiData() {
-		let loadDrugs = this.backendService.authorizedBackendCall<ApiInterfaceEmptyIn, ApiInterfaceDrugsOut>(QsreportComponent.API_URL_DRUG).then(dat => {
-				const categorized = new CategorizedList<ReportableDrug>();
-				categorized.init({ category: DRUG_CATEGORY_OK, items: dat.prefered },
-					{ category: DRUG_CATEGORY_WARN, items: dat.fallback });
-				this.reportableDrugList.set(categorized);
-				console.log("Loaded " + this.reportableDrugList().length + " drugs!");
-			}).catch(e => {
-				this.errorlistService.showErrorMessage("Error receiving list of reportable drugs: " + e);
-			});
-
-		let loadFarmers = this.backendService.authorizedBackendCall<ApiInterfaceEmptyIn, ApiInterfaceFarmersOut>(QsreportComponent.API_URL_FARMER).then(dat => {
-				this.farmers.set(dat.farmers);
-				console.log("Loaded " + this.farmers().length + " farmers!");
-			}).catch(e => {
-				this.errorlistService.showErrorMessage("Error receiving list of reportable drugs: " + e);
-			});
-
 		if (this.sessionService.store.qsVeterinaryName) {
 			let control = this.qsFormGroup.controls["vetName"];
 			control.setValue(this.sessionService.store.qsVeterinaryName || "<unknown>");
 			control.disable();
 		}
 
-		Promise.allSettled([loadDrugs, loadFarmers, this.loadUiFinished]).then(() => {
+		Promise.allSettled([this.qsreportBackend.fetchBackendData(), this.loadUiFinished]).then((proms) => {
+			let backendFetchProm = proms[0];
+			if (backendFetchProm.status == 'fulfilled') {
+				this.reportableDrugList.set(backendFetchProm.value.drugs);
+				console.log("Loaded " + this.reportableDrugList().length + " drugs!");
+				this.farmers.set(backendFetchProm.value.farmers);
+				console.log("Loaded " + this.farmers().length + " farmers!");
+			}
+
 			setTimeout(() => {
 				this.pageInitFinished.next();
 			}, 1);
@@ -128,8 +120,10 @@ export class QsreportComponent implements AfterViewInit {
 		private backendService: BackendService,
 		private sessionService: SessionProviderService,
 		private offlineStore: OfflineStoreService,
-		private changeDetectorRef: ChangeDetectorRef
+		private changeDetectorRef: ChangeDetectorRef,
+		private qsreportBackend: QsreportBackendService
 	) {
+		this._sessionService = sessionService;
 		this.loadApiData();
 		this.offlineModuleStore = this.offlineStore.getStore("qs")!;
 		this.offlineModuleStore.recall();
@@ -154,14 +148,12 @@ export class QsreportComponent implements AfterViewInit {
 	}
 
 	addPrescriptionRow(i: number) {
-		// this.prescriptionRows.update((els) => [...els, { id: this.prescriptionRows.length + 1 }])
 		this.prescriptionRows.insert(i+1, this.formBuilder.control('', Validators.required));
 	}
 	removePrescriptionRow(i: number) {
 		if(this.prescriptionRows.length > 1) {
 			this.prescriptionRows.removeAt(i);
 		}
-		// this.prescriptionRows.update((els) => els.filter((e) => e != els[els.length - 1] || els.length == 1))
 	}
 
 	resetForm(fullClear: boolean) {
@@ -274,10 +266,6 @@ export class QsreportComponent implements AfterViewInit {
 		} else {
 			entry.synchronizationSuccess = this.submitForm();
 		}
-	}
-
-	isOnlineSession() {
-		return this.sessionService.getSessionType() == SessionType.ONLINE;
 	}
 
 	showDrugErrorOverlay(drug: ReportableDrug|undefined) {

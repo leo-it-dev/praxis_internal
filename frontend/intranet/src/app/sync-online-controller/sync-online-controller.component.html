@@ -21,7 +21,7 @@
 
 <div class="section">
     @if(isSyncMode()) {
-    <button [disabled]="!this.isOnlineSession() || entryCount() == 0" class="smallActionButton" (click)="commitAllEntries()">Alle Absenden</button>
+    <button [disabled]="!this.sessionProvider.isOnlineSession() || entryCount() == 0" class="smallActionButton" (click)="commitAllEntries()">Alle Absenden</button>
     }
     @if(isSyncMode()) {
         <button class="smallActionButtonUnimportant" (click)="exitSynchronizationMode()">Synchronisationsmodus verlassen</button>

@@ -92,6 +92,10 @@ export class SessionProviderService {
 		return undefined;
 	}
 
+	isOnlineSession() {
+		return this.getSessionType() == SessionType.ONLINE;
+	}
+
 	selectOnlineSessionProvider() {
 		this.session = this.sessionOnlineService;
 	}

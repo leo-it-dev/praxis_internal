@@ -1,6 +1,7 @@
 import { computed, Injectable, Signal } from '@angular/core';
 import { OfflineModuleStore } from './offline-module-store';
 import { ErrorlistService } from '../../errorlist/errorlist.service';
+import { QsreportComponent } from '../../qsreport/qsreport.component';
 
 @Injectable({
 	providedIn: 'root'
@@ -9,8 +10,7 @@ export class OfflineStoreService {
 
 	constructor(private errorlistService: ErrorlistService) {
 		// Register all used offline stores here:
-		this.register("qs", "QS-Meldung", "/qs")
-		
+		this.register("qs", "QS-Meldung", "/qs");
 		this.loadAllStores();
 	}
 

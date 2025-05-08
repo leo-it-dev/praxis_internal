@@ -46,6 +46,6 @@
                 ></app-prescription-row>
         </div>
 
-        <button class="actionButton" id="submit-form" [disabled]="!qsFormGroup.valid">Abgabebeleg {{this.isOnlineSession() ? "absenden" : "lokal speichern"}}</button>
+        <button class="actionButton" id="submit-form" [disabled]="!qsFormGroup.valid">Abgabebeleg {{_sessionService.isOnlineSession() ? "absenden" : "lokal speichern"}}</button>
     </form>
 </div>

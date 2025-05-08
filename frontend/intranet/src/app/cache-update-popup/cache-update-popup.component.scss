@@ -1,7 +1,7 @@
 div {
     display: block;
     position: fixed;
-    bottom: 30px;
+    bottom: 110px;
     right: 30px;
     z-index: 1000;
     opacity: 0;
@@ -33,19 +33,32 @@ h3 {
     font-size: 10pt;
 }
 
-button {
-    margin-top: 5px;
-    appearance: none;
-    cursor: pointer;
-    font-weight: bolder;
-
-    width: max-content;
-    background-image: linear-gradient(to right, var(--action-button-gradient-left), var(--action-button-gradient-right));
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
+ul {
+    list-style: none;
+    margin: 0px;
+}
+li {
+    font-size: 10pt;
+    margin: 10px 0px;
 }
 
-button::selection {
-    color: black;
+.success,
+.error,
+.inprog {
+    padding: 5px;
+    background-color: var(--notification);
+    margin-left: 10px;
+    text-align: center;
+    line-height: 15px;
+    height: 15px;
+    width: 15px;
+    border-radius: 15px;
+    display: inline-block;
+}
+
+.error {
+    background-color: var(--error);
+}
+.inprog {
+    background-color: var(--shadeLevel1);
 }

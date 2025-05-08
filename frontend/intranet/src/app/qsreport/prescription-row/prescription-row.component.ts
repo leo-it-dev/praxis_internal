@@ -39,16 +39,16 @@ export class PrescriptionRowComponent {
 		this.injector = injector;
 		controlDir.valueAccessor = this;
 
-		this.qsFormGroup.valueChanges.subscribe(value => {
-			if (this.onChangeValidationCallback) {
-				this.onChangeValidationCallback(this.qsFormGroup.valid ? this.serializeFormToObject() : undefined);
-			}
-		});
 		this.selectedProductionType = toSignal(this.qsFormGroup.controls["productionType"].valueChanges);
 		this.selectedUsageGroup = toSignal(this.qsFormGroup.controls["usageGroup"].valueChanges);
 		this.selectedDrugUnit = toSignal(this.qsFormGroup.controls["amountUnit"].valueChanges);
 		this.selectedDrug = toSignal(this.qsFormGroup.controls["drugZNR"].valueChanges);
 		this.selectedPackingForm = toSignal(this.qsFormGroup.controls["drugPID"].valueChanges);
+		this.qsFormGroup.valueChanges.subscribe(value => {
+			if (this.onChangeValidationCallback) {
+				this.onChangeValidationCallback(this.qsFormGroup.valid ? this.serializeFormToObject() : undefined);
+			}
+		});
 	}
 
 	// Constants
