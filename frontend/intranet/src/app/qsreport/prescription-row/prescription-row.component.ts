@@ -1,4 +1,4 @@
-import { Component, computed, EventEmitter, inject, Injector, input, Input, Output, Signal, signal, ViewChild, WritableSignal } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, EventEmitter, inject, Injector, input, Input, OnInit, Output, Signal, signal, ViewChild, WritableSignal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, NgControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { DrugPackage, DrugUnit, DrugUnits, Farmer, PrescriptionRow, ReportableDrug } from '../../../../../../api_common/api_qs';
 import { IStringify, NO_HINT, SearchDropdownComponent } from '../../search-dropdown/search-dropdown.component';
@@ -34,7 +34,8 @@ export class PrescriptionRowComponent {
 	injector: Injector;
 
 	constructor(injector: Injector,
-		private controlDir: NgControl
+		private controlDir: NgControl,
+		private changeDetRef: ChangeDetectorRef
 	) {
 		this.injector = injector;
 		controlDir.valueAccessor = this;
@@ -44,9 +45,10 @@ export class PrescriptionRowComponent {
 		this.selectedDrugUnit = toSignal(this.qsFormGroup.controls["amountUnit"].valueChanges);
 		this.selectedDrug = toSignal(this.qsFormGroup.controls["drugZNR"].valueChanges);
 		this.selectedPackingForm = toSignal(this.qsFormGroup.controls["drugPID"].valueChanges);
-		this.qsFormGroup.valueChanges.subscribe(value => {
+		this.qsFormGroup.valueChanges.subscribe(_ => {
+			this.changeDetRef.detectChanges();
 			if (this.onChangeValidationCallback) {
-				this.onChangeValidationCallback(this.qsFormGroup.valid ? this.serializeFormToObject() : undefined);
+				this.onChangeValidationCallback(this.isFormValid() ? this.serializeFormToObject() : undefined);
 			}
 		});
 	}
@@ -117,6 +119,10 @@ export class PrescriptionRowComponent {
 		amountUnit: new FormControl<DrugUnit | null>(null, Validators.required),
 		applicationDuration: [0, Validators.required]
 	});
+
+	isFormValid(): boolean {
+		return this.qsFormGroup.valid && this.selectedUsageGroup() != null && this.selectedDrug() != null && this.selectedPackingForm() != null;
+	}
 
 	drugSelected(drug: CategorizedItem<ReportableDrug> | undefined) {
 		if (drug?.category == DRUG_CATEGORY_WARN) {

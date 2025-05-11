@@ -1,6 +1,7 @@
 import { NgFor } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit, signal, Signal } from '@angular/core';
 import { Module, ModuleService } from '../module/module.service';
+import { DelayedSignalService } from '../shared-service/delayed-signal.service';
 
 @Component({
   selector: 'app-cache-update-popup',
@@ -11,9 +12,13 @@ import { Module, ModuleService } from '../module/module.service';
 export class CacheUpdatePopupComponent {
 
 	_moduleService: ModuleService;
+	_delayedPopupHide: Signal<boolean> = signal(false);
 
-	constructor(private modService: ModuleService) {
-		this._moduleService = modService
+	constructor(private modService: ModuleService,
+		private delayedSignal: DelayedSignalService
+	) {
+		this._moduleService = modService;
+		this._delayedPopupHide = this.delayedSignal.delayedBitSetInstantClear(this._moduleService.backendCacheUpdateFinished.bind(this._moduleService), 3000);
 	}
 
 	trackByModule(index: number, obj: Module) {

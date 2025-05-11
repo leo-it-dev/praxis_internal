@@ -1,5 +1,5 @@
 import { CommonModule, NgFor } from '@angular/common';
-import { AfterViewInit, Component, computed, ElementRef, EventEmitter, Input, Output, QueryList, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, computed, ElementRef, EventEmitter, Input, Output, QueryList, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
 import { ControlValueAccessor, FormControl, NgControl, ReactiveFormsModule } from '@angular/forms';
 import { HintComponent } from "../hint-ok/hint.component";
 
@@ -36,7 +36,9 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	currentItemRowDisplay = computed(() => this.lastItemSelectedEventItem() ? this.serial.display(this.lastItemSelectedEventItem()!) : {text: '', hint: {color: '', text: ''}});
 
-	constructor(private controlDir: NgControl) {
+	constructor(private controlDir: NgControl,
+		private changeDetRef: ChangeDetectorRef
+	) {
 		this.controlDir.valueAccessor = this;
 	}
 

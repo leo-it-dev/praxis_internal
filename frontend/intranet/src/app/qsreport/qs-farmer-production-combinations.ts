@@ -51,8 +51,6 @@ export abstract class QsFarmerProductionCombination {
                 allowedIDsLookup = this.productionIDCombinationsPossibleBeef;
                 productionIDsLookup = this.productionIDsApiCompatibleBeef;
                 productionIDBase = this.PRODUCTION_IDS_BEEF_BASE;
-
-                console.log(allowedIDsLookup, productionIDsLookup, productionIDBase);
                 break;
             case this.PRODUCTION_IDS_PORK_BASE:
                 allowedIDsLookup = this.productionIDCombinationsPossiblePork;
