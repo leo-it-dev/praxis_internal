@@ -1,0 +1,26 @@
+on: push
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    container: node:18
+    defaults:
+      run:
+        working-directory: frontend/intranet
+    steps:
+      - uses: actions/checkout@v3
+      - run: node --version
+      - run: npm --version
+      - run: npm install
+      - run: npm run build-prod
+  build-backend:
+    runs-on: ubuntu-latest
+    container: node:18
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v3
+      - run: node --version
+      - run: npm --version
+      - run: npm install
+      - run: npm run build
