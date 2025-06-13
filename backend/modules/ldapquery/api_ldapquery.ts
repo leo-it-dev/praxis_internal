@@ -82,7 +82,8 @@ export class ApiModuleLdapQuery extends ApiModule {
                 res({
                     // Append additional ActiveDirectory attributes needed here to add to the response
                     thumbnail: "data:image/jpg;base64," + (this.findAttr(userSID, ldapEntry.attributes, "thumbnailPhoto")?.buffers[0].toString('base64') ?? "<default>"),
-                    vetproofVeterinaryName: this.findAttr(userSID, ldapEntry.attributes, options.AD_ATTRIBUTE_QS_VETERINARY_ID)?.values[0] ?? "<default>"
+                    vetproofVeterinaryName: this.findAttr(userSID, ldapEntry.attributes, options.AD_ATTRIBUTE_QS_VETERINARY_ID)?.values[0] ?? "<default>",
+                    accName: this.findAttr(userSID, ldapEntry.attributes, options.AD_ATTRIBUTE_QS_DOCUMENT_NUMBER_USER_NAME_PREFIX)?.values[0] ?? "<default>"
                 });
             } catch(err) {
                 rej(err);

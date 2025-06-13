@@ -65,7 +65,7 @@ export type PrescriptionRow = {
 
 export type DrugReport = {
 	locationNumber: string; // VVVO-Nummer Farmer
-	documentNumber: number; // Belegnummer
+	documentNumber: string; // Belegnummer
 	deliveryDate: string; // Abgabedatum
 	veterinary: string; // Nachname,Vorname Tierarzt
 	prescriptionRows: PrescriptionRow[];

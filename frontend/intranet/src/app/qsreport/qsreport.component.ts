@@ -105,7 +105,6 @@ export class QsreportComponent implements AfterViewInit {
 	private formBuilder = inject(FormBuilder);
 	qsFormGroup = this.formBuilder.group({
 		vetName: ['', Validators.required],
-		documentNumber: ['', Validators.required],
 		deliveryDate: ['', [Validators.required, Validators.pattern(this.buildPatternThisAndPreviousYear())]],
 		locationNumber: new FormControl<Farmer|null>(null),
 		prescriptionRows: this.formBuilder.array([new FormControl<PrescriptionRow>({} as PrescriptionRow, Validators.required)])
@@ -158,7 +157,6 @@ export class QsreportComponent implements AfterViewInit {
 
 	resetForm(fullClear: boolean) {
 		if (fullClear) {
-			this.qsFormGroup.controls.documentNumber.setValue("");
 			this.qsFormGroup.controls.deliveryDate.setValue(DatepickerComponent.serializeDateGerman(new Date()));
 		}
 		this.prescriptionRowsDOM.forEach(e => {
@@ -173,7 +171,6 @@ export class QsreportComponent implements AfterViewInit {
 		// Vet name is just a placeholder in the stored object. We need to ensure, noone can just store QS entries for another vet. Therefore we set it here to the current sessions vet name!
 		this.qsFormGroup.controls["vetName"].setValue(this.sessionService.store.qsVeterinaryName || "<unknown>");
 		this.qsFormGroup.controls["deliveryDate"].setValue(DatepickerComponent.serializeDateGerman(this.fromDateString(object.drugReport.deliveryDate)));
-		this.qsFormGroup.controls["documentNumber"].setValue(String(object.drugReport.documentNumber));
 		this.qsFormGroup.controls["locationNumber"].setValue(this.farmers().find(f => f.locationNumber == object.drugReport.locationNumber)!);
 
 		while(this.prescriptionRows.length > object.drugReport.prescriptionRows.length) {
@@ -213,12 +210,15 @@ export class QsreportComponent implements AfterViewInit {
 	}
 
 	serializeFormToObject(): ApiInterfacePutPrescriptionRowsIn {
+		let userShort = this.sessionService.store.lazyloadUserInfo?.accName.toUpperCase().substring(0, 3) || "<unknown>";
+		let documentNumber = userShort + parseInt(String(new Date().getTime()));
+
 		return {
 			cacheTillOnline: true,
 			drugReport: {
 				veterinary: this.qsFormGroup.controls["vetName"].value!,
 				deliveryDate: this.toDateString(DatepickerComponent.parseDateGerman(this.qsFormGroup.controls["deliveryDate"].value!)!),
-				documentNumber: parseInt(this.qsFormGroup.controls["documentNumber"].value!),
+				documentNumber: documentNumber,
 				locationNumber: this.selectedFarmer()!.locationNumber,
 				prescriptionRows: this.prescriptionRows.value
 			}

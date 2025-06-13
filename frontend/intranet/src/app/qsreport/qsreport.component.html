@@ -20,10 +20,6 @@
             <input name="vet-name" type="text" id="vet-name" formControlName="vetName" />
         </div>
         <div class="cont">
-            <label for="document-number">Abgabebeleg-Nummer</label>
-            <input name="document-number" type="text" id="document-number" formControlName="documentNumber" />
-        </div>
-        <div class="cont">
             <label for="delivery-date">Abgabedatum</label>
             <app-datepicker placeholder="Bitte Datum angeben" [formControl]="qsFormGroup.controls['deliveryDate']"></app-datepicker>
         </div>
