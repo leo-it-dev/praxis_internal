@@ -1,6 +1,5 @@
 // const util = require('util')
 let xlsx = require('js-xlsx');
-import {options} from "../../options";
 
 type DrugPackage = {
     content: string;

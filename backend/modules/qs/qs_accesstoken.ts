@@ -1,6 +1,6 @@
 import * as jwtHelper from '../../utilities/jwt_helper'
 import * as utils from '../../utilities/utilities'
-import {options} from '../../options'
+const config = require('config');
 
 export class QsAccessToken {
     tokenRaw : string;
@@ -35,7 +35,7 @@ export class QsAccessToken {
     }
 
     isTokenStillValid() {
-        return this.expTimestamp > new Date().getTime() + options.TOKEN_EXPIRATION_SAFETY_MARGIN_SECONDS_QS*1000;
+        return this.expTimestamp > new Date().getTime() + config.get('generic.TOKEN_EXPIRATION_SAFETY_MARGIN_SECONDS_QS')*1000;
     }
 
     getRawToken() {

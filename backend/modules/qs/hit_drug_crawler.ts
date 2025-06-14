@@ -1,8 +1,8 @@
 // const util = require('util')
 let xlsx = require('js-xlsx');
-import {options} from "../../options";
 import { compare, parseSimpleDate } from "../../utilities/utilities";
 import { DrugPackage, ReportableDrug } from "../../../api_common/api_qs";
+const config = require('config');
 
 function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
     let reportableDrugs: Array<ReportableDrug> = [];
@@ -114,7 +114,7 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
 
 export async function readReportableDrugListFromHIT(): Promise<Array<ReportableDrug>> {
     return new Promise((res, rej) => {
-        fetch(options.DRUGS_CSV_URL_HIT, {}).then(dat => dat.arrayBuffer()).then(array => {
+        fetch(config.get('generic.DRUGS_CSV_URL_HIT'), {}).then(dat => dat.arrayBuffer()).then(array => {
             let text = new TextDecoder('iso-8859-1');
             let lines = text.decode(array).split("\n").map(l => l.replace('\r', ''));
             lines = lines.filter(line => line.trim() != '');

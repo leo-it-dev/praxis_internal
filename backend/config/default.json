@@ -1,0 +1,51 @@
+{
+    "generic": {
+        "TOKEN_EXPIRATION_SAFETY_MARGIN_SECONDS_QS": 120,
+        "TOKEN_EXPIRATION_SAFETY_MARGIN_SECONDS_ADFS": 120,
+        "GATEWAY_ID": "your-personal-access-token",
+        "USER_ALIAS": "your-username",
+        "USER_PASSWORD": "your-password",
+        
+        "HOSTNAME_ADFS": "adfs.your-site.de",
+        "ADFS_URL_ROOT": "/adfs",
+        "ADFS_URL_LOGOUT": "/adfs/oauth2/logout",
+        "ADFS_URL_TOKEN": "/adfs/oauth2/token",
+
+        "ADFS_INTRANET_CLIENT_ID": "adfs-client-id",
+        "ADFS_INTRANET_CLIENT_SECRET": "adfs-client-secret",
+        "ADFS_INTRANET_REDIRECT_URL_LOGOUT": "https://your-site.de/logout",
+        "ADFS_INTRANET_REDIRECT_URL_LOGIN": "https://your-site.de/login",
+
+        "JWKS_UPDATE_INTERVAL_MINUTES": 60,
+
+        "LDAP_USER_DN_BASE": "CN=Users,DC=your-site,DC=de",
+        "LDAP_LOGIN_USER": "CN=your-ldap-access-user,CN=Users,DC=your-site,DC=de",
+        "LDAP_LOGIN_PASS": "your-ldap-user-password",
+        "LDAP_URL": "ldap://ldap.your-site.de",
+
+        "DRUGS_CSV_URL_HIT": "https://www.hi-tier.de/Entwicklung/Dateibereich/TAM_ARZNX.CSV",
+        "DRUGS_CRAWLING_INTERVAL_DAYS": 20,
+        "QS_API_SYSTEM": "https://test.vetproof.de/user-rest",
+        "QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS": 2,
+
+        "DRUGS_ODBC_MOVETA_UID": "official-moveta-odbc-user",
+        "DRUGS_ODBC_MOVETA_PASS": "official-moveta-odbc-password",
+        "DRUGS_ODBC_MOVETA_DSN": "your-local-moveta-odbc-connection-DSN",
+
+        "DRUGS_SQLBASE_SERVER_NAME": "server1",
+        "DRUGS_SQLBASE_SERVER_PASSWORD": "SYSADM",
+        "DRUGS_SQLBASE_ADMIN_DATABASE": "SBTASK",
+        "DRUGS_SQLBASE_ADMIN_USERNAME": "SYSADM",
+        "DRUGS_SQLBASE_ADMIN_PASSWORD": "SYSADM",
+        "DRUGS_SQLBASE_WORKING_DATABSE": "your-moveta-database-name-on-server",
+        "SQLLXTLK_BINARY_PATH": "/opt/Unify/SQLBase/sqllxtlk",
+
+        "AD_ATTRIBUTE_QS_VETERINARY_ID": "msDS-cloudExtensionAttribute1",
+        "AD_ATTRIBUTE_QS_DOCUMENT_NUMBER_USER_NAME_PREFIX": "sAMAccountName"
+    },
+    "adfsOidcConfiguration": {
+        "oidcRoot": "/adfs",
+        "configurationPath": "/adfs/.well-known/openid-configuration",
+        "hostname": "adfs.your-site.de"
+    }
+}

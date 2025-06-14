@@ -1,14 +1,14 @@
 import { ApiModule } from "../../api_module";
-import { options } from "../../options";
 import { ApiInterfaceUserInfoOut, UserInfo } from "../../../api_common/api_ldapquery";
 import { ApiInterfaceEmptyIn, ApiModuleResponse } from "../../../api_common/backend_call";
 import ldapjs = require('ldapjs');
 import { Mutex } from "async-mutex";
+const config = require('config');
 
 export class ApiModuleLdapQuery extends ApiModule {
 
     private ldapConfig = {
-        url: options.LDAP_URL,
+        url: config.get('generic.LDAP_URL'),
         connectionTimeOut: 30000,
         reconnect: true
     };
@@ -33,11 +33,11 @@ export class ApiModuleLdapQuery extends ApiModule {
                     this.ldapClient.destroy();
                     this.ldapClient = undefined;
                 });
-                this.ldapClient.bind(options.LDAP_LOGIN_USER, options.LDAP_LOGIN_PASS, (error) => {
+                this.ldapClient.bind(config.get('generic.LDAP_LOGIN_USER'), config.get('generic.LDAP_LOGIN_PASS'), (error) => {
                     if (error) {
-                        console.error("Error binding to LDAP user: " + options.LDAP_LOGIN_USER + ": " + error);
+                        console.error("Error binding to LDAP user: " + config.get('generic.LDAP_LOGIN_USER') + ": " + error);
                     } else {
-                        console.log("Successfully bound to LDAP user: " + options.LDAP_LOGIN_USER + "!");
+                        console.log("Successfully bound to LDAP user: " + config.get('generic.LDAP_LOGIN_USER') + "!");
                     }
                     this.ldapConnectMutex.release();
                     res();
@@ -68,7 +68,7 @@ export class ApiModuleLdapQuery extends ApiModule {
     readUserInfo(userSID): Promise<UserInfo> {
         return new Promise(async (res, rej) => {
             try {
-                let ldapEntry = await this.performLdapSearch(options.LDAP_USER_DN_BASE, {
+                let ldapEntry = await this.performLdapSearch(config.get('generic.LDAP_USER_DN_BASE'), {
                     filter: "(&(objectClass=user)(objectsid=" + userSID + "))",
                     scope: "sub",
                     attributes: '*'
@@ -82,8 +82,8 @@ export class ApiModuleLdapQuery extends ApiModule {
                 res({
                     // Append additional ActiveDirectory attributes needed here to add to the response
                     thumbnail: "data:image/jpg;base64," + (this.findAttr(userSID, ldapEntry.attributes, "thumbnailPhoto")?.buffers[0].toString('base64') ?? "<default>"),
-                    vetproofVeterinaryName: this.findAttr(userSID, ldapEntry.attributes, options.AD_ATTRIBUTE_QS_VETERINARY_ID)?.values[0] ?? "<default>",
-                    accName: this.findAttr(userSID, ldapEntry.attributes, options.AD_ATTRIBUTE_QS_DOCUMENT_NUMBER_USER_NAME_PREFIX)?.values[0] ?? "<default>"
+                    vetproofVeterinaryName: this.findAttr(userSID, ldapEntry.attributes, config.get('generic.AD_ATTRIBUTE_QS_VETERINARY_ID'))?.values[0] ?? "<default>",
+                    accName: this.findAttr(userSID, ldapEntry.attributes, config.get('generic.AD_ATTRIBUTE_QS_DOCUMENT_NUMBER_USER_NAME_PREFIX'))?.values[0] ?? "<default>"
                 });
             } catch(err) {
                 rej(err);

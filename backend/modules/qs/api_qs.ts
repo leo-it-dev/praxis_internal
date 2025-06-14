@@ -1,6 +1,5 @@
 import { ApiModule } from '../../api_module';
 import { Farmer, QsApiHandler } from './qsapi_handler';
-import { options } from '../../options';
 import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
 import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, ReportableDrug } from '../../../api_common/api_qs';
 import { readReportableDrugListFromHIT } from './hit_drug_crawler';
@@ -9,6 +8,7 @@ import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/b
 import { getApiModule } from '../../index';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
 import { Mutex } from 'async-mutex';
+const config = require('config');
 
 export class ApiModuleQs extends ApiModule {
 
@@ -83,10 +83,10 @@ export class ApiModuleQs extends ApiModule {
             console.error("Error detecting Vetproof Gateway Version!: " + e);
         }
 
-        setInterval(this.updateDrugs.bind(this), options.DRUGS_CRAWLING_INTERVAL_DAYS * 24 * 60 * 60 * 1000);
+        setInterval(this.updateDrugs.bind(this), config.get('generic.DRUGS_CRAWLING_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
         this.updateDrugs();
 
-        setInterval(this.updateQsDatabase.bind(this), options.QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS * 24 * 60 * 60 * 1000);
+        setInterval(this.updateQsDatabase.bind(this), config.get('generic.QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
         this.updateQsDatabase();
     }
 

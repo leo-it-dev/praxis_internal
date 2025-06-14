@@ -1,10 +1,10 @@
 import { ApiModule } from "../../api_module";
 import { AdfsOidc } from "../../framework/adfs_oidc_instance";
 import { AdfsSessionToken } from "../../framework/adfs_sessiontoken";
-import { options } from "../../options";
 import { ApiInterfaceGenerateTokenIn, ApiInterfaceGenerateTokenOut, ApiInterfaceRefreshTokenIn, ApiInterfaceRefreshTokenOut, ApiInterfaceRevokeTokenIn, JwtError, JwtErrorType } from "../../../api_common/api_auth"
 import * as ssl from '../../ssl/ssl'
 import { ApiInterfaceEmptyOut } from "../../../api_common/backend_call";
+const config = require('config');
 
 export class ApiModuleAuth extends ApiModule {
 
@@ -20,13 +20,13 @@ export class ApiModuleAuth extends ApiModule {
 
     registerEndpoints(): void {
         this.postJson<ApiInterfaceGenerateTokenIn, ApiInterfaceGenerateTokenOut>("generateToken", async (req, _) => {
-            const bodyContent = "grant_type=authorization_code&code=" + req.body.code + "&redirect_uri=" + encodeURIComponent(options.ADFS_INTRANET_REDIRECT_URL_LOGIN);
+            const bodyContent = "grant_type=authorization_code&code=" + req.body.code + "&redirect_uri=" + encodeURIComponent(config.get('generic.ADFS_INTRANET_REDIRECT_URL_LOGIN'));
 
             try {
                 let res = await ssl.httpsRequest(
-                    options.HOSTNAME_ADFS, options.ADFS_URL_TOKEN,
+                    config.get('generic.HOSTNAME_ADFS'), config.get('generic.ADFS_URL_TOKEN'),
                     'POST', bodyContent,
-                    'application/x-www-form-urlencoded', 'Basic ' + btoa(options.ADFS_INTRANET_CLIENT_ID + ":" + options.ADFS_INTRANET_CLIENT_SECRET));
+                    'application/x-www-form-urlencoded', 'Basic ' + btoa(config.get('generic.ADFS_INTRANET_CLIENT_ID') + ":" + config.get('generic.ADFS_INTRANET_CLIENT_SECRET')));
                     
                     try {
                         const body = JSON.parse(res.data);
@@ -56,13 +56,13 @@ export class ApiModuleAuth extends ApiModule {
         });
 
         this.postJson<ApiInterfaceRevokeTokenIn, ApiInterfaceEmptyOut>("revokeToken", async (req, _) => {
-            const bodyContent = "id_token_hint=" + req.body.id_token + "&post_logout_redirect_uri=" + options.ADFS_INTRANET_REDIRECT_URL_LOGOUT;
+            const bodyContent = "id_token_hint=" + req.body.id_token + "&post_logout_redirect_uri=" + config.get('generic.ADFS_INTRANET_REDIRECT_URL_LOGOUT');
 
             try {
                 let resp = await ssl.httpsRequest(
-                    options.HOSTNAME_ADFS, options.ADFS_URL_LOGOUT,
+                    config.get('generic.HOSTNAME_ADFS'), config.get('generic.ADFS_URL_LOGOUT'),
                     'POST', bodyContent,
-                    'application/x-www-form-urlencoded', 'Basic ' + btoa(options.ADFS_INTRANET_CLIENT_ID + ":" + options.ADFS_INTRANET_CLIENT_SECRET));
+                    'application/x-www-form-urlencoded', 'Basic ' + btoa(config.get('generic.ADFS_INTRANET_CLIENT_ID') + ":" + config.get('generic.ADFS_INTRANET_CLIENT_SECRET')));
 
                 if (resp.statusCode == 200) {
                     const adfsToken = new AdfsSessionToken(req.body.id_token);
@@ -83,9 +83,9 @@ export class ApiModuleAuth extends ApiModule {
             
             try {
                 let res = await ssl.httpsRequest(
-                    options.HOSTNAME_ADFS, options.ADFS_URL_TOKEN,
+                    config.get('generic.'), config.get('generic.ADFS_URL_TOKEN'),
                     'POST', bodyContent,
-                    'application/x-www-form-urlencoded', 'Basic ' + btoa(options.ADFS_INTRANET_CLIENT_ID + ":" + options.ADFS_INTRANET_CLIENT_SECRET));
+                    'application/x-www-form-urlencoded', 'Basic ' + btoa(config.get('generic.ADFS_INTRANET_CLIENT_ID') + ":" + config.get('generic.ADFS_INTRANET_CLIENT_SECRET')));
                 if (res.statusCode == 200) {
                     const body = JSON.parse(res.data);
                     let responseObject = {access_token: undefined, refresh_token: undefined, id_token: undefined};

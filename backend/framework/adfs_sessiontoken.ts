@@ -1,6 +1,6 @@
 import * as jwtHelper from '../utilities/jwt_helper'
 import * as utils from '../utilities/utilities'
-import {options} from '../options'
+const config = require('config');
 
 // https://learn.microsoft.com/de-de/entra/identity-platform/id-token-claims-reference
 export class AdfsSessionToken { // ID-Token
@@ -40,7 +40,7 @@ export class AdfsSessionToken { // ID-Token
     }
 
     isTokenStillValid() {
-        return this.expirationTimestamp > new Date().getTime() + options.TOKEN_EXPIRATION_SAFETY_MARGIN_SECONDS_ADFS*1000;
+        return this.expirationTimestamp > new Date().getTime() + config.get('generic.TOKEN_EXPIRATION_SAFETY_MARGIN_SECONDS_ADFS')*1000;
     }
 
     getRawToken() {

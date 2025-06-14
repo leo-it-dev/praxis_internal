@@ -1,9 +1,9 @@
-import { options } from '../options';
 import { resolveOicdConfiguration, updateJwksCertificates } from '../utilities/jwt_helper';
 import { b64UrlRegexChar, base64urlDecode } from '../utilities/utilities';
 import jwt = require('jsonwebtoken');
 import { Mutex } from 'async-mutex';
 import { JwtError, JwtErrorType } from '../../api_common/api_auth';
+const config = require('config');
 
 export class OidcInstance {
 
@@ -14,8 +14,8 @@ export class OidcInstance {
     private constructor(configResolved: OidcConfigurationResolved) {
         this.configuration = configResolved;
         this.jwksUpdateMutex = new Mutex();
-        this.jwksUpdateInterval = setInterval(this.updateJwksKeyStore.bind(this), options.JWKS_UPDATE_INTERVAL_MINUTES * 60 * 1000);
-        console.log("OIDC registered automatic jwks key store renew interval for host " + this.configuration.hostname + ": " + options.JWKS_UPDATE_INTERVAL_MINUTES + " Minutes");
+        this.jwksUpdateInterval = setInterval(this.updateJwksKeyStore.bind(this), config.get('generic.JWKS_UPDATE_INTERVAL_MINUTES') * 60 * 1000);
+        console.log("OIDC registered automatic jwks key store renew interval for host " + this.configuration.hostname + ": " + config.get('generic.JWKS_UPDATE_INTERVAL_MINUTES') + " Minutes");
         this.updateJwksKeyStore();
     }
 

@@ -5,5 +5,5 @@ vetproof_api/
 **/node_modules/
 backend/js
 frontend/dist
-backend/options.ts
+backend/config/development.json
 frontend/intranet/public/Books

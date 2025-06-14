@@ -1,8 +1,8 @@
 import vetproof = require('vet_proof_external_tools_api');
 import {QsAccessToken} from './qs_accesstoken'
-import {options} from '../../options'
 import { DrugReport } from '../../../api_common/api_qs';
 const util = require('util');
+const config = require('config');
 
 export type Farmer = {
     name: string; // Eindeutige Identifikation des Tierhalters in VetProof
@@ -20,7 +20,7 @@ export class QsApiHandler {
     private accessToken: QsAccessToken | undefined = undefined;
     
     constructor() {
-        this.client = new vetproof.ApiClient(options.QS_API_SYSTEM);
+        this.client = new vetproof.ApiClient(config.get('generic.QS_API_SYSTEM'));
         this.authApi = new vetproof.AuthenticationApi(this.client);
         this.vetDocumentsApi = new vetproof.TierarztBelegeApi(this.client);
     }
@@ -43,7 +43,7 @@ export class QsApiHandler {
 
     renewAccessToken(): Promise<string> {
         return new Promise((res, rej) => {
-            this.authApi.accessTokenPost({'accessTokenInput': {'id': options.GATEWAY_ID, 'alias': options.USER_ALIAS, 'password': options.USER_PASSWORD}}, (error, data, response) => {
+            this.authApi.accessTokenPost({'accessTokenInput': {'id': config.get('generic.GATEWAY_ID'), 'alias': config.get('generic.USER_ALIAS'), 'password': config.get('generic.USER_PASSWORD')}}, (error, data, response) => {
                 if (error) {
                     rej(error);
                 } else {

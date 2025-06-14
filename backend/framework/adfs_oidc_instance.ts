@@ -1,13 +1,13 @@
 import { Request } from "express";
-import { AdfsOicdConfiguration } from "../options";
 import { OidcInstance } from "./oidc_instance";
 const util = require('util');
+const config = require('config');
 
 export abstract class AdfsOidc {
     private static adfsOidcInstance: OidcInstance;
 
     static async initialize() {
-        AdfsOidc.adfsOidcInstance = await OidcInstance.construct(AdfsOicdConfiguration);
+        AdfsOidc.adfsOidcInstance = await OidcInstance.construct(config.get('adfsOidcConfiguration'));
     }
 
     static getOidcProvider(): OidcInstance {

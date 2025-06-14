@@ -16,7 +16,10 @@
             "outFiles": [
                 "${workspaceFolder}/backend/**/*.js"
             ],
-            "cwd": "${workspaceFolder}/backend"
+            "cwd": "${workspaceFolder}/backend",
+            "env": {
+                "NODE_ENV": "development"
+            }
         }
     ]
 }
