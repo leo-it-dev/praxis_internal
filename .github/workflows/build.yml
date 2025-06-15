@@ -37,6 +37,10 @@ jobs:
       - run: npm run build
       - name: Copy static assets into build directory
         run: mkdir js/backend/config && cp config/default.json js/backend/config
+      - name: Reinstall node_modules as production run
+        run: rm -r node_modules && npm install --production
+      - name: Copy node_modules into build directory
+        run: cp -r node_modules js/backend
       - name: Upload Backend Artifact
         id: upload
         uses: actions/upload-artifact@v4
