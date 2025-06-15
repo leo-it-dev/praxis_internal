@@ -2,6 +2,7 @@ import https = require('node:https');
 import express = require('express');
 import path = require('path');
 import * as ssl from './ssl/ssl'
+const fs = require('fs');
 
 /**
  * Endpoint modules
@@ -20,6 +21,23 @@ async function startup() {
     process.chdir(projectRoot);
     __dirname = projectRoot;
 
+    // The file structure slightly differs between deployment and development run.
+    // We can use this information to determine whether or not we are run in development or deploy environment.
+    const filePathFrontendDev = '../frontend/intranet/dist/intranet/browser';
+    const filePathFrontendDepl = '../frontend/intranet/browser';
+
+    const devMode = fs.existsSync(filePathFrontendDev);
+    const deployMode = fs.existsSync(filePathFrontendDepl);
+    if (devMode) {
+        console.log("File structure indicates development mode!");
+    } else if (deployMode) {
+        console.log("File structure indicates deployment mode!");
+    } else {
+        console.log("File structure seems odd. Can't find frontend, won't start!");
+        return;
+    }
+
+    const filePathFrontend = devMode ? filePathFrontendDev : filePathFrontendDepl;
     const app = express();
 
     console.log("started server");
@@ -43,7 +61,7 @@ async function startup() {
     }
     console.log("Finished module loader ---");
 
-    app.use(express.static(path.join(__dirname, '../frontend/intranet/dist/intranet/browser')));
+    app.use(express.static(path.join(__dirname, filePathFrontend)));
 
     app.use((req, res, next) => {
         if (req.url.includes("ngsw.json") || req.url.includes("worker-basic.min.js")) {
@@ -55,7 +73,14 @@ async function startup() {
     });
 
     app.get("*", (req, res) => {
-        res.sendFile(path.join(__dirname, '../frontend/intranet/dist/intranet/browser/index.html'));
+        if (fs.existsSync('')) {
+            if (deployMode) {
+                res.sendFile(filePathFrontendDepl);
+            }
+            if (devMode) {
+                res.sendFile(filePathFrontendDev);
+            }
+        }
     });
 
     https.createServer(ssl.SSL_OPTIONS, app).listen(443);
