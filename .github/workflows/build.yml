@@ -35,6 +35,8 @@ jobs:
       - run: npm --version
       - run: npm install
       - run: npm run build
+      - name: Copy static assets into build directory
+        run: mkdir js/backend/config && cp config/default.json js/backend/config
       - name: Upload Backend Artifact
         id: upload
         uses: actions/upload-artifact@v4
