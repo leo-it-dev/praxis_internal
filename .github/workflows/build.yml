@@ -103,3 +103,18 @@ jobs:
         with:
           name: full-package
           path: package
+  deploy:
+    runs-on: deploy
+    needs: [package]
+    steps:
+      - name: Cleanup
+        run: rm -rf package
+      - name: Download final package
+        uses: actions/download-artifact@v4
+        with:
+          name: full-package
+          path: package
+      - name: Link all pre-existing configuration files into our working directory.
+        run: |
+          find ~/dynamic/ssl/* -exec bash -c 'ln -s $(realpath {}) package/backend/ssl/$(basename "\{}")' \;
+          find ~/dynamic/config/* -exec bash -c 'ln -s $(realpath {}) package/backend/config/$(basename "\{}")' \;
