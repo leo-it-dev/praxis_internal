@@ -62,11 +62,16 @@ jobs:
           cp -r setup_tools/* package/
           echo "Packaged utility setup tools."
 
+      - uses: vimtor/action-zip@v1.2
+        with:
+          files: package/
+          dest: setup_tools.zip
+
       - name: Upload Setup Package
         uses: actions/upload-artifact@v4
         with:
           name: setup-package
-          path: package
+          path: setup_tools.zip
 
   package:
     runs-on: ubuntu-latest
@@ -116,5 +121,5 @@ jobs:
           path: package
       - name: Link all pre-existing configuration files into our working directory.
         run: |
-          find ~/dynamic/ssl/* -exec bash -c 'ln -s $(realpath {}) package/backend/ssl/$(basename "\{}")' \;
-          find ~/dynamic/config/* -exec bash -c 'ln -s $(realpath {}) package/backend/config/$(basename "\{}")' \;
+          find ~/dynamic/ssl/* -exec bash -c 'cp $(realpath {}) package/backend/ssl/$(basename "\{}")' \;
+          find ~/dynamic/config/* -exec bash -c 'cp $(realpath {}) package/backend/config/$(basename "\{}")' \;

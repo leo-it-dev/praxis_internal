@@ -13,6 +13,7 @@ export const SSL_OPTIONS = {
 
 export function httpsRequest(hostname: string, path: string, method: string, body: string, contentType?: string, authorization?: string): Promise<{'statusCode': number, 'data': string}> {
     return new Promise<{'statusCode': number, 'data': string}>((res, rej) => {
+        console.log("Performing https request: ", hostname, path, method);
         let reqHeaders = {};
         if (contentType) {
             reqHeaders = { 'content-type': contentType };
