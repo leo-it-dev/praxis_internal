@@ -2,6 +2,8 @@ on:
   push:
     tags:
       - release/*
+permissions:
+  contents: write
 jobs:
   build-frontend:
     runs-on: ubuntu-latest
@@ -108,10 +110,21 @@ jobs:
           echo "Packaged application with frontend, backend and setup-tools."
 
       - name: Upload Final Package
+        id: upload-package
         uses: actions/upload-artifact@v4
         with:
           name: full-package
           path: package
+
+      - uses: vimtor/action-zip@v1.2
+        with:
+          files: package/
+          dest: package.zip
+
+      - name: upload binaries to release
+        uses: softprops/action-gh-release@v1
+        with:
+         files: package.zip
 
   build-docker:
     runs-on: ubuntu-latest
@@ -160,4 +173,4 @@ jobs:
       - name: Delete old container (if not already gone)
         run: docker rm vet_internal || true
       - name: Run image
-        run: script -q -c "docker run -d -it --name vet_internal --rm -p 443:443 -v ~/dynamic/ssl/:/app/package/backend/ssl/certs -v ~/dynamic/config:/app/package/backend/config ${{ secrets.DOCKER_REGISTRY_URL }}/vet_internal:${{ env.RELEASE_VERSION }}"
+        run: script -q -c "docker run -d -it --name vet_internal --restart always -p 443:443 -v ~/dynamic/ssl/:/app/package/backend/ssl/certs -v ~/dynamic/config:/app/package/backend/config ${{ secrets.DOCKER_REGISTRY_URL }}/vet_internal:${{ env.RELEASE_VERSION }}"
