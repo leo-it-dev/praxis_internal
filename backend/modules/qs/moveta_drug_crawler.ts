@@ -35,7 +35,7 @@ function escape(str: string): string {
 
 function runMovetaSQLQueryCmdLineConvertToUTF8(query: string): Promise<row[]> {
     return new Promise((res, rej) => {
-        const command = 'echo "' + escape(query) + '" | isql -c -d' + escape(COLUMN_DELIMITER) + ' -b ' + escape(config.get('generic.DRUGS_ODBC_MOVETA_DSN')) + 
+        const command = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/Unify/SQLBase; echo "' + escape(query) + '" | isql -c -d' + escape(COLUMN_DELIMITER) + ' -b ' + escape(config.get('generic.DRUGS_ODBC_MOVETA_DSN')) + 
             ' ' + escape(config.get('generic.DRUGS_ODBC_MOVETA_UID')) + 
             ' ' + escape(config.get('generic.DRUGS_ODBC_MOVETA_PASS')) + ' | iconv -f ' + escape(SOURCE_CODING) + ' -t ' + escape(DEST_CODING);
 

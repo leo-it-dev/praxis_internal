@@ -37,6 +37,7 @@ async function startup() {
         return;
     }
 
+    console.log("Env: ", process.env);
     console.log("Loading configuration file: ", process.env.NODE_ENV);
 
     const filePathFrontend = devMode ? filePathFrontendDev : filePathFrontendDepl;

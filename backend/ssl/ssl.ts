@@ -1,10 +1,10 @@
 import fs = require('node:fs');
 import https = require('https');
 
-export const CA_CERT = fs.readFileSync('./ssl/ca.crt');
-export const ADFS_CERT = fs.readFileSync('./ssl/adfs.crt');
-export const intranetCertificate = fs.readFileSync('./ssl/internal-praxisnet.crt');
-export const intranetPrivateKey = fs.readFileSync('./ssl/internal-praxisnet.key');
+export const CA_CERT = fs.readFileSync(__dirname + '/certs/ca.crt');
+export const ADFS_CERT = fs.readFileSync(__dirname + '/certs/adfs.crt');
+export const intranetCertificate = fs.readFileSync(__dirname + '/certs/internal-praxisnet.crt');
+export const intranetPrivateKey = fs.readFileSync(__dirname + '/certs/internal-praxisnet.key');
 
 export const SSL_OPTIONS = {
     key: intranetPrivateKey,

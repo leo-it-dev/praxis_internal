@@ -1,4 +1,7 @@
-on: push
+on:
+  push:
+    tags:
+      - release/*
 jobs:
   build-frontend:
     runs-on: ubuntu-latest
@@ -101,6 +104,7 @@ jobs:
         run: |
           mkdir package
           cp -r artifacts/* package/
+          cp Dockerfile package/
           echo "Packaged application with frontend, backend and setup-tools."
 
       - name: Upload Final Package
@@ -108,18 +112,49 @@ jobs:
         with:
           name: full-package
           path: package
-  deploy:
-    runs-on: deploy
+
+  build-docker:
+    runs-on: ubuntu-latest
     needs: [package]
     steps:
-      - name: Cleanup
-        run: rm -rf package
       - name: Download final package
         uses: actions/download-artifact@v4
         with:
           name: full-package
           path: package
-      - name: Link all pre-existing configuration files into our working directory.
-        run: |
-          find ~/dynamic/ssl/* -exec bash -c 'cp $(realpath {}) package/backend/ssl/$(basename "\{}")' \;
-          find ~/dynamic/config/* -exec bash -c 'cp $(realpath {}) package/backend/config/$(basename "\{}")' \;
+
+      - name: Login to private docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY_URL }}
+          username: ${{ secrets.DOCKER_REGISTRY_USER }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASS }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: ls
+        run: ls -lsa package/
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: package
+          push: true
+          tags: ${{ secrets.DOCKER_REGISTRY_URL }}/vet_internal:latest
+
+  deploy:
+    runs-on: deploy
+    needs: [build-docker]
+    steps:
+      - name: Cleanup
+        run: rm -rf package
+      - name: Login to private docker registry
+        run: echo "${{ secrets.DOCKER_REGISTRY_PASS }}" | docker login ${{ secrets.DOCKER_REGISTRY_URL }} -u ${{ secrets.DOCKER_REGISTRY_USER }} --password-stdin
+      - name: Pull image
+        run: docker image pull ${{ secrets.DOCKER_REGISTRY_URL }}/vet_internal:latest
+      - name: Stop old container
+        run: docker stop vet_internal || true
+      - name: Delete old container (if not already gone)
+        run: docker rm vet_internal || true
+      - name: Run image
+        run: script -q -c "docker run -d -it --name vet_internal --rm -p 443:443 -v ~/dynamic/ssl/:/app/package/backend/ssl/certs -v ~/dynamic/config:/app/package/backend/config ${{ secrets.DOCKER_REGISTRY_URL }}/vet_internal:latest"
