@@ -62,6 +62,8 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 			items = [];
 		}
 
+		console.log("Setting new items: ", items);
+
 		this._items = items;
 		this.recommendedItems.set(this._items);
 

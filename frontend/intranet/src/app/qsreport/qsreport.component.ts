@@ -149,6 +149,7 @@ export class QsreportComponent implements AfterViewInit {
 	addPrescriptionRow(i: number) {
 		this.prescriptionRows.insert(i+1, this.formBuilder.control('', Validators.required));
 	}
+
 	removePrescriptionRow(i: number) {
 		if(this.prescriptionRows.length > 1) {
 			this.prescriptionRows.removeAt(i);
