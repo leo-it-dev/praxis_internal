@@ -1,15 +1,22 @@
 import fs = require('node:fs');
 import https = require('https');
 
-export const CA_CERT = fs.readFileSync(__dirname + '/certs/ca.crt');
-export const ADFS_CERT = fs.readFileSync(__dirname + '/certs/adfs.crt');
-export const intranetCertificate = fs.readFileSync(__dirname + '/certs/internal-praxisnet.crt');
-export const intranetPrivateKey = fs.readFileSync(__dirname + '/certs/internal-praxisnet.key');
+export let CA_CERT: string = "";
+export let ADFS_CERT: string = "";
+export let intranetCertificate: string = "";
+export let intranetPrivateKey: string = "";
 
 export const SSL_OPTIONS = {
     key: intranetPrivateKey,
     cert: intranetCertificate,
 };
+
+export function initSSL() {
+    this.CA_CERT = fs.readFileSync(__dirname + '/certs/ca.crt');
+    this.ADFS_CERT = fs.readFileSync(__dirname + '/certs/adfs.crt');
+    this.intranetCertificate = fs.readFileSync(__dirname + '/certs/internal-praxisnet.crt');
+    this.intranetPrivateKey = fs.readFileSync(__dirname + '/certs/internal-praxisnet.key');
+}
 
 export function httpsRequest(hostname: string, path: string, method: string, body: string, contentType?: string, authorization?: string): Promise<{'statusCode': number, 'data': string}> {
     return new Promise<{'statusCode': number, 'data': string}>((res, rej) => {

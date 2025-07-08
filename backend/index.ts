@@ -1,8 +1,8 @@
 import https = require('node:https');
 import express = require('express');
-import path = require('path');
+import * as path from 'path';
 import * as ssl from './ssl/ssl'
-const fs = require('fs');
+import * as fs from 'fs';
 
 /**
  * Endpoint modules
@@ -12,8 +12,28 @@ import { ApiModuleAuth } from './modules/auth/api_auth';
 import { ApiModule } from './api_module';
 import { AdfsOidc } from './framework/adfs_oidc_instance';
 import { ApiModuleLdapQuery } from './modules/ldapquery/api_ldapquery';
+import { DeploymentType } from './deployment';
 
 let apiModulesInstances = [];
+
+function initializeDevelopmentBuildEnvironment(projectRoot: string) {
+    console.log("--- Preparing development environment ---");
+    let runtimeRoot = path.join(projectRoot, 'js', 'backend');
+
+    let copyPaths = [
+        {
+            src: path.join(projectRoot, 'ssl', 'certs'),
+            dest: path.join(runtimeRoot, 'ssl', 'certs')
+        }
+    ]
+
+    for (let copyPath of copyPaths) {
+        console.log("    - Copying path ", copyPath.src, "to", copyPath.dest);
+        fs.cpSync(copyPath.src, copyPath.dest, { recursive: true });
+    }
+
+    console.log("--- Preparing development environment finished ---");
+}
 
 async function startup() {
     // Change directory to project root (ts-files)
@@ -26,11 +46,14 @@ async function startup() {
     const filePathFrontendDev = '../frontend/intranet/dist/intranet/browser';
     const filePathFrontendDepl = '../frontend/intranet/browser';
 
-    const devMode = fs.existsSync(filePathFrontendDev);
-    const deployMode = fs.existsSync(filePathFrontendDepl);
-    if (devMode) {
+    let deploymentType;
+
+    if (fs.existsSync(filePathFrontendDev)) {
+        deploymentType = DeploymentType.DEVELOPMENT;
         console.log("File structure indicates development mode!");
-    } else if (deployMode) {
+        initializeDevelopmentBuildEnvironment(projectRoot);
+    } else if (fs.existsSync(filePathFrontendDepl)) {
+        deploymentType = DeploymentType.PRODUCTION;
         console.log("File structure indicates deployment mode!");
     } else {
         console.log("File structure seems odd. Can't find frontend, won't start!");
@@ -40,7 +63,7 @@ async function startup() {
     console.log("Env: ", process.env);
     console.log("Loading configuration file: ", process.env.NODE_ENV);
 
-    const filePathFrontend = devMode ? filePathFrontendDev : filePathFrontendDepl;
+    const filePathFrontend = deploymentType == DeploymentType.PRODUCTION ? filePathFrontendDepl : filePathFrontendDev;
     const app = express();
 
     console.log("started server");
@@ -49,6 +72,8 @@ async function startup() {
         ApiModuleQs,
         ApiModuleLdapQuery
     ];
+
+    ssl.initSSL();
 
     // Initialize framework classes needed by modules below ------
     await AdfsOidc.initialize();
@@ -77,10 +102,10 @@ async function startup() {
 
     app.get("*", (req, res) => {
         if (fs.existsSync('')) {
-            if (deployMode) {
+            if (deploymentType == DeploymentType.PRODUCTION) {
                 res.sendFile(filePathFrontendDepl);
             }
-            if (devMode) {
+            if (deploymentType == DeploymentType.DEVELOPMENT) {
                 res.sendFile(filePathFrontendDev);
             }
         }
