@@ -41,7 +41,7 @@ export class QsreportComponent implements AfterViewInit {
 
 	pageInitFinished: Subject<void> = new Subject<void>();
 
-	static API_URL_POST_REPORT = "https://internal.mittermeier-kraiburg.vet/module/qs/report"
+	static API_URL_POST_REPORT = "/module/qs/report"
 
 	HINT_OK_local = HINT_OK;
 	HINT_WARN_local = HINT_WARN;

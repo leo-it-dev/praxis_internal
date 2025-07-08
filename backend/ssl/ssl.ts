@@ -7,8 +7,8 @@ export let intranetCertificate: string = "";
 export let intranetPrivateKey: string = "";
 
 export const SSL_OPTIONS = {
-    key: intranetPrivateKey,
-    cert: intranetCertificate,
+    key: '<uninitialized>',
+    cert: '<uninitialized>',
 };
 
 export function initSSL() {
@@ -16,6 +16,9 @@ export function initSSL() {
     this.ADFS_CERT = fs.readFileSync(__dirname + '/certs/adfs.crt');
     this.intranetCertificate = fs.readFileSync(__dirname + '/certs/internal-praxisnet.crt');
     this.intranetPrivateKey = fs.readFileSync(__dirname + '/certs/internal-praxisnet.key');
+
+    SSL_OPTIONS.key = intranetPrivateKey;
+    SSL_OPTIONS.cert = intranetCertificate;
 }
 
 export function httpsRequest(hostname: string, path: string, method: string, body: string, contentType?: string, authorization?: string): Promise<{'statusCode': number, 'data': string}> {

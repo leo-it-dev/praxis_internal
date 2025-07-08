@@ -17,8 +17,8 @@ export type QsBackendFetch = {
 })
 export class QsreportBackendService implements IModule {
 
-	API_URL_DRUG = "https://internal.mittermeier-kraiburg.vet/module/qs/drugs"
-	API_URL_FARMER = "https://internal.mittermeier-kraiburg.vet/module/qs/farmers"
+	API_URL_DRUG = "/module/qs/drugs"
+	API_URL_FARMER = "/module/qs/farmers"
 
 	constructor(private backendService: BackendService,
 		private errorlistService: ErrorlistService

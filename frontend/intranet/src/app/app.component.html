@@ -3,4 +3,7 @@
 <app-errorlist></app-errorlist>
 <app-cache-update-popup></app-cache-update-popup>
 <app-sworker-ui></app-sworker-ui>
+@if (this.metaServie.isDevelopmentDeployment()) {
+    <app-deployment-developer-notice></app-deployment-developer-notice>
+}
 <router-outlet></router-outlet>

@@ -26,7 +26,7 @@ export class BackendService {
 
 	anonymousBackendCall<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(url: string, body: REQ|undefined = undefined): Promise<RES> {
 		return new Promise((res, rej) => {
-			fetch(url, {
+			fetch(document.location.origin + url, {
 				method: body === undefined ? "GET" : "POST",
 				body: JSON.stringify(body),
 				headers: {
@@ -51,7 +51,7 @@ export class BackendService {
 		return new Promise((res, rej) => {
 			if (this.getSessionService().getSessionType() == SessionType.ONLINE) {
 				this.getSessionService().store.accessToken.then((accessToken) => {
-					fetch(url, {
+					fetch(document.location.origin + url, {
 						method: body === undefined ? "GET" : "POST",
 						body: JSON.stringify(body),
 						headers: {

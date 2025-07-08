@@ -13,8 +13,11 @@ import { ApiModule } from './api_module';
 import { AdfsOidc } from './framework/adfs_oidc_instance';
 import { ApiModuleLdapQuery } from './modules/ldapquery/api_ldapquery';
 import { DeploymentType } from './deployment';
+import { ApiModuleMeta } from './modules/meta/api_meta';
 
 let apiModulesInstances = [];
+
+let deploymentType: DeploymentType = DeploymentType.DEVELOPMENT;
 
 function initializeDevelopmentBuildEnvironment(projectRoot: string) {
     console.log("--- Preparing development environment ---");
@@ -46,7 +49,6 @@ async function startup() {
     const filePathFrontendDev = '../frontend/intranet/dist/intranet/browser';
     const filePathFrontendDepl = '../frontend/intranet/browser';
 
-    let deploymentType;
 
     if (fs.existsSync(filePathFrontendDev)) {
         deploymentType = DeploymentType.DEVELOPMENT;
@@ -68,6 +70,7 @@ async function startup() {
 
     console.log("started server");
     const apiModules = [
+        ApiModuleMeta,
         ApiModuleAuth,
         ApiModuleQs,
         ApiModuleLdapQuery
@@ -122,4 +125,8 @@ export function getApiModule<T = ApiModule>(apiModuleClass: { new(...args: any[]
         }
     }
     return undefined;
+}
+
+export function getDeploymentType(): DeploymentType {
+    return deploymentType;
 }

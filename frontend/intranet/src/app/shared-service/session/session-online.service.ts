@@ -12,10 +12,10 @@ export class SessionOnlineService extends SessionProviderPlugin {
     static AUTH_SERVER = "https://adfs.mittermeier-kraiburg.vet/adfs"
     static CLIENT_ID = "cf1b923f-dccc-4a60-b9dd-927fbbaa8953";
     static CALLBACK_URL = "https://internal.mittermeier-kraiburg.vet/login"
-    static EXCHANGE_TOKEN_URL = "https://internal.mittermeier-kraiburg.vet/module/auth/generateToken"
-    static REVOKE_TOKEN_URL = "https://internal.mittermeier-kraiburg.vet/module/auth/revokeToken"
-    static USERINFO_URL = "https://internal.mittermeier-kraiburg.vet/module/ldapquery/userinfo"
-    static REFRESH_TOKEN_URL = "https://internal.mittermeier-kraiburg.vet/module/auth/refreshToken"
+    static EXCHANGE_TOKEN_URL = "/module/auth/generateToken"
+    static REVOKE_TOKEN_URL = "/module/auth/revokeToken"
+    static USERINFO_URL = "/module/ldapquery/userinfo"
+    static REFRESH_TOKEN_URL = "/module/auth/refreshToken"
 
     public getAccessToken(): Promise<string> {
         let storage = SessionProviderService.instance;
