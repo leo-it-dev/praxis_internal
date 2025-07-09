@@ -62,16 +62,16 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 			items = [];
 		}
 
-		console.log("Setting new items: ", items);
-
 		this._items = items;
 		this.recommendedItems.set(this._items);
 
+		let selectItem = items.length == 1 ? items[0] : undefined;
 		if (this.inputElement) {
-			let value = items.length == 1 ? this.serial.display(items[0]).text : "";
+			let value = selectItem ? this.serial.display(selectItem).text : "";
 			this.inputElement.nativeElement.value = value;
-
 			this.updateUIAfterInputValueChange();
+		} else {
+			this._selectItemAfterInit = selectItem;
 		}
 		this.updateEnableFlag();
 
@@ -395,6 +395,11 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		if (this.inputElement) {
 			this.selectItemExt(obj as TItem);
 		} else {
+			if (this._items?.length == 1 && (obj === undefined || obj === null)) {
+				// If only one item can be selected, the user must choose this one item, therefore we don't allow for deleting the content of our field.
+				return;
+			}
+
 			this._selectItemAfterInit = obj as TItem;
 		}
 	}

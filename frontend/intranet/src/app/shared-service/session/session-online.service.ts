@@ -11,7 +11,7 @@ import { SessionProviderService, SessionType } from './session-provider.service'
 export class SessionOnlineService extends SessionProviderPlugin {
     static AUTH_SERVER = "https://adfs.mittermeier-kraiburg.vet/adfs"
     static CLIENT_ID = "cf1b923f-dccc-4a60-b9dd-927fbbaa8953";
-    static CALLBACK_URL = "https://internal.mittermeier-kraiburg.vet/login"
+    static CALLBACK_URL = "/login"
     static EXCHANGE_TOKEN_URL = "/module/auth/generateToken"
     static REVOKE_TOKEN_URL = "/module/auth/revokeToken"
     static USERINFO_URL = "/module/ldapquery/userinfo"
@@ -68,7 +68,7 @@ export class SessionOnlineService extends SessionProviderPlugin {
 
     authorizeSession() {
         const randomUUID = self.crypto.randomUUID();
-        window.location.href = SessionOnlineService.AUTH_SERVER + "/oauth2/authorize?response_type=code&scope=openid&client_id=" + SessionOnlineService.CLIENT_ID + "&state=" + randomUUID + "&redirect_uri=" + encodeURIComponent(SessionOnlineService.CALLBACK_URL);
+        window.location.href = SessionOnlineService.AUTH_SERVER + "/oauth2/authorize?response_type=code&scope=openid&client_id=" + SessionOnlineService.CLIENT_ID + "&state=" + randomUUID + "&redirect_uri=" + window.location.origin + encodeURIComponent(SessionOnlineService.CALLBACK_URL);
     }
 
     exchangeCodeForToken(code: string, state: string): Promise<void> {
