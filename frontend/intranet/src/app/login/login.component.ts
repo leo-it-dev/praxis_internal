@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { ErrorlistService } from '../errorlist/errorlist.service';
 import { SessionProviderService } from '../shared-service/session/session-provider.service';
 import { UserAccountComponent } from '../user-account/user-account.component';
 import { ModuleService } from '../module/module.service';
+import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
 
 @Component({
 	selector: 'app-login',

@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ErrormessageComponent } from './errormessage.component';
+import { PopuplistComponent } from './popuplist.component';
 
-describe('ErrormessageComponent', () => {
-  let component: ErrormessageComponent;
-  let fixture: ComponentFixture<ErrormessageComponent>;
+describe('PopuplistComponent', () => {
+  let component: PopuplistComponent;
+  let fixture: ComponentFixture<PopuplistComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ErrormessageComponent]
+      imports: [PopuplistComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(ErrormessageComponent);
+    fixture = TestBed.createComponent(PopuplistComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

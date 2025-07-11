@@ -8,8 +8,6 @@
         
         "HOSTNAME_ADFS": "adfs.your-site.de",
         "ADFS_URL_ROOT": "/adfs",
-        "ADFS_URL_LOGOUT": "/adfs/oauth2/logout",
-        "ADFS_URL_TOKEN": "/adfs/oauth2/token",
 
         "ADFS_INTRANET_CLIENT_ID": "adfs-client-id",
         "ADFS_INTRANET_CLIENT_SECRET": "adfs-client-secret",

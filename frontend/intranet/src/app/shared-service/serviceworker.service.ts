@@ -1,4 +1,4 @@
-import { Injectable, Output } from '@angular/core';
+import { EventEmitter, Injectable, Output } from '@angular/core';
 import { SwUpdate } from '@angular/service-worker';
 import { ModuleService } from '../module/module.service';
 
@@ -8,7 +8,7 @@ import { ModuleService } from '../module/module.service';
 export class ServiceworkerService {
 
 	@Output()
-	newVersionReady: boolean = false;
+	newVersionReady: EventEmitter<void> = new EventEmitter<void>();
 
 	constructor(updates: SwUpdate,
 		private moduleService: ModuleService
@@ -21,7 +21,7 @@ export class ServiceworkerService {
 				case 'VERSION_READY':
 					console.log(`Current app version: ${evt.currentVersion.hash}`);
 					console.log(`New app version ready for use: ${evt.latestVersion.hash}`);
-					this.newVersionReady = true;
+					this.newVersionReady.emit();
 					break;
 				case 'VERSION_INSTALLATION_FAILED':
 					console.log(`Failed to install app version ${evt.version.hash}: ${evt.error}`)	

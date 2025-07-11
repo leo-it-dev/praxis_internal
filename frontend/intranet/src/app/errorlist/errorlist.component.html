@@ -1,3 +1,0 @@
-<app-errormessage
-    *ngFor="let item of getErrorlist() | keyvalue; trackBy: trackByFn"
-    [error]="item.value" [id]="item.key" (removeRequested)="removeItem($event)"></app-errormessage>

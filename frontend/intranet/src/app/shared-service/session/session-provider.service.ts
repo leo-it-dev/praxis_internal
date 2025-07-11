@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { ErrorlistService } from '../../errorlist/errorlist.service';
 import { JwtHelperService } from '../jwt-helper.service';
 import { SessionOfflineService } from './session-offline.service';
 import { SessionOnlineService } from './session-online.service';
 import { SessionProviderPlugin } from './session-provider-plugin';
 import { SessionStore } from './session-store';
+import { ErrorlistService } from '../../timed-popups/popuplist/errorlist.service';
 
 export enum SessionType {
 	ONLINE = "Online",

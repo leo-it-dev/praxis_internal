@@ -1,0 +1,11 @@
+<app-popupmessage
+    *ngFor="let item of getErrorlist() | keyvalue; trackBy: trackByFn"
+    [error]="item.value" [id]="item.key" (removeRequested)="removeItem($event)"></app-popupmessage>
+
+@if (!this.hideBackendCacheUpdateOverlay()) {
+    <app-cache-update-popup></app-cache-update-popup>
+}
+
+@if (this.showServiceWorkerOverlay) {
+    <app-sworker-ui></app-sworker-ui>
+}

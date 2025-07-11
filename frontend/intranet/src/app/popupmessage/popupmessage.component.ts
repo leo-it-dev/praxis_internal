@@ -1,16 +1,16 @@
 import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
 
 @Component({
-	selector: 'app-errormessage',
+	selector: 'app-popupmessage',
 	imports: [],
-	templateUrl: './errormessage.component.html',
-	styleUrl: './errormessage.component.scss'
+	templateUrl: './popupmessage.component.html',
+	styleUrl: './popupmessage.component.scss'
 })
-export class ErrormessageComponent {
+export class PopupmessageComponent {
 	@Input({required: true}) error!: string;
 	@Input({required: true}) id!: string;
-	@Output() removeRequested = new EventEmitter<ErrormessageComponent>();
-	
+	@Output() removeRequested = new EventEmitter<PopupmessageComponent>();
+
 	@HostListener('animationend') animationEnded() {
 		this.removeRequested.emit(this);
 	}

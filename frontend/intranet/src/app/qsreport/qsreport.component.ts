@@ -8,7 +8,6 @@ import { ApiInterfaceEmptyOut } from '../../../../../api_common/backend_call';
 import { BackendService } from '../api/backend.service';
 import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
 import { DatepickerComponent } from '../datepicker/datepicker.component';
-import { ErrorlistService } from '../errorlist/errorlist.service';
 import { HintComponent } from "../hint-ok/hint.component";
 import { Hint, IStringify, NO_HINT, SearchDropdownComponent } from '../search-dropdown/search-dropdown.component';
 import { OfflineEntry } from '../shared-service/offline-sync/offline-entry';
@@ -19,6 +18,7 @@ import { ApplyEntryEvent, CommitSynchronizeEntryEvent, SyncOnlineControllerCompo
 import { CategorizedList } from '../utilities/categorized-list';
 import { PrescriptionRowComponent } from "./prescription-row/prescription-row.component";
 import { QsreportBackendService } from './qsreport-backend.service';
+import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
 
 export const DRUG_CATEGORY_OK = "moveta";
 export const DRUG_CATEGORY_WARN = "hit";

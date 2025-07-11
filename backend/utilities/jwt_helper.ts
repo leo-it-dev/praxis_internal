@@ -36,6 +36,8 @@ export function resolveOicdConfiguration(endpoint: OidcConfigurationRaw): Promis
             res({
                 ...endpoint,
                 jwksUrl: new URL(body['jwks_uri']),
+                logoutUrl: new URL(body['end_session_endpoint']),
+                tokenEndpointUrl: new URL(body['token_endpoint']),
                 jwksCertificates: []
             });
         } catch(e) {

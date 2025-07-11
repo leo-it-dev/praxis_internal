@@ -36,6 +36,7 @@
     border-left: 4px solid transparent;
     border-image: linear-gradient(to bottom, var(--error) var(--progress), transparent calc(var(--progress) + 1px));
     border-image-slice: 1;
+    margin: 5px;
     margin-bottom: 10px;
     animation: unload 10s ease-out;
     box-shadow: 0px 0px 5px gray;

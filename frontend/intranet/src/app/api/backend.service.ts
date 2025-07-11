@@ -1,8 +1,8 @@
 import { Injectable, Injector } from '@angular/core';
 import { ApiModuleBody, ApiModuleInterfaceB2F, ApiModuleInterfaceF2B } from '../../../../../api_common/backend_call';
-import { ErrorlistService } from '../errorlist/errorlist.service';
 import { SessionProviderService, SessionType } from '../shared-service/session/session-provider.service';
 import { OfflineCacheService } from '../shared-service/offline-cache.service';
+import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
 
 @Injectable({
 	providedIn: 'root'

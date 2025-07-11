@@ -13,6 +13,8 @@ interface JwksCertificate {
 interface OidcConfigurationResolved extends OidcConfigurationRaw {
     jwksUrl: URL;
     jwksCertificates: Array<JwksCertificate>;
+    logoutUrl: URL;
+    tokenEndpointUrl: URL;
 }
 
 type JsonObject = {

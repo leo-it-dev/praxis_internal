@@ -2,10 +2,10 @@ import { Injectable } from '@angular/core';
 import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, Farmer, ReportableDrug } from '../../../../../api_common/api_qs';
 import { ApiInterfaceEmptyIn } from '../../../../../api_common/backend_call';
 import { BackendService } from '../api/backend.service';
-import { ErrorlistService } from '../errorlist/errorlist.service';
 import { CategorizedList } from '../utilities/categorized-list';
 import { DRUG_CATEGORY_OK, DRUG_CATEGORY_WARN } from './qsreport.component';
 import { IModule } from '../module/module.service';
+import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
 
 export type QsBackendFetch = {
 	drugs: CategorizedList<ReportableDrug>;

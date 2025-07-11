@@ -24,7 +24,7 @@ export class ApiModuleAuth extends ApiModule {
 
             try {
                 let res = await ssl.httpsRequest(
-                    config.get('generic.HOSTNAME_ADFS'), config.get('generic.ADFS_URL_TOKEN'),
+                    config.get('generic.HOSTNAME_ADFS'), AdfsOidc.getOidcProvider().getConfiguration().tokenEndpointUrl.pathname,
                     'POST', bodyContent,
                     'application/x-www-form-urlencoded', 'Basic ' + btoa(config.get('generic.ADFS_INTRANET_CLIENT_ID') + ":" + config.get('generic.ADFS_INTRANET_CLIENT_SECRET')));
                     
@@ -60,7 +60,7 @@ export class ApiModuleAuth extends ApiModule {
 
             try {
                 let resp = await ssl.httpsRequest(
-                    config.get('generic.HOSTNAME_ADFS'), config.get('generic.ADFS_URL_LOGOUT'),
+                    config.get('generic.HOSTNAME_ADFS'), AdfsOidc.getOidcProvider().getConfiguration().logoutUrl.pathname,
                     'POST', bodyContent,
                     'application/x-www-form-urlencoded', 'Basic ' + btoa(config.get('generic.ADFS_INTRANET_CLIENT_ID') + ":" + config.get('generic.ADFS_INTRANET_CLIENT_SECRET')));
 
@@ -83,7 +83,7 @@ export class ApiModuleAuth extends ApiModule {
             
             try {
                 let res = await ssl.httpsRequest(
-                    config.get('generic.'), config.get('generic.ADFS_URL_TOKEN'),
+                    config.get('generic.'), AdfsOidc.getOidcProvider().getConfiguration().tokenEndpointUrl.pathname,
                     'POST', bodyContent,
                     'application/x-www-form-urlencoded', 'Basic ' + btoa(config.get('generic.ADFS_INTRANET_CLIENT_ID') + ":" + config.get('generic.ADFS_INTRANET_CLIENT_SECRET')));
                 if (res.statusCode == 200) {

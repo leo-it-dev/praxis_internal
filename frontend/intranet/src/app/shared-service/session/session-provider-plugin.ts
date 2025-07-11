@@ -1,8 +1,8 @@
 import { Router } from "@angular/router";
-import { ErrorlistService } from "../../errorlist/errorlist.service";
 import { JwtHelperService } from "../jwt-helper.service";
 import { BackendService } from "../../api/backend.service";
 import { Injectable } from "@angular/core";
+import { ErrorlistService } from "../../timed-popups/popuplist/errorlist.service";
 
 @Injectable()
 export abstract class SessionProviderPlugin {

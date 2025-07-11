@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, signal, WritableSignal } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
-import { ErrorlistService } from '../errorlist/errorlist.service';
+import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
 import { OfflineEntry } from '../shared-service/offline-sync/offline-entry';
 import { OfflineModuleStore } from '../shared-service/offline-sync/offline-module-store';
 import { SessionProviderService, SessionType } from '../shared-service/session/session-provider.service';

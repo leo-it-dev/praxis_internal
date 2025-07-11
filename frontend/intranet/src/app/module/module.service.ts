@@ -38,6 +38,7 @@ export class ModuleService {
 
 	updateBackendCaches(): Promise<void> {
 		return new Promise((res, rej) => {
+			console.log("update backend caches!!");
 			this._modules.forEach(m => m.backendCacheUpdateInProgress.set(true));
 
 			Promise.allSettled(this._modules.map(m => 

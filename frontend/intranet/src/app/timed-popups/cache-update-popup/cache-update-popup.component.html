@@ -1,0 +1,14 @@
+<h3>Aktualisiere Backend-Caches...</h3>
+<ul *ngFor="let module of this._moduleService.modules; trackBy:trackByModule">
+    <li>{{module.imodule.name()}}
+        @if(!module.backendCacheUpdateInProgress()) {
+            @if(module.backendCacheUpdateResult()) {
+                <span class="success">✓</span>
+            } @else {
+                <span class="error">✗</span>
+            }
+        } @else {
+            <span class="inprog">-</span>
+        }
+    </li>
+</ul>

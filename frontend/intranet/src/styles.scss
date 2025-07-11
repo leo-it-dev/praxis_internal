@@ -141,3 +141,13 @@ body {
 input.ng-invalid:not(form) {
     border-left: 2px solid red !important;
 }
+
+ul {
+    list-style: none;
+    margin: 0px;
+}
+
+li {
+    font-size: 10pt;
+    margin: 10px 0px;
+}
