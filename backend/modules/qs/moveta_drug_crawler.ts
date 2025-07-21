@@ -35,9 +35,7 @@ function escape(str: string): string {
 
 function runMovetaSQLQueryCmdLineConvertToUTF8(query: string): Promise<row[]> {
     return new Promise((res, rej) => {
-        const command = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/Unify/SQLBase; echo "' + escape(query) + '" | isql -c -d' + escape(COLUMN_DELIMITER) + ' -b ' + escape(config.get('generic.DRUGS_ODBC_MOVETA_DSN')) + 
-            ' ' + escape(config.get('generic.DRUGS_ODBC_MOVETA_UID')) + 
-            ' ' + escape(config.get('generic.DRUGS_ODBC_MOVETA_PASS')) + ' | iconv -f ' + escape(SOURCE_CODING) + ' -t ' + escape(DEST_CODING);
+        const command = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/Unify/SQLBase; echo "' + escape(query) + '" | isql -c -d' + escape(COLUMN_DELIMITER) + ' -b ' + escape(config.get('movetaOdbcConnection.DRUGS_ODBC_MOVETA_DSN')) + ' | iconv -f ' + escape(SOURCE_CODING) + ' -t ' + escape(DEST_CODING);
 
         exec(command, (err, stdout: string, stderr: string) => {
             if (err) {
@@ -101,11 +99,11 @@ async function movetaRunSQLAdministrativeCommands(commands: string[]): Promise<s
         // final command example: 
         // cd /somepath; LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/somepath; export LD_LIBRARY_PATH; ( echo "SET SERVER server1/PASS;"; echo "INSTALL DATABASE SOMEDBNAME;" ) | /somepath/sqllxtlk BAT DB=SBTASK/SYSADM/SYSADM;
 
-        let dirpath = escape(path.dirname(config.get('generic.SQLLXTLK_BINARY_PATH')));
+        let dirpath = escape(path.dirname(config.get('movetaOdbcConnection.SQLLXTLK_BINARY_PATH')));
         commands = commands.map(c => 'echo "' + escape(c) + '"');
         let cmd1 = 'cd ' + dirpath + ';LD_LIBRARY_PATH="$LD_LIBRARY_PATH:' + dirpath + "\"; export LD_LIBRARY_PATH";
         let cmd2 = '( ' + commands.join(';') + ' )';
-        let cmd3 = config.get('generic.SQLLXTLK_BINARY_PATH') + ' BAT DB=' + config.get('generic.DRUGS_SQLBASE_ADMIN_DATABASE') + '/' + config.get('generic.DRUGS_SQLBASE_ADMIN_USERNAME') + '/' + config.get('generic.DRUGS_SQLBASE_ADMIN_PASSWORD');
+        let cmd3 = config.get('movetaOdbcConnection.SQLLXTLK_BINARY_PATH') + ' BAT DB=' + config.get('generic.DRUGS_SQLBASE_ADMIN_DATABASE') + '/' + config.get('generic.DRUGS_SQLBASE_ADMIN_USERNAME') + '/' + config.get('generic.DRUGS_SQLBASE_ADMIN_PASSWORD');
         
         let command = cmd1 + ';' + cmd2 + ' | ' + cmd3;
         exec(command, (err, stdout: string, stderr: string) => {
@@ -125,19 +123,19 @@ async function movetaRunSQLAdministrativeCommands(commands: string[]): Promise<s
 export async function installMovetaDBInSqlBaseServer(): Promise<void> {
     return new Promise((res, rej) => {
         let cmds = [
-            'SET SERVER ' + escape(config.get('generic.DRUGS_SQLBASE_SERVER_NAME')) + '/' + escape(config.get('generic.DRUGS_SQLBASE_SERVER_PASSWORD')) + ';',
-            'INSTALL DATABASE ' + escape(config.get('generic.DRUGS_SQLBASE_WORKING_DATABSE')) + ';'
+            'SET SERVER ' + escape(config.get('movetaOdbcConnection.DRUGS_SQLBASE_SERVER_NAME')) + '/' + escape(config.get('movetaOdbcConnection.DRUGS_SQLBASE_SERVER_PASSWORD')) + ';',
+            'INSTALL DATABASE ' + escape(config.get('movetaOdbcConnection.DRUGS_SQLBASE_WORKING_DATABASE')) + ';'
         ]
-        console.log("Trying to install database " + config.get('generic.DRUGS_SQLBASE_WORKING_DATABSE') + " in SQLServer (make it available for network access)...");
+        console.log("Trying to install database " + config.get('movetaOdbcConnection.DRUGS_SQLBASE_WORKING_DATABASE') + " in SQLServer (make it available for network access)...");
         movetaRunSQLAdministrativeCommands(cmds).then(stdout => {
             if(stdout.includes("SERVER IS SET") && stdout.includes("DATABASE INSTALLED")) {
-                console.log("Successfully installed database " + config.get('generic.DRUGS_SQLBASE_WORKING_DATABSE') + " for isql access!");
+                console.log("Successfully installed database " + config.get('movetaOdbcConnection.DRUGS_SQLBASE_WORKING_DATABASE') + " for isql access!");
                 res();
             } else {
                 throw new Error("Invalid stdout from sqllxtlk subprocess: " + stdout);
             }
         }).catch(stderr => {
-            console.error("Error installing database " + config.get('generic.DRUGS_SQLBASE_WORKING_DATABSE') + " for isql access: " + stderr);
+            console.error("Error installing database " + config.get('movetaOdbcConnection.DRUGS_SQLBASE_WORKING_DATABASE') + " for isql access: " + stderr);
             rej();
         });
     });
@@ -166,26 +164,3 @@ async function runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary(query:
         });
     });
 }
-
-// export async function installOdbcDatabaseInServer(): Promise<void> {
-//     return new Promise((res, rej) => {
-//         odbc.connect("DSN=" + options.DRUGS_ODBC_MOVETA_DSN +
-//             ";UID=" + options.DRUGS_ODBC_MOVETA_UID +
-//             ";PWD=" + options.DRUGS_ODBC_MOVETA_PASS, (error, conn) => {
-//                 if (error) {
-//                     rej(error);
-//                 } else {
-//                     conn.query('select ASUCH,ABEZ,AMEN,APCK,AZULASSUNG,APACKUNGSID'
-//                         + ' from SYSADM.ARZNEIEN '
-//                         + ' WHERE AZULASSUNG IS NOT NULL', (error, result) => {
-//                             if (error) {
-//                                 rej(error);
-//                             }
-
-//                             let drugs = processRows(result);
-//                             res(drugs);
-//                         });
-//                 }
-//             });
-//     });
-// }
