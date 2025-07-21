@@ -81,6 +81,7 @@ jobs:
   package:
     runs-on: build
     needs: [build-frontend, build-backend, package-setup-tools]
+    container: debian:latest
     steps:
       - run: apt-get update && apt-get install -y git-lfs
       - uses: actions/checkout@v4
