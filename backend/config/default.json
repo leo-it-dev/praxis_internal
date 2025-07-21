@@ -26,18 +26,6 @@
         "QS_API_SYSTEM": "https://test.vetproof.de/user-rest",
         "QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS": 2,
 
-        "DRUGS_ODBC_MOVETA_UID": "official-moveta-odbc-user",
-        "DRUGS_ODBC_MOVETA_PASS": "official-moveta-odbc-password",
-        "DRUGS_ODBC_MOVETA_DSN": "your-local-moveta-odbc-connection-DSN",
-
-        "DRUGS_SQLBASE_SERVER_NAME": "server1",
-        "DRUGS_SQLBASE_SERVER_PASSWORD": "SYSADM",
-        "DRUGS_SQLBASE_ADMIN_DATABASE": "SBTASK",
-        "DRUGS_SQLBASE_ADMIN_USERNAME": "SYSADM",
-        "DRUGS_SQLBASE_ADMIN_PASSWORD": "SYSADM",
-        "DRUGS_SQLBASE_WORKING_DATABSE": "your-moveta-database-name-on-server",
-        "SQLLXTLK_BINARY_PATH": "/opt/Unify/SQLBase/sqllxtlk",
-
         "AD_ATTRIBUTE_QS_VETERINARY_ID": "msDS-cloudExtensionAttribute1",
         "AD_ATTRIBUTE_QS_DOCUMENT_NUMBER_USER_NAME_PREFIX": "sAMAccountName"
     },
@@ -45,5 +33,21 @@
         "oidcRoot": "/adfs",
         "configurationPath": "/adfs/.well-known/openid-configuration",
         "hostname": "adfs.your-site.de"
+    },
+    "movetaOdbcConnection": {
+        "DRUGS_ODBC_MOVETA_UID": "official-moveta-odbc-user",
+        "DRUGS_ODBC_MOVETA_PASS": "official-moveta-odbc-password",
+        "DRUGS_ODBC_MOVETA_DSN": "your-local-moveta-odbc-connection-DSN",
+
+        "DRUGS_ODBC_MOVETA_HOSTNAME": "your-moveta-server-hostname",
+        "DRUGS_ODBC_MOVETA_PORT": 2155,
+
+        "DRUGS_SQLBASE_SERVER_NAME": "server1",
+        "DRUGS_SQLBASE_SERVER_PASSWORD": "SYSADM",
+        "DRUGS_SQLBASE_ADMIN_DATABASE": "SBTASK",
+        "DRUGS_SQLBASE_ADMIN_USERNAME": "SYSADM",
+        "DRUGS_SQLBASE_ADMIN_PASSWORD": "SYSADM",
+        "DRUGS_SQLBASE_WORKING_DATABASE": "your-moveta-database-name-on-server",
+        "SQLLXTLK_BINARY_PATH": "/opt/Unify/SQLBase/sqllxtlk"
     }
 }
