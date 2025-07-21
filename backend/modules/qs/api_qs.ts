@@ -9,6 +9,7 @@ import { getApiModule } from '../../index';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
 import { Mutex } from 'async-mutex';
 const config = require('config');
+import { performPatches } from '../../ext_config_patcher';
 
 export class ApiModuleQs extends ApiModule {
 
@@ -28,9 +29,19 @@ export class ApiModuleQs extends ApiModule {
         return true;
     }
 
+    initializeDrugSources() {
+        performPatches([
+            // /etc/odbc.ini and /opt/Unify/SQLBase/sql.ini contain placeholders as part of the installation process.
+            // create a backup of the placeholder file variants and resolve all placeholders with the <movetaOdbcConnection> configuration section.
+            {configurationBase: "movetaOdbcConnection", patchPaths: ["/etc/odbc.ini", "/opt/Unify/SQLBase/sql.ini"]}
+        ]);
+    }
+
     async updateDrugs() {
         const inst = this;
         console.log("Scheduled update of internal databases of reportable drugs...");
+
+        this.initializeDrugSources();
 
         await this.updateDrugsMutex.acquire();
         let databases = [
