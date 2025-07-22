@@ -25,6 +25,30 @@ export class QsApiHandler {
         this.vetDocumentsApi = new vetproof.TierarztBelegeApi(this.client);
     }
 
+    requestSingleDrugReport(id: number): Promise<vetproof.VeterinaryDocumentData> {
+        return new Promise((res, rej) => {
+            new vetproof.TierarztBelegeApi(this.client).veterinaryDocumentsIdGet({id: id}, (error, data, resp) => {
+                if (error) {
+                    rej(error);
+                } else {
+                    res(data);
+                }
+            });
+        });
+    }
+
+    requestDrugReports(limit: number, offset: number): Promise<vetproof.VeterinaryDocumentDataList> {
+        return new Promise((res, rej) => {
+            new vetproof.TierarztBelegeApi(this.client).veterinaryDocumentsGet({limit: limit, offset: offset}, (error, data, resp) => {
+                if (error) {
+                    rej(error);
+                } else {
+                    res(data);
+                }
+            });
+        });
+    }
+
     requestVersionInformation(): Promise<string> {
         return new Promise((res, rej) => {
             this.checkAndRenewAccessToken().then(() => {

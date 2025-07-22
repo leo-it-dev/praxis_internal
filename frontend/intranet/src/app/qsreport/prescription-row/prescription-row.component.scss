@@ -74,8 +74,22 @@ label {
     flex-direction: column;
     flex-wrap: nowrap;
 }
-.prescriptionControls > * {
-    cursor: pointer;
+
+#add-prescription-row,
+#rem-prescription-row {
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    background-color: transparent;
+    margin: 3px;
+    aspect-ratio: 1;
+}
+
+#add-prescription-row {
+    background-image: url("/images/add.svg");
+}
+#rem-prescription-row {
+    background-image: url("/images/remove.svg");
 }
 
 .valid {

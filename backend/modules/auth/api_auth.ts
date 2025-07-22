@@ -43,6 +43,7 @@ export class ApiModuleAuth extends ApiModule {
 
                             return {statusCode: 200, responseObject: { id_token: idToken, access_token: accessToken, refresh_token: refreshToken }, error: undefined};
                         } else {
+                            console.error("Body of /generateToken: ", body);
                             throw new Error("Client sent invalid request body to /generateToken");
                         }
                     } catch (e) {
@@ -83,7 +84,7 @@ export class ApiModuleAuth extends ApiModule {
             
             try {
                 let res = await ssl.httpsRequest(
-                    config.get('generic.'), AdfsOidc.getOidcProvider().getConfiguration().tokenEndpointUrl.pathname,
+                    config.get('generic.HOSTNAME_ADFS'), AdfsOidc.getOidcProvider().getConfiguration().tokenEndpointUrl.pathname,
                     'POST', bodyContent,
                     'application/x-www-form-urlencoded', 'Basic ' + btoa(config.get('generic.ADFS_INTRANET_CLIENT_ID') + ":" + config.get('generic.ADFS_INTRANET_CLIENT_SECRET')));
                 if (res.statusCode == 200) {

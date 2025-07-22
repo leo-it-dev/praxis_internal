@@ -103,7 +103,7 @@ async function movetaRunSQLAdministrativeCommands(commands: string[]): Promise<s
         commands = commands.map(c => 'echo "' + escape(c) + '"');
         let cmd1 = 'cd ' + dirpath + ';LD_LIBRARY_PATH="$LD_LIBRARY_PATH:' + dirpath + "\"; export LD_LIBRARY_PATH";
         let cmd2 = '( ' + commands.join(';') + ' )';
-        let cmd3 = config.get('movetaOdbcConnection.SQLLXTLK_BINARY_PATH') + ' BAT DB=' + config.get('generic.DRUGS_SQLBASE_ADMIN_DATABASE') + '/' + config.get('generic.DRUGS_SQLBASE_ADMIN_USERNAME') + '/' + config.get('generic.DRUGS_SQLBASE_ADMIN_PASSWORD');
+        let cmd3 = config.get('movetaOdbcConnection.SQLLXTLK_BINARY_PATH') + ' BAT DB=' + config.get('movetaOdbcConnection.DRUGS_SQLBASE_ADMIN_DATABASE') + '/' + config.get('movetaOdbcConnection.DRUGS_SQLBASE_ADMIN_USERNAME') + '/' + config.get('movetaOdbcConnection.DRUGS_SQLBASE_ADMIN_PASSWORD');
         
         let command = cmd1 + ';' + cmd2 + ' | ' + cmd3;
         exec(command, (err, stdout: string, stderr: string) => {

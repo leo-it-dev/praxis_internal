@@ -10,6 +10,7 @@ import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
 import { Mutex } from 'async-mutex';
 const config = require('config');
 import { performPatches } from '../../ext_config_patcher';
+import * as fs from 'fs';
 
 export class ApiModuleQs extends ApiModule {
 
@@ -99,6 +100,76 @@ export class ApiModuleQs extends ApiModule {
 
         setInterval(this.updateQsDatabase.bind(this), config.get('generic.QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
         this.updateQsDatabase();
+
+
+        // TODO: Remove
+        /*let limit = 100;
+        let offset = 0;
+
+        let filePath = "/tmp/qs_dump.csv";
+        let fileHandle = await fs.promises.open(filePath, 'w');
+
+        let headerWritten = false;
+        let headers = [];
+
+        let drugs = new Set<string>();
+
+        try {
+            while (true) {
+                console.log("a");
+                
+                let resOut = undefined;
+                let prom = new Promise((res, rej) => {resOut = res;})
+                setTimeout(() => resOut(), 100);
+                await prom;
+
+                let data = await this.qsApiHandler.requestDrugReports(limit, offset);
+                // await this.qsApiHandler.requestSingleDrugReport(data.documents[0].id);
+
+                for (let doc of data.documents) {
+                    if (!headerWritten) {
+                        headers = Object.keys(doc).map(e => e.toString());
+                        fileHandle.writeFile(headers.join(';') + "\r\n");
+                        headerWritten = true;
+                    }
+
+                    let serializeEntries = [];
+                    for(let entry of headers) {
+                        serializeEntries.push(doc[entry] || "-");
+                    }
+                    drugs.add(doc["drugDisplayName"]);
+                    fileHandle.writeFile(serializeEntries.join(";") + "\r\n");
+                }
+
+                if (!data.moreData) {
+                    console.log("Done reading all entries!");
+                    fileHandle.close();
+                    break;
+                }
+
+                offset += limit;
+            }
+
+            let found = 0;
+            let notFound = 0;
+            for (let drugDisplayName of Array.from(drugs)) {
+                let foundCountPrimary = this.reportableDrugsPrefered.filter(d => d.name.toLowerCase() == drugDisplayName.toLowerCase()).length;
+                let foundCountSecondary = this.reportableDrugsFallback.filter(d => d.name.toLowerCase() == drugDisplayName.toLowerCase()).length;
+                console.log(Math.max(foundCountPrimary, foundCountSecondary) > 0 ? "+" : "-", drugDisplayName, foundCountPrimary, foundCountSecondary);
+                if (Math.max(foundCountPrimary, foundCountSecondary) > 0) {
+                    found++;
+                } else {
+                    notFound++;
+                }
+            }
+
+
+            console.log("Found: ", found);
+            console.log("Not found:", notFound);
+            console.log("");
+        } catch(er) {
+            console.error(er);
+        }*/
     }
 
     registerEndpoints() {

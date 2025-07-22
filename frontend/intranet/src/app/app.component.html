@@ -4,4 +4,7 @@
 @if (this.metaServie.isDevelopmentDeployment()) {
     <app-deployment-developer-notice></app-deployment-developer-notice>
 }
+@if (this.loadingService.loadingOverlayVisible()) {
+    <app-loadingoverlay></app-loadingoverlay>
+}
 <router-outlet></router-outlet>

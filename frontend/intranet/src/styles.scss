@@ -13,6 +13,10 @@ input, button {
     border-radius: 2px;
     padding: var(--input-padding);
 }
+button {
+    cursor: pointer;
+}
+
 button:hover {
     filter: brightness(0.9);
 }
@@ -150,4 +154,21 @@ ul {
 li {
     font-size: 10pt;
     margin: 10px 0px;
+}
+
+
+.overlayContainer {
+    padding: 50px;
+    box-shadow: 0px 0px 50px var(--shadeLevel2);
+    min-width: 30vw;
+    min-height: min-content;
+    width: max-content;
+    max-width: 70vw;
+    height: min-content;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--background);
+    z-index: 1001;
 }

@@ -20,6 +20,16 @@
 
 #logo {
     padding: 0;
+    background-color: white;
+    background-image: url("/favicon.ico");
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 100%;
+    display: block;
+    aspect-ratio: 1;
+    border: 6px solid transparent;
+    box-sizing: border-box;
 }
 
 :host > .action-item,

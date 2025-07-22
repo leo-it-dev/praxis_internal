@@ -19,6 +19,8 @@ import { CategorizedList } from '../utilities/categorized-list';
 import { PrescriptionRowComponent } from "./prescription-row/prescription-row.component";
 import { QsreportBackendService } from './qsreport-backend.service';
 import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
+import { LoadingoverlayComponent } from '../loadingoverlay/loadingoverlay.component';
+import { LoadingoverlayService } from '../loadingoverlay/loadingoverlay.service';
 
 export const DRUG_CATEGORY_OK = "moveta";
 export const DRUG_CATEGORY_WARN = "hit";
@@ -28,7 +30,7 @@ export const HINT_WARN: Hint = { color: 'orange', text: 'WARN' }
 
 @Component({
 	selector: 'app-qsreport',
-	imports: [DatepickerComponent, BlockingoverlayComponent, ReactiveFormsModule, SyncOnlineControllerComponent, HintComponent, NgFor, PrescriptionRowComponent, SearchDropdownComponent],
+	imports: [DatepickerComponent, BlockingoverlayComponent, LoadingoverlayComponent, ReactiveFormsModule, SyncOnlineControllerComponent, HintComponent, NgFor, PrescriptionRowComponent, SearchDropdownComponent],
 	templateUrl: './qsreport.component.html',
 	styleUrl: './qsreport.component.scss'
 })
@@ -120,7 +122,8 @@ export class QsreportComponent implements AfterViewInit {
 		private sessionService: SessionProviderService,
 		private offlineStore: OfflineStoreService,
 		private changeDetectorRef: ChangeDetectorRef,
-		private qsreportBackend: QsreportBackendService
+		private qsreportBackend: QsreportBackendService,
+		private loadingService: LoadingoverlayService
 	) {
 		this._sessionService = sessionService;
 		this.loadApiData();
@@ -227,9 +230,14 @@ export class QsreportComponent implements AfterViewInit {
 	}
 
 	submitForm(): Promise<void> {
-		return new Promise((res, rej) => {
+		return new Promise<void>((resFin, rejFin) => {
+			let res = (() => {this.loadingService.hideLoadingOverlay(); resFin()});
+			let rej = (() => {this.loadingService.hideLoadingOverlay(); rejFin()});
+
 			this.qsFormGroup.updateValueAndValidity(); // Ensure the valid attribute is up-to-date.
 			if (this.qsFormGroup.valid) {
+				this.loadingService.showLoadingOverlay();
+
 				let putRequest = this.serializeFormToObject();
 				if (this.sessionService.getSessionType() == SessionType.ONLINE) {
 					this.backendService.authorizedBackendCall<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>(QsreportComponent.API_URL_POST_REPORT, putRequest
