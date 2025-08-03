@@ -3,6 +3,7 @@ import express = require('express');
 import * as path from 'path';
 import * as ssl from './ssl/ssl'
 import * as fs from 'fs';
+import * as config from 'config';
 
 /**
  * Endpoint modules
@@ -36,6 +37,18 @@ function initializeDevelopmentBuildEnvironment(projectRoot: string) {
     }
 
     console.log("--- Preparing development environment finished ---");
+}
+
+async function runSecureRedirectServer() {
+    console.log("Starting up secure redirection server on port 80...");
+    const app = express();
+    // redirect every single incoming request to https
+    app.use(function(req, res) {
+        console.log("Redirected request to " + req.url + " from HTTP to HTTPS!");
+        res.redirect('https://' + config.get('generic.SERVE_DOMAIN') + req.originalUrl);
+    });
+    app.listen(80);
+    console.log("Secure redirect server is running on port 80!");
 }
 
 async function startup() {
@@ -114,6 +127,7 @@ async function startup() {
         }
     });
 
+    runSecureRedirectServer();
     https.createServer(ssl.SSL_OPTIONS, app).listen(443);
 }
 startup();

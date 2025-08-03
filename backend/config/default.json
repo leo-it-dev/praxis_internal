@@ -1,5 +1,7 @@
 {
     "generic": {
+        "SERVE_DOMAIN": "subdomain.your-site.de",
+
         "TOKEN_EXPIRATION_SAFETY_MARGIN_SECONDS_QS": 120,
         "TOKEN_EXPIRATION_SAFETY_MARGIN_SECONDS_ADFS": 120,
         "GATEWAY_ID": "your-personal-access-token",

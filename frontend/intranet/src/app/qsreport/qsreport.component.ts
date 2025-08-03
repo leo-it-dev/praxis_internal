@@ -30,7 +30,7 @@ export const HINT_WARN: Hint = { color: 'orange', text: 'WARN' }
 
 @Component({
 	selector: 'app-qsreport',
-	imports: [DatepickerComponent, BlockingoverlayComponent, LoadingoverlayComponent, ReactiveFormsModule, SyncOnlineControllerComponent, HintComponent, NgFor, PrescriptionRowComponent, SearchDropdownComponent],
+	imports: [DatepickerComponent, BlockingoverlayComponent, ReactiveFormsModule, SyncOnlineControllerComponent, HintComponent, NgFor, PrescriptionRowComponent, SearchDropdownComponent],
 	templateUrl: './qsreport.component.html',
 	styleUrl: './qsreport.component.scss'
 })
