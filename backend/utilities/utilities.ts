@@ -1,4 +1,8 @@
+import { getLogger } from "../logger";
+
 export const b64UrlRegexChar = "[A-Za-z0-9_-]";
+
+let logger = getLogger('utilities');
 
 export function getSystemTimeZone() {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -20,7 +24,7 @@ export function base64urlDecode(base64url: string) {
 export function parseSimpleDate(dateStr: string): Date {
     let parts = dateStr.split(".");
     if (parts.length !== 3) {
-        console.error("Error parsing simple date! Not exactly three parts to date!");
+        logger.error("Error parsing simple date! Not exactly three parts to date!", {date: dateStr});
         return new Date(0);
     }
     return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));

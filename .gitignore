@@ -2,6 +2,7 @@ vetproof_api/
 **/*.crt
 **/*.key
 **/*.req
+**/*.log
 **/node_modules/
 backend/js
 frontend/dist

@@ -1,8 +1,9 @@
-import { base64urlDecode, b64UrlRegexChar } from "./utilities";
 import jwt = require('jsonwebtoken');
 import crypto = require('crypto');
-import { OidcInstance } from "../framework/oidc_instance";
+import { getLogger } from '../logger';
 const ssl = require('../ssl/ssl');
+
+const logger = getLogger('jwt-helper');
 
 export function parseJWTtoken(jwtString: string): {'header': string, 'content': string, 'hash': string} {
     let [header, content, hash] = jwtString.split(".");
@@ -13,7 +14,7 @@ export function parseJWTtoken(jwtString: string): {'header': string, 'content': 
     return {'header': headerParsed, 'content': contentParsed, 'hash': hash};
 }
 
-export function resolveOicdConfiguration(endpoint: OidcConfigurationRaw): Promise<OidcConfigurationResolved> {
+export function resolveOidcConfiguration(endpoint: OidcConfigurationRaw): Promise<OidcConfigurationResolved> {
     return new Promise<OidcConfigurationResolved>(async (res, rej) => {
         try {
             /**
@@ -22,17 +23,17 @@ export function resolveOicdConfiguration(endpoint: OidcConfigurationRaw): Promis
     
             let resp = await ssl.httpsRequest(endpoint.hostname, endpoint.configurationPath, 'GET', '', undefined, undefined);
             if (resp.statusCode != 200) {
-                console.error("Error reading OIDC configuration! ADFS returned invalid status code: ", resp.statusCode);
+                logger.error("Error reading OIDC configuration! ADFS returned invalid status code!", {hostname: endpoint.hostname, configPath: endpoint.configurationPath, statusCode: resp.statusCode});
                 return null;
             }
 
-            console.log("Read OIDC configuration!");
+            logger.info("Read OIDC configuration!");
             const body = JSON.parse(resp.data);
             /**
              * Maybe additional information is to be parsed out of this body
              * Add data extraction code here.
              */
-            
+
             res({
                 ...endpoint,
                 jwksUrl: new URL(body['jwks_uri']),
@@ -40,9 +41,9 @@ export function resolveOicdConfiguration(endpoint: OidcConfigurationRaw): Promis
                 tokenEndpointUrl: new URL(body['token_endpoint']),
                 jwksCertificates: []
             });
-        } catch(e) {
-            console.error(e);
-            rej(e);
+        } catch(err) {
+            logger.error("An error occurred while trying to resolve OIDC configuration!", {error: err});
+            rej(err);
         }
     });
 }
@@ -56,18 +57,18 @@ export function updateJwksCertificates(endpoint: OidcConfigurationResolved): Pro
              * Extract certificates
              */
             if (endpoint.jwksUrl.hostname != endpoint.hostname) {
-                console.error("Invalid JWKS host announced by ADFS server!");
+                logger.error("Invalid JWKS host announced by ADFS server!", {hostnameExpected: endpoint.hostname, hostnameReported: endpoint.jwksUrl.hostname});
                 return false;
             }
             let resp = await ssl.httpsRequest(endpoint.hostname, endpoint.jwksUrl.pathname, 'GET', '', undefined, undefined);
             if (resp.statusCode != 200) {
-                console.error("Error reading JWT Keystore page! ADFS returned invalid status code: ", resp.statusCode);
+                logger.error("Error reading JWT Keystore page! ADFS returned invalid status code!", {statusCode: resp.statusCode});
                 return false;
             }
     
             let jwks = JSON.parse(resp.data);
     
-            console.log("Read JWT key store!");
+            logger.info("Read JWT key store!", {jwks: jwks});
             for (const key of jwks['keys']) {
                 if (key['alg'] == 'RS256') {
                     const x5t = key['x5t'];
@@ -78,13 +79,13 @@ export function updateJwksCertificates(endpoint: OidcConfigurationResolved): Pro
                         x5t: x5t, 
                         cert: x5c, 
                         publicKey: publicKey.export({type: "spki", format: "pem"}).toString()});
-                    console.log("Loaded ADFS verfication certificate for x5t " + x5t);
+                    logger.info("Loaded ADFS verfication certificate for x5t!", {x5t: x5t});
                 }
             }
     
             res();
         } catch(e) {
-            console.error(e);
+            logger.error("Error occurred while trying to update jwks certificate store!", {error: e});
             rej(e);
         }
     });

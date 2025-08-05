@@ -28,6 +28,7 @@
     "@types/ldapjs": "^3.0.6",
     "async-mutex": "^0.5.0",
     "body-parser": "^1.20.3",
+    "chalk": "^4",
     "config": "^4.0.0",
     "express": "^4.21.1",
     "iconv": "^3.0.1",
@@ -37,7 +38,8 @@
     "node": "^18.20.5",
     "odbc": "^2.4.9",
     "vet_proof_external_tools_api": "1.2.1",
-    "windows-1252": "^3.0.4"
+    "windows-1252": "^3.0.4",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

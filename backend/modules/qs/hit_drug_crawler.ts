@@ -2,7 +2,10 @@
 let xlsx = require('js-xlsx');
 import { compare, parseSimpleDate } from "../../utilities/utilities";
 import { DrugPackage, ReportableDrug } from "../../../api_common/api_qs";
+import { getLogger } from "../../logger";
 const config = require('config');
+
+let logger = getLogger('hit-drug-crawler');
 
 function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
     let reportableDrugs: Array<ReportableDrug> = [];
@@ -69,7 +72,7 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
             // This removes the old registration of the same drug and replaces it with the new registration!
             let oldReg = parsedValsRemovedDuplicates.pop();
             if (oldReg.name !== parsedDrug.name || oldReg.pack !== parsedDrug.pack) {
-                console.warn(" - Replaced old drug registration with new one, but details have changed which is unexpected: ", oldReg, parsedDrug);
+                logger.warn("Replaced old drug registration with new one, but details have changed which is unexpected!", {oldReg: oldReg, newReg: parsedDrug});
             }
         }
 
@@ -107,8 +110,6 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
 
     // sort grouped drugs by name ascending
     reportableDrugs.sort((drugA, drugB) => drugA.name.localeCompare(drugB.name));
-
-    // console.log(util.inspect(reportableDrugs, {showHidden: false, depth: null, colors: true}))
     return reportableDrugs;
 }
 

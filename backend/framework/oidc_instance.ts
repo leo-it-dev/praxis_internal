@@ -1,8 +1,9 @@
-import { resolveOicdConfiguration, updateJwksCertificates } from '../utilities/jwt_helper';
+import { resolveOidcConfiguration, updateJwksCertificates } from '../utilities/jwt_helper';
 import { b64UrlRegexChar, base64urlDecode } from '../utilities/utilities';
 import jwt = require('jsonwebtoken');
 import { Mutex } from 'async-mutex';
 import { JwtError, JwtErrorType } from '../../api_common/api_auth';
+import { getLogger } from '../logger';
 const config = require('config');
 
 export class OidcInstance {
@@ -11,17 +12,19 @@ export class OidcInstance {
     private jwksUpdateInterval: NodeJS.Timeout;
     private jwksUpdateMutex: Mutex;
 
+    private logger = getLogger('oidc-instance');
+
     private constructor(configResolved: OidcConfigurationResolved) {
         this.configuration = configResolved;
         this.jwksUpdateMutex = new Mutex();
         this.jwksUpdateInterval = setInterval(this.updateJwksKeyStore.bind(this), config.get('generic.JWKS_UPDATE_INTERVAL_MINUTES') * 60 * 1000);
-        console.log("OIDC registered automatic jwks key store renew interval for host " + this.configuration.hostname + ": " + config.get('generic.JWKS_UPDATE_INTERVAL_MINUTES') + " Minutes");
+        this.logger.info("OIDC registered automatic jwks key store renew interval.", {host: this.configuration.hostname, updateIntervalMinutes: config.get('generic.JWKS_UPDATE_INTERVAL_MINUTES')});
         this.updateJwksKeyStore();
     }
 
     static construct(config: OidcConfigurationRaw): Promise<OidcInstance> {
         return new Promise<OidcInstance>((res, rej) => {
-            resolveOicdConfiguration(config).then(configRes => {
+            resolveOidcConfiguration(config).then(configRes => {
                 res(new OidcInstance(configRes));
             }).catch(err => {
                 rej();
@@ -30,19 +33,19 @@ export class OidcInstance {
     }
 
     updateJwksKeyStore() {
-        console.log("Scheduled jwks update for oidc instance " + this.configuration.hostname);
+        this.logger.info("Scheduled jwks update for oidc instance!", {host: this.configuration.hostname});
         const inst = this;
         this.jwksUpdateMutex.runExclusive(() => {
-            console.log("Mutex released. Starting jwks update for oidc instance " + inst.configuration.hostname);
+            this.logger.info("Mutex released. Starting jwks update for oidc instance!", {host: inst.configuration.hostname});
             updateJwksCertificates(inst.configuration).then(() => {
-                console.log("Successfully updated jwks certificates in store: " + inst.configuration.hostname + ". Received " + inst.configuration.jwksCertificates.length + " items!");
+                this.logger.info("Successfully updated jwks certificates in store!", {host: inst.configuration.hostname, certCount: inst.configuration.jwksCertificates.length});
             }).catch(err => {
-                console.error("Error updating jwks certificate store! " + err);
+                this.logger.error("Error updating jwks certificate store! ", {error: err});
             });
         }).then(() => {
-            console.log("Finished jwks update for oidc instance " + inst.configuration.hostname);
+            this.logger.info("Finished jwks update for oidc instance!", {host: inst.configuration.hostname});
         }).catch((err) => {
-            console.error("Error updating jwks store: " + err);
+            this.logger.error("Error updating jwks store!", {error: err});
         });
     }
 
@@ -94,10 +97,10 @@ export class OidcInstance {
             jwt.verify(jwtToken, certificate.publicKey, (err, user) => {
                 if (err == null) {
                     // Success
-                    console.log("Successfully validated JWT token!");
+                    this.logger.debug("Successfully validated JWT token!", {userSid: user.sid, userEmail: user.email});
                     res(user);
                 } else {
-                    console.log("Error validating JWT token: ", err);
+                    this.logger.error("Error validating JWT token!", {error: err});
                     if (err.name == 'TokenExpiredError') {
                         rej({error: JwtErrorType.EXPIRED, reason: "Error validating JWT token signature: " + err});
                     } else {

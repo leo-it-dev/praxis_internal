@@ -1,5 +1,6 @@
 import fs = require('node:fs');
 import https = require('https');
+import { getLogger } from '../logger';
 
 export let CA_CERT: string = "";
 export let ADFS_CERT: string = "";
@@ -10,6 +11,8 @@ export const SSL_OPTIONS = {
     key: '<uninitialized>',
     cert: '<uninitialized>',
 };
+
+const logger = getLogger('ssl');
 
 export function initSSL() {
     this.CA_CERT = fs.readFileSync(__dirname + '/certs/ca.crt');
@@ -23,7 +26,7 @@ export function initSSL() {
 
 export function httpsRequest(hostname: string, path: string, method: string, body: string, contentType?: string, authorization?: string): Promise<{'statusCode': number, 'data': string}> {
     return new Promise<{'statusCode': number, 'data': string}>((res, rej) => {
-        console.log("Performing https request: ", hostname, path, method);
+        logger.debug("Performing https request!", {hostname: hostname, path: path, method: method});
         let reqHeaders = {};
         if (contentType) {
             reqHeaders = { 'content-type': contentType };
@@ -55,7 +58,7 @@ export function httpsRequest(hostname: string, path: string, method: string, bod
             let data = "";
             response.on('data', (chunk) => data += chunk.toString());
             response.on('error', (err) => {
-                console.error(err);
+                logger.error("Received error while trying to perform SSL https request!", {hostname: hostname, path: path, method: method, body: body, contenetType: contentType, authorization: authorization, error: err});
                 rej(err);
             });
             response.on('end', () => {

@@ -1,8 +1,11 @@
 import { DrugUnits, ReportableDrug } from "../../../api_common/api_qs";
 import odbc = require("odbc");
 import path = require("node:path");
+import { getLogger } from "../../logger";
 const { exec } = require('child_process');
 const config = require('config');
+
+const logger = getLogger('moveta-drug-crawler');
 
 const movetaDrugUnitMapping = {
     "kg": DrugUnits.kilogram,
@@ -122,20 +125,24 @@ async function movetaRunSQLAdministrativeCommands(commands: string[]): Promise<s
 
 export async function installMovetaDBInSqlBaseServer(): Promise<void> {
     return new Promise((res, rej) => {
+        let databaseName = config.get('movetaOdbcConnection.DRUGS_SQLBASE_WORKING_DATABASE');
+        let serverName = config.get('movetaOdbcConnection.DRUGS_SQLBASE_SERVER_NAME');
+        let password = config.get('movetaOdbcConnection.DRUGS_SQLBASE_SERVER_PASSWORD');
+
         let cmds = [
-            'SET SERVER ' + escape(config.get('movetaOdbcConnection.DRUGS_SQLBASE_SERVER_NAME')) + '/' + escape(config.get('movetaOdbcConnection.DRUGS_SQLBASE_SERVER_PASSWORD')) + ';',
-            'INSTALL DATABASE ' + escape(config.get('movetaOdbcConnection.DRUGS_SQLBASE_WORKING_DATABASE')) + ';'
+            'SET SERVER ' + escape(serverName) + '/' + escape(password) + ';',
+            'INSTALL DATABASE ' + escape(databaseName) + ';'
         ]
-        console.log("Trying to install database " + config.get('movetaOdbcConnection.DRUGS_SQLBASE_WORKING_DATABASE') + " in SQLServer (make it available for network access)...");
+        logger.info("Trying to install moveta database in SQL Server (make it available for network access)!", {database: databaseName});
         movetaRunSQLAdministrativeCommands(cmds).then(stdout => {
             if(stdout.includes("SERVER IS SET") && stdout.includes("DATABASE INSTALLED")) {
-                console.log("Successfully installed database " + config.get('movetaOdbcConnection.DRUGS_SQLBASE_WORKING_DATABASE') + " for isql access!");
+                logger.info("Successfully installed database " + databaseName + " for isql access!");
                 res();
             } else {
                 throw new Error("Invalid stdout from sqllxtlk subprocess: " + stdout);
             }
         }).catch(stderr => {
-            console.error("Error installing database " + config.get('movetaOdbcConnection.DRUGS_SQLBASE_WORKING_DATABASE') + " for isql access: " + stderr);
+            logger.error("Error installing database for isql access!", {database: databaseName, error: stderr});
             rej();
         });
     });

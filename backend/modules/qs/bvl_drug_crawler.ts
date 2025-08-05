@@ -43,7 +43,6 @@ function parseReportableDrugsExcelBlob(blob): Array<ReportableDrug> {
     
     // TODO: Fix last entry being added wrongly
     outData.push({"znr": lastZnr, "name": lastName, 'forms': drugListZnr})
-    // console.log(util.inspect(outData, {showHidden: false, depth: null, colors: true}))
     return outData;
 }
 
@@ -52,7 +51,6 @@ export async function readReportableDrugListFromBVL() {
         let dat = await fetch(options.DRUGS_XLSX_URL).then(dat => dat.arrayBuffer());
         return parseReportableDrugsExcelBlob(Buffer.from(dat));
     } catch(e) {
-        console.error("Error reading drugs list from BVL: ", e);
         return null;
     }*/
 }

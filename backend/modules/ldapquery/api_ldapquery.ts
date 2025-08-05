@@ -28,16 +28,16 @@ export class ApiModuleLdapQuery extends ApiModule {
 
                 this.ldapClient = ldapjs.createClient(this.ldapConfig);
                 this.ldapClient.on('error', (err) => {
-                    console.log("LDAP client disconnected. Next access will try to reconnect.", err.code);
+                    this.logger().warn("LDAP client disconnected. Next access will try to reconnect.", {errorCode: err.code});
                     this.ldapClient.unbind();
                     this.ldapClient.destroy();
                     this.ldapClient = undefined;
                 });
                 this.ldapClient.bind(config.get('generic.LDAP_LOGIN_USER'), config.get('generic.LDAP_LOGIN_PASS'), (error) => {
                     if (error) {
-                        console.error("Error binding to LDAP user: " + config.get('generic.LDAP_LOGIN_USER') + ": " + error);
+                        this.logger().error("Error binding to LDAP user!", {username: config.get('generic.LDAP_LOGIN_USER'), error: error});
                     } else {
-                        console.log("Successfully bound to LDAP user: " + config.get('generic.LDAP_LOGIN_USER') + "!");
+                        this.logger().info("Successfully bound to LDAP user!", {username: config.get('generic.LDAP_LOGIN_USER')});
                     }
                     this.ldapConnectMutex.release();
                     res();
@@ -60,7 +60,7 @@ export class ApiModuleLdapQuery extends ApiModule {
         if (attr) {
             return attr;
         } else {
-            console.error("Error looking up ldap entry for user: " + userSID + " " + attrName);
+            this.logger().error("Error looking up ldap entry for user!", {sid: userSID, attributeName: attrName});
             return undefined;
         }
     }

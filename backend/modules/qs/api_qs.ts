@@ -1,16 +1,15 @@
-import { ApiModule } from '../../api_module';
-import { Farmer, QsApiHandler } from './qsapi_handler';
-import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
-import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, ReportableDrug } from '../../../api_common/api_qs';
-import { readReportableDrugListFromHIT } from './hit_drug_crawler';
-import { sum } from '../../utilities/utilities';
-import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
-import { getApiModule } from '../../index';
-import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
 import { Mutex } from 'async-mutex';
-const config = require('config');
+import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, ReportableDrug } from '../../../api_common/api_qs';
+import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
+import { ApiModule } from '../../api_module';
 import { performPatches } from '../../ext_config_patcher';
-import * as fs from 'fs';
+import { getApiModule } from '../../index';
+import { sum } from '../../utilities/utilities';
+import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
+import { readReportableDrugListFromHIT } from './hit_drug_crawler';
+import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
+import { Farmer, QsApiHandler } from './qsapi_handler';
+const config = require('config');
 
 export class ApiModuleQs extends ApiModule {
 
@@ -40,7 +39,7 @@ export class ApiModuleQs extends ApiModule {
 
     async updateDrugs() {
         const inst = this;
-        console.log("Scheduled update of internal databases of reportable drugs...");
+        this.logger().info("Scheduled update of internal databases of reportable drugs!");
 
         this.initializeDrugSources();
 
@@ -59,25 +58,25 @@ export class ApiModuleQs extends ApiModule {
                     logStr += " - " + database.logname + ": " + drug.value.length + " Drugs / " + sum(drug.value.map(d => d.forms.length)) + " Packaging Forms\n";
                 } else {
                     logStr += " - " + database.logname + ": error: " + drug.reason.trim("\n") + "\n";
-                    console.error("Error receiving drug list from " + database.logname + " db: " + drug.reason.trim("\n"));
+                    this.logger().error("Error receiving drug list from provider!", {provider: database.logname, reason: drug.reason.trim("\n")});
                 }
             });
             this.updateDrugsMutex.release();
-            console.log(logStr);
+            this.logger().info(logStr);
         });
     }
 
     async updateQsDatabase() {
         const inst = this;
-        console.log("Scheduled update of internal database of QS informations...");
+        this.logger().info("Scheduled update of internal database of QS informations!");
 
         await this.updateFarmersMutex.acquire();
 
         this.qsApiHandler.readFarmers().then(farmers => {
             inst.farmers = farmers;
-            console.log("Successfully updated list of registered farmers: " + this.farmers.length + " entries!");
+            this.logger().info("Successfully updated list of registered farmers!", {entryCount: this.farmers.length});
         }).catch(e => {
-            console.error("Error updating internal database of registered farmers: ", e);
+            this.logger().error("Error updating internal database of registered farmers!", {error: e});
         }).finally(() => {
             this.updateFarmersMutex.release();
         });
@@ -90,9 +89,9 @@ export class ApiModuleQs extends ApiModule {
 
         try {
             let versionInformation = await this.qsApiHandler.requestVersionInformation();
-            console.log("Detected Vetproof Gateway Version: " + versionInformation);
+            this.logger().info("Detected Vetproof Gateway Version!", {version: versionInformation});
         } catch (e) {
-            console.error("Error detecting Vetproof Gateway Version!: " + e);
+            this.logger().error("Error detecting Vetproof Gateway Version!", {error: e});
         }
 
         setInterval(this.updateDrugs.bind(this), config.get('generic.DRUGS_CRAWLING_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
@@ -116,7 +115,7 @@ export class ApiModuleQs extends ApiModule {
 
         try {
             while (true) {
-                console.log("a");
+                this.logger().info("a");
                 
                 let resOut = undefined;
                 let prom = new Promise((res, rej) => {resOut = res;})
@@ -142,7 +141,7 @@ export class ApiModuleQs extends ApiModule {
                 }
 
                 if (!data.moreData) {
-                    console.log("Done reading all entries!");
+                    this.logger().info("Done reading all entries!");
                     fileHandle.close();
                     break;
                 }
@@ -155,7 +154,7 @@ export class ApiModuleQs extends ApiModule {
             for (let drugDisplayName of Array.from(drugs)) {
                 let foundCountPrimary = this.reportableDrugsPrefered.filter(d => d.name.toLowerCase() == drugDisplayName.toLowerCase()).length;
                 let foundCountSecondary = this.reportableDrugsFallback.filter(d => d.name.toLowerCase() == drugDisplayName.toLowerCase()).length;
-                console.log(Math.max(foundCountPrimary, foundCountSecondary) > 0 ? "+" : "-", drugDisplayName, foundCountPrimary, foundCountSecondary);
+                this.logger().info(Math.max(foundCountPrimary, foundCountSecondary) > 0 ? "+" : "-", drugDisplayName, foundCountPrimary, foundCountSecondary);
                 if (Math.max(foundCountPrimary, foundCountSecondary) > 0) {
                     found++;
                 } else {
@@ -164,11 +163,11 @@ export class ApiModuleQs extends ApiModule {
             }
 
 
-            console.log("Found: ", found);
-            console.log("Not found:", notFound);
-            console.log("");
+            this.logger().info("Found: ", found);
+            this.logger().info("Not found:", notFound);
+            this.logger().info("");
         } catch(er) {
-            console.error(er);
+            this.logger().error(er);
         }*/
     }
 
@@ -194,7 +193,7 @@ export class ApiModuleQs extends ApiModule {
                     throw new Error("Stated veterinary name of drug report does not match vet name registered for user in LDAP!");                    
                 }
             } catch(err) {
-                console.error("Error processing QS veterinary document post request: ", err);
+                this.logger().error("Error processing QS veterinary document post request!", {error: err});
                 return { statusCode: 500, responseObject: {}, error: "Error posting veterinary document to API! " + err };
             }
         });

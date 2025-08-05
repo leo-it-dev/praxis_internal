@@ -15,13 +15,16 @@ import { AdfsOidc } from './framework/adfs_oidc_instance';
 import { ApiModuleLdapQuery } from './modules/ldapquery/api_ldapquery';
 import { DeploymentType } from './deployment';
 import { ApiModuleMeta } from './modules/meta/api_meta';
+import { getLogger } from './logger';
 
 let apiModulesInstances = [];
 
 let deploymentType: DeploymentType = DeploymentType.DEVELOPMENT;
 
+let moduleLogger = getLogger('index');
+
 function initializeDevelopmentBuildEnvironment(projectRoot: string) {
-    console.log("--- Preparing development environment ---");
+    moduleLogger.info("--- Preparing development environment ---");
     let runtimeRoot = path.join(projectRoot, 'js', 'backend');
 
     let copyPaths = [
@@ -32,23 +35,25 @@ function initializeDevelopmentBuildEnvironment(projectRoot: string) {
     ]
 
     for (let copyPath of copyPaths) {
-        console.log("    - Copying path ", copyPath.src, "to", copyPath.dest);
+        moduleLogger.info("    - Copying path ", {src: copyPath.src, dst: copyPath.dest});
         fs.cpSync(copyPath.src, copyPath.dest, { recursive: true });
     }
 
-    console.log("--- Preparing development environment finished ---");
+    moduleLogger.info("--- Preparing development environment finished ---");
 }
 
 async function runSecureRedirectServer() {
-    console.log("Starting up secure redirection server on port 80...");
+    let redirectionLogger = getLogger('https-redirection-server');
+
+    redirectionLogger.info("Starting up secure redirection server on port 80...");
     const app = express();
     // redirect every single incoming request to https
     app.use(function(req, res) {
-        console.log("Redirected request to " + req.url + " from HTTP to HTTPS!");
+        redirectionLogger.debug("Redirected request to " + req.url + " from HTTP to HTTPS!");
         res.redirect('https://' + config.get('generic.SERVE_DOMAIN') + req.originalUrl);
     });
     app.listen(80);
-    console.log("Secure redirect server is running on port 80!");
+    redirectionLogger.info("Secure redirect server is running on port 80!");
 }
 
 async function startup() {
@@ -65,23 +70,23 @@ async function startup() {
 
     if (fs.existsSync(filePathFrontendDev)) {
         deploymentType = DeploymentType.DEVELOPMENT;
-        console.log("File structure indicates development mode!");
+        moduleLogger.info("File structure indicates deployment mode", {mode: "DEVELOPMENT"});
         initializeDevelopmentBuildEnvironment(projectRoot);
     } else if (fs.existsSync(filePathFrontendDepl)) {
         deploymentType = DeploymentType.PRODUCTION;
-        console.log("File structure indicates deployment mode!");
+        moduleLogger.info("File structure indicates deployment mode", {mode: "PRODUCTION"});
     } else {
-        console.log("File structure seems odd. Can't find frontend, won't start!");
+        moduleLogger.error("File structure seems odd. Can't find frontend, won't start!");
         return;
     }
 
-    console.log("Env: ", process.env);
-    console.log("Loading configuration file: ", process.env.NODE_ENV);
+    moduleLogger.debug("Env: ", {env: process.env});
+    moduleLogger.info("Loading configuration file: ", {configFileName: process.env.NODE_ENV});
 
     const filePathFrontend = deploymentType == DeploymentType.PRODUCTION ? filePathFrontendDepl : filePathFrontendDev;
     const app = express();
 
-    console.log("started server");
+    moduleLogger.info("started server");
     const apiModules = [
         ApiModuleMeta,
         ApiModuleAuth,
@@ -95,15 +100,17 @@ async function startup() {
     await AdfsOidc.initialize();
 
     // Now initialize all intranet modules -------
-    console.log("Starting module loader ---");
+    let moduleLoaderLogger = moduleLogger.child({service: 'module-loader'});
+    moduleLoaderLogger.info("Starting module loader ---");
+
     for (let apiModuleClass of apiModules) {
         let apiModule = new apiModuleClass(app);
-        console.log("- Loading Api Backend Module " + apiModuleClass.name + " on basepath -> " + apiModule.basepath());
+        moduleLoaderLogger.info("Loading Api Backend Module on basepath: ", {module: apiModuleClass.name, basepath: apiModule.basepath()});
         await apiModule.initialize();
         apiModule.registerEndpoints();
         apiModulesInstances.push(apiModule);
     }
-    console.log("Finished module loader ---");
+    moduleLoaderLogger.info("Finished module loader ---");
 
     app.use(express.static(path.join(__dirname, filePathFrontend)));
 

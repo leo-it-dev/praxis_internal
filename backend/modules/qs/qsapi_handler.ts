@@ -1,8 +1,10 @@
 import vetproof = require('vet_proof_external_tools_api');
-import {QsAccessToken} from './qs_accesstoken'
 import { DrugReport } from '../../../api_common/api_qs';
+import { getLogger } from '../../logger';
+import { QsAccessToken } from './qs_accesstoken';
 const util = require('util');
 const config = require('config');
+const crypto = require('crypto');
 
 export type Farmer = {
     name: string; // Eindeutige Identifikation des Tierhalters in VetProof
@@ -19,6 +21,8 @@ export class QsApiHandler {
 
     private accessToken: QsAccessToken | undefined = undefined;
     
+    private logger = getLogger('qs-api-handler');
+
     constructor() {
         this.client = new vetproof.ApiClient(config.get('generic.QS_API_SYSTEM'));
         this.authApi = new vetproof.AuthenticationApi(this.client);
@@ -72,7 +76,7 @@ export class QsApiHandler {
                     rej(error);
                 } else {
                     this.accessToken = new QsAccessToken(data.token);
-                    console.log("Constructed new token for user_id: ", this.accessToken.userId, " valid until: ", this.accessToken.getExpirationTimeString());
+                    this.logger.info("Constructed new token for user_id with specified validity time!", {userId: this.accessToken.userId, validDuration: this.accessToken.getExpirationTimeString()});
                 
                     let vetproofGatewayToken = this.client.authentications['vetproofGatewayToken'];
                     vetproofGatewayToken.accessToken = this.accessToken.getRawToken();
@@ -86,19 +90,19 @@ export class QsApiHandler {
         return new Promise((res, rej) => {
             const accessTokenStillValid = this.accessToken && this.accessToken.isTokenStillValid();
             if (accessTokenStillValid) {
-                console.log("Checked QS access token. Still valid until: " + this.accessToken.getExpirationTimeString());
+                this.logger.info("Checked QS access token validity duration!", {duration: this.accessToken.getExpirationTimeString()});
                 res();
             } else {
                 if (this.accessToken)
-                    console.log("Checked QS access token. Token expired " + this.accessToken.getExpirationTimeString() + ". We now request a new token!");
+                    this.logger.warn("Checked QS access token. Token expired. We now request a new token!", {expirationTime: this.accessToken.getExpirationTimeString()});
                 else
-                    console.log("Requesting initial access token!");
+                    this.logger.info("Requesting initial access token!");
     
                 this.renewAccessToken().then(() => {
-                    console.log("We got a new QS access token!");
+                    this.logger.info("We got a new QS access token!");
                     res();
                 }).catch((err) => {
-                    console.log("There was an error refreshing our access token of QS!:", err);
+                    this.logger.error("There was an error refreshing our access token of QS!", {error: err});
                     rej();
                 });
             }
@@ -109,10 +113,10 @@ export class QsApiHandler {
         const pingApi = new vetproof.PingApi(this.client);
         this.checkAndRenewAccessToken().then(() => {
             pingApi.pingGet({}, (error, data, response) => {
-                console.log(error, data, response);
+                this.logger.info("Sent ping to QS!", {error: error, data: data, response: response});
             });
-        }).catch(() => {
-            console.error("Error refreshing QS access token!");
+        }).catch((err) => {
+            this.logger.error("Error refreshing QS access token!", {error: err});
         });
     }
 
@@ -148,7 +152,7 @@ export class QsApiHandler {
             let branches = ["CATTLE_BRANCH", "PIG_BRANCH"];
 
             for (let branch of branches) {
-                console.log("Reading in QS-Farmers for branch " + branch);
+                this.logger.info("Reading in QS-Farmers for specified branch!", {branch: branch});
                 let offset = 0;
                 let data;
 
@@ -213,35 +217,35 @@ export class QsApiHandler {
 
     postDrugReport(drugReport: DrugReport): Promise<string> {
         return new Promise<string>((res, rej) => {
+            let reference = crypto.randomUUID();
             this.checkAndRenewAccessToken().then(() => {
-                let drugReportStr = util.inspect(drugReport, {showHidden: false, depth: null, colors: true});
-                console.log("Sending new drug report to QS: ", drugReportStr);
+                this.logger.info("Sending new drug report to QS!", {drugReport: drugReport, reference:reference});
                 this.vetDocumentsApi.veterinaryDocumentsPost(drugReport, (error, data, response) => {
                     if (error) {
-                        console.error("Error posting prescription-row to API (early error): sent data:", drugReportStr, "got error", error.message, response.text);
+                        this.logger.error("Error posting prescription-row to API (early error): sent data but got an error!", {report: drugReport, error: error.message, responseText: response.text, reference:reference});
                         rej(this.parseErrors(JSON.parse(response.text)));
                     } else {
                         if (response.statusCode == 200) { // OK
                             let rowID = data[0];
-                            console.log("Successfully posted prescription-row to API! Resulting row ID:", rowID);
+                            this.logger.info("Successfully posted prescription-row to API! Got resulting row ID!", {rowID: rowID, reference:reference});
                             res(rowID);
                         } else if(response.statusCode == 400) { // Content is invalid or too short
-                            console.error("Error posting prescription-row to API (400): sent data:", drugReportStr, "got error", data);
+                            this.logger.error("Error posting prescription-row to API (400): sent data but got an error!", {report: drugReport, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         } else if(response.statusCode == 403) { // Our access token is not allowed to perform this operation
-                            console.error("Error posting prescription-row to API (403): sent data:", drugReportStr, "got error", data);
+                            this.logger.error("Error posting prescription-row to API (403): sent data but got an error!", {report: drugReport, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         } else if(response.statusCode == 404) { // The given data could not be found
-                            console.error("Error posting prescription-row to API (404): sent data:", drugReportStr, "got error", data);
+                            this.logger.error("Error posting prescription-row to API (404): sent data but got error!", {report: drugReport, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         } else {
-                            console.error("Error posting prescription-row to API (unknown status: " + response.statusCode + "): sent data:", drugReportStr, "got error", data);
+                            this.logger.error("Error posting prescription-row to API (unknown status-code received while sending data)", {report: drugReport, statusCode: response.statusCode, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         }
                     }
                 });
-            }).catch(() => {
-                console.error("Error posting prescription-row to API (error renewing QS access token!)");
+            }).catch((err) => {
+                this.logger.error("Error posting prescription-row to API (error renewing QS access token!)", {error: err, reference:reference});
                 rej("Error renewing QS Access-Token!");
             });
         });
