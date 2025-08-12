@@ -21,6 +21,11 @@ export interface IStringify<T> {
 	display(obj: T): RowDisplay;
 }
 
+export interface IItemDisable<T> {
+	isItemDisabled(obj: T): boolean;
+}
+
+
 @Component({
 	selector: 'app-search-dropdown',
 	imports: [NgFor, CommonModule, ReactiveFormsModule, HintComponent],
@@ -33,6 +38,12 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 	private _preventNextSelectEventEmit = false;
 
 	private _selectItemAfterInit: TItem|undefined = undefined;
+
+	handleTextChangeFinished: Function | undefined;
+	hoveredItem: WritableSignal<number> = signal(-1);
+	hintText: WritableSignal<String> = signal(this.placeholder);
+
+	recommendedItems: WritableSignal<Array<TItem>> = signal([] as TItem[]);
 
 	currentItemRowDisplay = computed(() => this.lastItemSelectedEventItem() ? this.serial.display(this.lastItemSelectedEventItem()!) : {text: '', hint: {color: '', text: ''}});
 
@@ -65,7 +76,9 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		this._items = items;
 		this.recommendedItems.set(this._items);
 
-		let selectItem = items.length == 1 ? items[0] : undefined;
+		let enabledItems = items.filter(i => !this.itemDisabled.isItemDisabled(i));
+
+		let selectItem = enabledItems.length == 1 ? enabledItems[0] : undefined;
 		if (this.inputElement) {
 			let value = selectItem ? this.serial.display(selectItem).text : "";
 			this.inputElement.nativeElement.value = value;
@@ -91,6 +104,10 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		})
 	};
 
+	@Input({required:false}) itemDisabled: IItemDisable<TItem> = {isItemDisabled: (e) => {
+		return false;
+	}};
+
 	@Output() itemSelectedEvent = new EventEmitter<TItem | undefined>();
 	lastItemSelectedEventItem: WritableSignal<TItem | undefined> = signal(undefined);
 
@@ -100,7 +117,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	updateEnableFlag() {
 		if (this.control) {
-			if (this.hasMultipleItems()) {
+			if (this.filterItemsNotDisabled().length > 1) {
 				this.control.enable();
 			} else {
 				this.control.disable();
@@ -130,12 +147,6 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		}
 	}
 
-	handleTextChangeFinished: Function | undefined;
-	hoveredItem: WritableSignal<number> = signal(-1);
-	hintText: WritableSignal<String> = signal(this.placeholder);
-
-	recommendedItems: WritableSignal<Array<TItem>> = signal([] as TItem[]);
-
 	sendEvent(item: TItem | undefined) {
 		if (!this._preventNextSelectEventEmit) {
 			this.itemSelectedEvent.emit(item);
@@ -155,8 +166,11 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		this.forceInvalidate(item === undefined);
 	}
 
-	hasMultipleItems(): boolean {
-		return this._items !== undefined && this._items.length > 1;
+	filterItemsNotDisabled(): TItem[] {
+		return (this._items || []).filter(i => !this.itemDisabled.isItemDisabled(i));
+	}
+	filterRecommendedItemsNotDisabled(): TItem[] {
+		return (this.recommendedItems() || []).filter(i => !this.itemDisabled.isItemDisabled(i));
 	}
 
 	updateUIAfterInputValueChange() {
@@ -171,7 +185,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 			}
 			this.hoveredItem.set(-1);
 
-			if (this.recommendedItems().length == 1) {
+			if (this.recommendedItems().length == 1 && !this.itemDisabled.isItemDisabled(this.recommendedItems()[0])) {
 				let recomText = this.serial!.display(this.recommendedItems()[0]).text;
 				recomText = search + recomText.substring(search.length);
 				this.hintText.set(recomText);
@@ -182,7 +196,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 			if (search == "") {
 				this.hintText.set(this.placeholder);
 			}
-	
+
 			if (this.handleTextChangeFinished !== undefined) {
 				this.handleTextChangeFinished();
 				this.handleTextChangeFinished = undefined;
@@ -197,8 +211,10 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	hoveredItemChanged(autoScroll: boolean) {
 		let input = this.inputElement!.nativeElement as HTMLInputElement;
-		if(this.hoveredItem() >= 0) {
-			this.hintText.set(input.value + this.serial!.display(this.recommendedItems()[this.hoveredItem()]).text.substring(input.value.length));
+		let hoveredItem = this.hoveredItem() >= 0 && !this.itemDisabled.isItemDisabled(this.recommendedItems()[this.hoveredItem()]) ? this.recommendedItems()[this.hoveredItem()] : undefined;
+		
+		if(hoveredItem) {
+			this.hintText.set(input.value + this.serial!.display(hoveredItem).text.substring(input.value.length));
 			if (autoScroll) {
 				(this.optionItems.get(this.hoveredItem())?.nativeElement as HTMLElement).scrollIntoView({block: "nearest"});
 			}
@@ -212,8 +228,10 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 		if (event.key == "ArrowDown") {
 			if (input.selectionStart == input.value.length) {
-				if (this.hoveredItem() < this.recommendedItems().length - 1) {
-					this.hoveredItem.set(this.hoveredItem() + 1);
+				let nextEnabledItem = this.recommendedItems().slice(this.hoveredItem() + 1).find(e => !this.itemDisabled.isItemDisabled(e));
+				if (nextEnabledItem) {
+					let nextEnabledItemIdx = this.recommendedItems().indexOf(nextEnabledItem);
+					this.hoveredItem.set(nextEnabledItemIdx);
 					this.hoveredItemChanged(true);
 				}
 			}
@@ -221,10 +239,13 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		}
 		if (event.key == "ArrowUp") {
 			if (this.hoveredItem() != -1) {
-				event.preventDefault();
 				if (this.hoveredItem() >= 0) {
-					this.hoveredItem.set(this.hoveredItem() - 1);
-					this.hoveredItemChanged(true);
+					let prevEnabledItem = this.recommendedItems().slice(0, this.hoveredItem()).reverse().find(e => !this.itemDisabled.isItemDisabled(e));
+					if (prevEnabledItem) {
+						let prevEnabledItemIdx = this.recommendedItems().indexOf(prevEnabledItem);
+						this.hoveredItem.set(prevEnabledItemIdx);
+						this.hoveredItemChanged(true);
+					}
 				}
 			}
 			event.preventDefault();
@@ -233,7 +254,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 			let selectedItem = undefined;
 			if (this.hoveredItem() != -1) {
 				selectedItem = this.recommendedItems()[this.hoveredItem()];
-			} else if (this.recommendedItems().length == 1) {
+			} else if (this.recommendedItems().length == 1 && !this.itemDisabled.isItemDisabled(this.recommendedItems()[0])) {
 				selectedItem = this.recommendedItems()[0];
 			}
 			if (selectedItem) {
@@ -242,45 +263,75 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 			event.preventDefault();
 		}
 		if (event.key == "PageUp") {
-			let selected = this.hoveredItem() == -1 ? 0 : this.hoveredItem();
-			let optionDOM = this.optionItems.get(selected)?.nativeElement as HTMLElement;
-			optionDOM.parentElement!.scrollTop -= optionDOM.parentElement!.getBoundingClientRect().height;
-			
-			while(selected > 0) {
-				let optionDOM = this.optionItems.get(selected)?.nativeElement as HTMLElement;
-				if (optionDOM.getBoundingClientRect().y - optionDOM.parentElement!.getBoundingClientRect().y <= 0) {
-					this.hoveredItem.set(selected+1);
-					this.hoveredItemChanged(true);
-					break;
+			let enabledItems = this.filterRecommendedItemsNotDisabled();
+			if (enabledItems.length > 0) {
+				let firstEnabledItemIdx = this.recommendedItems().indexOf(enabledItems[0]);
+				let selected = this.hoveredItem() == -1 ? firstEnabledItemIdx : this.hoveredItem();
+				let scrollContainerDOM = (this.optionItems.get(0)?.nativeElement as HTMLElement).parentElement as HTMLElement;
+				scrollContainerDOM.scrollTop -= scrollContainerDOM.getBoundingClientRect().height;
+
+				while(selected > 0) {
+					let optionDOM = this.optionItems.get(selected)?.nativeElement as HTMLElement;
+					let optionDomTop = optionDOM.getBoundingClientRect().y;
+					let optionItem = this.recommendedItems()[selected];
+					let optionIsDisabled = this.itemDisabled.isItemDisabled(optionItem);
+					if (!optionIsDisabled && (optionDomTop - optionDOM.parentElement!.getBoundingClientRect().y <= 0)) {
+						this.hoveredItem.set(selected);
+						optionDOM.scrollIntoView({
+							behavior: 'instant',
+							block: 'start'
+						});
+						this.hoveredItemChanged(true);
+						break;
+					}
+					selected--;
 				}
-				selected--;
 			}
 			event.preventDefault();
 		}
 		if (event.key == "PageDown") {
-			let selected = this.hoveredItem() == -1 ? 0 : this.hoveredItem();
-			let optionDOM = this.optionItems.get(selected)?.nativeElement as HTMLElement;
-			optionDOM.parentElement!.scrollTop += optionDOM.parentElement!.getBoundingClientRect().height;
-			
-			while(selected < this.optionItems.length) {
-				let optionDOM = this.optionItems.get(selected)?.nativeElement as HTMLElement;
-				if (optionDOM.getBoundingClientRect().y - optionDOM.parentElement!.getBoundingClientRect().y + optionDOM.getBoundingClientRect().height >= optionDOM.parentElement!.getBoundingClientRect().height) {
-					this.hoveredItem.set(selected-1);
-					this.hoveredItemChanged(true);
-					break;
+			let enabledItems = this.filterRecommendedItemsNotDisabled();
+			if (enabledItems.length > 0) {
+				let lastEnabledItemIdx = this.recommendedItems().indexOf(enabledItems[0]);
+				let selected = this.hoveredItem() == -1 ? lastEnabledItemIdx : this.hoveredItem();
+				let scrollContainerDOM = (this.optionItems.get(0)?.nativeElement as HTMLElement).parentElement as HTMLElement;
+				scrollContainerDOM.scrollTop += scrollContainerDOM.getBoundingClientRect().height;
+
+				while(selected < this.optionItems.length) {
+					let optionDOM = this.optionItems.get(selected)?.nativeElement as HTMLElement;
+					let optionDomTop = optionDOM.getBoundingClientRect().y;
+					let optionItem = this.recommendedItems()[selected];
+					let optionIsDisabled = this.itemDisabled.isItemDisabled(optionItem);
+					if (!optionIsDisabled && (optionDomTop - optionDOM.parentElement!.getBoundingClientRect().y + optionDOM.getBoundingClientRect().height >= scrollContainerDOM.getBoundingClientRect().height)) {
+						this.hoveredItem.set(selected);
+						optionDOM.scrollIntoView({
+							behavior: 'instant',
+							block: 'end'
+						});
+						this.hoveredItemChanged(true);
+						break;
+					}
+					selected++;
 				}
-				selected++;
 			}
 			event.preventDefault();
 		}
 		if (event.key == "Home") {
-			this.hoveredItem.set(0);
-			this.hoveredItemChanged(true);
+			let enabledItems = this.filterRecommendedItemsNotDisabled();
+			if (enabledItems.length > 0) {
+				let firstEnabledItem = this.recommendedItems().indexOf(enabledItems[0]);
+				this.hoveredItem.set(firstEnabledItem);
+				this.hoveredItemChanged(true);
+			}
 			event.preventDefault();
 		}
 		if (event.key == "End") {
-			this.hoveredItem.set(this.optionItems.length - 1);
-			this.hoveredItemChanged(true);
+			let enabledItems = this.filterRecommendedItemsNotDisabled();
+			if (enabledItems.length > 0) {
+				let lastEnabledItem = this.recommendedItems().indexOf(enabledItems[enabledItems.length - 1]);
+				this.hoveredItem.set(lastEnabledItem);
+				this.hoveredItemChanged(true);
+			}
 			event.preventDefault();
 		}
 	}
@@ -293,23 +344,24 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		let option = (event.target as HTMLElement);
 		let input = this.inputElement!.nativeElement as HTMLInputElement;
 		let value = option.getElementsByClassName("dropdownRowText")[0].textContent || "";
-		input.value = value;
-
 		let selectedItem = this.getDropdownWrapperFromDOMElement(option);
 
-		new Promise((res, _) => {
-			this.handleTextChangeFinished = res;
-		}).then(() => {
-			option.blur(); // Remove focus
-			this.emitEvent(selectedItem);
-		});
-		this.updateUIAfterInputValueChange();
+		if (!this.itemDisabled.isItemDisabled(selectedItem)) {
+			input.value = value;
+			new Promise((res, _) => {
+				this.handleTextChangeFinished = res;
+			}).then(() => {
+				option.blur(); // Remove focus
+				this.emitEvent(selectedItem);
+			});
+			this.updateUIAfterInputValueChange();
+		}
 	}
 
 	selectItemExt(item?: TItem) {
 		if (this.inputElement) {
 			const input = (this.inputElement.nativeElement as HTMLInputElement);
-			if (item && this._items && this._items.includes(item)) {
+			if (item && !this.itemDisabled.isItemDisabled(item) && this._items && this._items.includes(item)) {
 				input.value = this.serial!.display(item).text;
 				this.updateUIAfterInputValueChange();
 				//input.blur();
@@ -325,17 +377,20 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	optionMouseOver(event: Event) {
 		let optionId = this.getDropdownWrapperFromDOMElement(event.target as HTMLElement);
-		this.hoveredItem.set(this.recommendedItems().indexOf(optionId));
-		this.hoveredItemChanged(false);
+		if (!this.itemDisabled.isItemDisabled(optionId)) {
+			this.hoveredItem.set(this.recommendedItems().indexOf(optionId));
+			this.hoveredItemChanged(false);
+		}
 	}
 
 	reevaluateAndEmit() {
 		let searchString = (this.inputElement!.nativeElement as HTMLInputElement).value;
 		let inputIsEmpty = searchString.length == 0;
-		let equalItem = this.recommendedItems().find(i => this.serial.display(i).text.toLowerCase() === searchString.toLowerCase());
+		let equalItem = this.recommendedItems().find(i => this.serial.display(i).text.toLowerCase() === searchString.toLowerCase() && !this.itemDisabled.isItemDisabled(i));
+		let enabledItems = this.filterRecommendedItemsNotDisabled();
 
-		if (this.recommendedItems().length == 1) {
-			let item = this.recommendedItems()[0];
+		if (enabledItems.length == 1) {
+			let item = enabledItems[0];
 			let value = this.serial.display(item).text;
 			this.inputElement!.nativeElement.value = value;
 			this.emitEvent(item);
@@ -395,11 +450,11 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		if (this.inputElement) {
 			this.selectItemExt(obj as TItem);
 		} else {
-			if (this._items?.length == 1 && (obj === undefined || obj === null)) {
+			let enabledItems = this.filterItemsNotDisabled();
+			if (enabledItems.length == 1 && (obj === undefined || obj === null)) {
 				// If only one item can be selected, the user must choose this one item, therefore we don't allow for deleting the content of our field.
 				return;
 			}
-
 			this._selectItemAfterInit = obj as TItem;
 		}
 	}

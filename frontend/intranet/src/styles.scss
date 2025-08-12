@@ -127,7 +127,8 @@ body {
     visibility: hidden;
 }
 
-*:disabled {
+*:disabled,
+.disabled {
     background-color: var(--shelfGradientDark) !important;
 }
 

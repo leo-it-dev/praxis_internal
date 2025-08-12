@@ -1,9 +1,13 @@
 import { Mutex } from 'async-mutex';
-import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, ReportableDrug } from '../../../api_common/api_qs';
+import * as crypto from 'crypto';
+import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, DrugReport, DrugUnits, ReportableDrug } from '../../../api_common/api_qs';
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
+import { QsFarmerAnimalAgeUsageGroup } from '../../../api_common/qs/qs-farmer-production-age-mapping';
+import { QsFarmerProductionCombination } from '../../../api_common/qs/qs-farmer-production-combinations';
 import { ApiModule } from '../../api_module';
 import { performPatches } from '../../ext_config_patcher';
 import { getApiModule } from '../../index';
+import { getLogger } from '../../logger';
 import { sum } from '../../utilities/utilities';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
 import { readReportableDrugListFromHIT } from './hit_drug_crawler';
@@ -12,6 +16,9 @@ import { Farmer, QsApiHandler } from './qsapi_handler';
 const config = require('config');
 
 export class ApiModuleQs extends ApiModule {
+
+    MAX_QS_REPORT_NUMBER_LENGTH_CHARS = 20;
+    INTRANET_QS_REPORT_NUMBER_WATERMARK = "_A";
 
     private qsApiHandler: QsApiHandler;
     private reportableDrugsPrefered: Array<ReportableDrug> = []; // List of drugs that *should* cover all drugs we use.
@@ -35,6 +42,63 @@ export class ApiModuleQs extends ApiModule {
             // create a backup of the placeholder file variants and resolve all placeholders with the <movetaOdbcConnection> configuration section.
             {configurationBase: "movetaOdbcConnection", patchPaths: ["/etc/odbc.ini", "/opt/Unify/SQLBase/sql.ini"]}
         ]);
+    }
+
+    async verifyReportabilityOfDrugList(drugList: Array<ReportableDrug>) {
+        let logger = getLogger('qs-znr-validator');
+        let reference = new Date().getTime();
+        logger.info("Starting drug ZNR verification cycle.", {reference: reference});
+
+        let farmer = this.farmers[0];
+        let productionType = QsFarmerProductionCombination.splitProductionIdIntoAPICompatibleIDs(farmer.productionType[0])[0];
+        let usageGroup = QsFarmerAnimalAgeUsageGroup.getUsageGroupsBasedOnProductionType(productionType.productionType)[0];
+
+        let erronousDrugs = [];
+        let successfullDrugs = [];
+
+        for(let drugNumber = 0; drugNumber < drugList.length; drugNumber++) {
+            let drug = drugList[drugNumber];
+            let date = new Date();
+            let drugReport: DrugReport = {
+                deliveryDate: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0'),
+                documentNumber: '_V' + date.getTime(),
+                locationNumber: farmer.locationNumber,
+                veterinary: config.get('generic.QS_API_AUTOMATED_DRUG_TEST_USER'),
+                prescriptionRows: [{
+                    animalCount: 1,
+                    animalGroup: usageGroup.usageGroup,
+                    drugs: [
+                        {
+                            amount: 1,
+                            applicationDuration: 1,
+                            packageId: drug.forms[0].pid,
+                            amountUnit: (drug.forms[0].unitSuggestion || DrugUnits.injector).id,
+                            approvalNumber: drug.znr
+                        }
+                    ]}
+                ]
+            };
+
+            await new Promise<void>((res, _) => {
+                setTimeout(() => {
+                    this.qsApiHandler.postDrugReport(drugReport, false).then((dat) => {
+                        // successfully posted, drugs are all valid.
+                        drug.reportabilityVerifierMarkedErronous = false;
+                        successfullDrugs.push(drug);
+                        logger.debug("Following drug is marked valid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, reference:reference});
+                        res();
+                    }).catch((err) => {
+                        // error posting, drugs contain invalid ZNRs or drug units.
+                        drug.reportabilityVerifierMarkedErronous = true;
+                        erronousDrugs.push({drugReport: drugReport, drug: drug, err: err});
+                        logger.debug("Following drug is marked invalid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, err: err, reference:reference});
+                        res();
+                    });
+                }, config.get('generic.QS_API_AUTOMATED_DRUG_TEST_INTERVAL_SECONDS') * 1000);
+            });
+        }
+
+        logger.debug("Finished drug ZNR verification cycle.", {successfull: {successfullDrugs}, erronous: {erronousDrugs}, reference:reference}); // Grafana can't handle arrays on first layer.
     }
 
     async updateDrugs() {
@@ -63,22 +127,27 @@ export class ApiModuleQs extends ApiModule {
             });
             this.updateDrugsMutex.release();
             this.logger().info(logStr);
+        
+            this.logger().info("Received all drugs, starting reportability check of approval numbers of primary drug list!");
+            this.verifyReportabilityOfDrugList(this.reportableDrugsPrefered);
         });
     }
 
     async updateQsDatabase() {
         const inst = this;
-        this.logger().info("Scheduled update of internal database of QS informations!");
-
-        await this.updateFarmersMutex.acquire();
-
-        this.qsApiHandler.readFarmers().then(farmers => {
-            inst.farmers = farmers;
-            this.logger().info("Successfully updated list of registered farmers!", {entryCount: this.farmers.length});
-        }).catch(e => {
-            this.logger().error("Error updating internal database of registered farmers!", {error: e});
-        }).finally(() => {
-            this.updateFarmersMutex.release();
+        return new Promise<void>(async (res, rej) => {
+            this.logger().info("Scheduled update of internal database of QS informations!");
+            await this.updateFarmersMutex.acquire();
+    
+            this.qsApiHandler.readFarmers().then(farmers => {
+                inst.farmers = farmers;
+                this.logger().info("Successfully updated list of registered farmers!", {entryCount: this.farmers.length});
+            }).catch(e => {
+                this.logger().error("Error updating internal database of registered farmers!", {error: e});
+            }).finally(() => {
+                this.updateFarmersMutex.release();
+                res();
+            });
         });
     }
 
@@ -94,12 +163,11 @@ export class ApiModuleQs extends ApiModule {
             this.logger().error("Error detecting Vetproof Gateway Version!", {error: e});
         }
 
-        setInterval(this.updateDrugs.bind(this), config.get('generic.DRUGS_CRAWLING_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
-        this.updateDrugs();
-
         setInterval(this.updateQsDatabase.bind(this), config.get('generic.QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
-        this.updateQsDatabase();
-
+        this.updateQsDatabase().then(() => {
+            setInterval(this.updateDrugs.bind(this), config.get('generic.DRUGS_CRAWLING_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
+            this.updateDrugs();
+        });
 
         // TODO: Remove
         /*let limit = 100;
@@ -185,6 +253,14 @@ export class ApiModuleQs extends ApiModule {
                 let userInfo = await getApiModule(ApiModuleLdapQuery).readUserInfo(user.sid);
                 let expectedVetName = userInfo.vetproofVeterinaryName;
                 let readVetName = req.body.drugReport.veterinary;
+
+                let maxReportNumberLengthFrontend = this.MAX_QS_REPORT_NUMBER_LENGTH_CHARS - this.INTRANET_QS_REPORT_NUMBER_WATERMARK.length;
+                if (req.body.drugReport.documentNumber.length > maxReportNumberLengthFrontend) {
+                    throw new Error("Stated report number is too long: " + req.body.drugReport.documentNumber + "! Max of " + maxReportNumberLengthFrontend + " chars!");
+                }
+
+                // append watermark suffix to report number, in order for grafana analytics to separate between reports generated by our intranet frontend and reports generated on the official web page.
+                req.body.drugReport.documentNumber += this.INTRANET_QS_REPORT_NUMBER_WATERMARK;
 
                 if (expectedVetName == readVetName) {
                     let response = await this.qsApiHandler.postDrugReport(req.body.drugReport);

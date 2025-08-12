@@ -1,11 +1,11 @@
 import { ChangeDetectorRef, Component, computed, EventEmitter, inject, Injector, input, Input, OnInit, Output, Signal, signal, ViewChild, WritableSignal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, NgControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { DrugPackage, DrugUnit, DrugUnits, Farmer, PrescriptionRow, ReportableDrug } from '../../../../../../api_common/api_qs';
-import { IStringify, NO_HINT, SearchDropdownComponent } from '../../search-dropdown/search-dropdown.component';
+import { IItemDisable, IStringify, NO_HINT, SearchDropdownComponent } from '../../search-dropdown/search-dropdown.component';
 import { computedIsUpdated } from '../../utilities/angular-util';
 import { CategorizedItem, CategorizedList } from '../../utilities/categorized-list';
-import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from '../qs-farmer-production-age-mapping';
-import { ApiCompatibleProductionType, QsFarmerProductionCombination } from '../qs-farmer-production-combinations';
+import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from '../../../../../../api_common/qs/qs-farmer-production-age-mapping';
+import { ApiCompatibleProductionType, QsFarmerProductionCombination } from '../../../../../../api_common/qs/qs-farmer-production-combinations';
 import { DRUG_CATEGORY_OK, DRUG_CATEGORY_WARN, HINT_OK, HINT_WARN } from '../qsreport.component';
 import { toSignal } from '@angular/core/rxjs-interop'
 
@@ -89,6 +89,10 @@ export class PrescriptionRowComponent {
 		return [];
 	});
 
+	isDrugDisabled: IItemDisable<CategorizedItem<ReportableDrug>> = {
+		isItemDisabled: (item) => item.item.reportabilityVerifierMarkedErronous
+	};
+
 	// Serializer
 	farmerProductionTypeSerializer: IStringify<ApiCompatibleProductionType> = { display: (prodType) => ({ text: prodType.productionTypeName, hint: NO_HINT }) };
 	usageGroupSerializer: IStringify<ProductionUsageGroup> = { display: (usageGroup) => ({ text: usageGroup.usageGroupName, hint: NO_HINT }) };
@@ -133,7 +137,7 @@ export class PrescriptionRowComponent {
 	drugPackingFormSelected(drugPacking?: DrugPackage) {
 		if (drugPacking) {
 			if (drugPacking.unitSuggestion) {
-				let unitQS = Object.values(DrugUnits).find(u => u.id == drugPacking.unitSuggestion.id && u.name == drugPacking.unitSuggestion.name);
+				let unitQS = Object.values(DrugUnits).find(u => drugPacking.unitSuggestion !== undefined && u.id == drugPacking.unitSuggestion.id && u.name == drugPacking.unitSuggestion.name);
 				this.drugUnitDOM?.selectItemExt(unitQS);
 			}
 		} else {

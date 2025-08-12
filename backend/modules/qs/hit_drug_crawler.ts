@@ -89,7 +89,7 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
     for(let obj of parsedValsRemovedDuplicates) {
         if (lastZnr != obj.znr) {
             if (drugListZnr.length > 0) {
-                reportableDrugs.push({znr: lastZnr, name: lastName, forms: drugListZnr, shortsearch: null})
+                reportableDrugs.push({znr: lastZnr, name: lastName, forms: drugListZnr, shortsearch: null, reportabilityVerifierMarkedErronous: false})
             }
             drugListZnr = [];
         }
@@ -105,7 +105,7 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
     }
     
     if (drugListZnr.length > 0) {
-        reportableDrugs.push({znr: lastZnr, name: lastName, forms: drugListZnr, shortsearch: null})
+        reportableDrugs.push({znr: lastZnr, name: lastName, forms: drugListZnr, shortsearch: null, reportabilityVerifierMarkedErronous: false})
     }
 
     // sort grouped drugs by name ascending

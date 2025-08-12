@@ -2,7 +2,6 @@ import vetproof = require('vet_proof_external_tools_api');
 import { DrugReport } from '../../../api_common/api_qs';
 import { getLogger } from '../../logger';
 import { QsAccessToken } from './qs_accesstoken';
-const util = require('util');
 const config = require('config');
 const crypto = require('crypto');
 
@@ -215,14 +214,22 @@ export class QsApiHandler {
         return listErrors.join(',');
     }
 
-    postDrugReport(drugReport: DrugReport): Promise<string> {
-        return new Promise<string>((res, rej) => {
+    postDrugReport(drugReport: DrugReport, failureIsErrorLevel: boolean = true): Promise<string> {
+        return new Promise<string>((res, rej) => { // Don't convert to function reference! Somehow 'service' field is not sent then.
+            let logFailure = (message, ...args) => {
+                if (failureIsErrorLevel) {
+                    this.logger.error(message, ...args);
+                } else {
+                    this.logger.warn(message, ...args);
+                }
+            };
+
             let reference = crypto.randomUUID();
             this.checkAndRenewAccessToken().then(() => {
                 this.logger.info("Sending new drug report to QS!", {drugReport: drugReport, reference:reference});
                 this.vetDocumentsApi.veterinaryDocumentsPost(drugReport, (error, data, response) => {
                     if (error) {
-                        this.logger.error("Error posting prescription-row to API (early error): sent data but got an error!", {report: drugReport, error: error.message, responseText: response.text, reference:reference});
+                        this.logger.warn("Error posting prescription-row to API (early error): sent data but got an error!", {report: drugReport, error: error.message, responseText: response.text, reference:reference});
                         rej(this.parseErrors(JSON.parse(response.text)));
                     } else {
                         if (response.statusCode == 200) { // OK
@@ -230,22 +237,22 @@ export class QsApiHandler {
                             this.logger.info("Successfully posted prescription-row to API! Got resulting row ID!", {rowID: rowID, reference:reference});
                             res(rowID);
                         } else if(response.statusCode == 400) { // Content is invalid or too short
-                            this.logger.error("Error posting prescription-row to API (400): sent data but got an error!", {report: drugReport, error: data, reference:reference});
+                            logFailure("Error posting prescription-row to API (400): sent data but got an error!", {report: drugReport, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         } else if(response.statusCode == 403) { // Our access token is not allowed to perform this operation
-                            this.logger.error("Error posting prescription-row to API (403): sent data but got an error!", {report: drugReport, error: data, reference:reference});
+                            logFailure("Error posting prescription-row to API (403): sent data but got an error!", {report: drugReport, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         } else if(response.statusCode == 404) { // The given data could not be found
-                            this.logger.error("Error posting prescription-row to API (404): sent data but got error!", {report: drugReport, error: data, reference:reference});
+                            logFailure("Error posting prescription-row to API (404): sent data but got error!", {report: drugReport, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         } else {
-                            this.logger.error("Error posting prescription-row to API (unknown status-code received while sending data)", {report: drugReport, statusCode: response.statusCode, error: data, reference:reference});
+                            logFailure("Error posting prescription-row to API (unknown status-code received while sending data)", {report: drugReport, statusCode: response.statusCode, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         }
                     }
                 });
             }).catch((err) => {
-                this.logger.error("Error posting prescription-row to API (error renewing QS access token!)", {error: err, reference:reference});
+                logFailure("Error posting prescription-row to API (error renewing QS access token!)", {error: err, reference:reference});
                 rej("Error renewing QS Access-Token!");
             });
         });

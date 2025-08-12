@@ -26,6 +26,8 @@
         "DRUGS_CSV_URL_HIT": "https://www.hi-tier.de/Entwicklung/Dateibereich/TAM_ARZNX.CSV",
         "DRUGS_CRAWLING_INTERVAL_DAYS": 20,
         "QS_API_SYSTEM": "https://test.vetproof.de/user-rest",
+        "QS_API_AUTOMATED_DRUG_TEST_USER": "your-drug-test-user",
+        "QS_API_AUTOMATED_DRUG_TEST_INTERVAL_SECONDS": 5,
         "QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS": 2,
 
         "AD_ATTRIBUTE_QS_VETERINARY_ID": "msDS-cloudExtensionAttribute1",
@@ -51,5 +53,12 @@
         "DRUGS_SQLBASE_ADMIN_PASSWORD": "SYSADM",
         "DRUGS_SQLBASE_WORKING_DATABASE": "your-moveta-database-name-on-server",
         "SQLLXTLK_BINARY_PATH": "/opt/Unify/SQLBase/sqllxtlk"
-    }
+    },
+    "logging": {
+        "OPEN_TELEMETRY_SERVICE_NAME": "intranet",
+        "OPEN_TELEMETRY_SERVICE_VERSION": "1.0",
+        "OPEN_TELEMETRY_COLLECTOR_URL": "http://your-loki-instance:4318/v1/logs",
+        "OPEN_TELEMETRY_COLLECTOR_BASICAUTH_USER": "username",
+        "OPEN_TELEMETRY_COLLECTOR_BASICAUTH_PASS": "password"
+   }
 }

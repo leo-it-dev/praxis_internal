@@ -31,14 +31,15 @@ export const DrugUnits = {
 export type DrugPackage = {
 	package: string;
 	pid: number;
-	unitSuggestion: DrugUnit;
+	unitSuggestion?: DrugUnit;
 }
 
 export type ReportableDrug = {
 	znr: string;
 	name: string;
-	forms: Array<DrugPackage>;
+	forms: DrugPackage[];
 	shortsearch: string | undefined;
+	reportabilityVerifierMarkedErronous: boolean;
 };
 
 export type Farmer = {
@@ -57,7 +58,7 @@ export type PrescriptionRow = {
 			approvalNumber: string;
 			packageId: number;
 			amount: number;
-			amountUnit: DrugUnitApi,
+			amountUnit: DrugUnitApi;
 			applicationDuration: number;
 		}
 	];

@@ -1,7 +1,6 @@
 import { DrugUnits, ReportableDrug } from "../../../api_common/api_qs";
-import odbc = require("odbc");
-import path = require("node:path");
 import { getLogger } from "../../logger";
+import path = require("node:path");
 const { exec } = require('child_process');
 const config = require('config');
 
@@ -13,8 +12,8 @@ const movetaDrugUnitMapping = {
     "Inj.": DrugUnits.injector,
     "Fl.": undefined,
     "Pack.": undefined,
-    "Stck": undefined,
-    "Stck.": undefined,
+    "Stck": DrugUnits.injector,
+    "Stck.": DrugUnits.injector,
     "Tabl.": DrugUnits.baton,
     "g": DrugUnits.gram,
     "Tube": undefined,
@@ -78,7 +77,8 @@ function processRows(rows: row[]): ReportableDrug[] {
                     pid: parseInt(row.APACKUNGSID),
                     unitSuggestion: parseDrugUnitIfPossible(row.APCK)
                 }
-            ]
+            ],
+            reportabilityVerifierMarkedErronous: false
         })
     };
 
@@ -114,9 +114,9 @@ async function movetaRunSQLAdministrativeCommands(commands: string[]): Promise<s
                 rej(err);
             } else {
                 if (stderr == '') {
-                    res(stdout);
+                    res(stdout + " " + stderr);
                 } else {
-                    rej(stderr);
+                    rej(stderr + " " + stderr);
                 }
             }
         });

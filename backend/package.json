@@ -23,6 +23,10 @@
   },
   "homepage": "https://github.com/leo-it-dev/praxis_internal#readme",
   "dependencies": {
+    "@opentelemetry/exporter-logs-otlp-http": "^0.203.0",
+    "@opentelemetry/resources": "^2.0.1",
+    "@opentelemetry/sdk-logs": "^0.203.0",
+    "@opentelemetry/semantic-conventions": "^1.36.0",
     "@types/config": "^3.3.5",
     "@types/express": "^5.0.0",
     "@types/ldapjs": "^3.0.6",
@@ -39,7 +43,8 @@
     "odbc": "^2.4.9",
     "vet_proof_external_tools_api": "1.2.1",
     "windows-1252": "^3.0.4",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "winston-transport": "^4.9.0"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

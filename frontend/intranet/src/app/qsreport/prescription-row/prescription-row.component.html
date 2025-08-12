@@ -16,7 +16,7 @@
         <!-- Only one ZNR per prescription row allowed! -->
         <div class="cont">
             <label for="drug">Arzneimittel</label>
-            <app-search-dropdown #drugDropdown placeholder="Arzneimittel suchen..." [items]="this.reportableDrugList" [serial]="this.drugSerializer" (itemSelectedEvent)="this.drugSelected($event)" [formControl]="qsFormGroup.controls['drugZNR']"></app-search-dropdown>
+            <app-search-dropdown #drugDropdown placeholder="Arzneimittel suchen..." [items]="this.reportableDrugList" [serial]="this.drugSerializer" (itemSelectedEvent)="this.drugSelected($event)" [formControl]="qsFormGroup.controls['drugZNR']" [itemDisabled]="this.isDrugDisabled" ></app-search-dropdown>
             <app-search-dropdown #packingDropdown placeholder="Packungform auswählen..." [items]="this.selectedDrugPackingForms()" [serial]="this.drugPackingSerializer" (itemSelectedEvent)="drugPackingFormSelected($event)"  [formControl]="qsFormGroup.controls['drugPID']"></app-search-dropdown>
         </div>
         <div class="cont">

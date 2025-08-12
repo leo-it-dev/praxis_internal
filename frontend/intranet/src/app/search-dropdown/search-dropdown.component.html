@@ -29,9 +29,10 @@
             *ngFor="let item of this.recommendedItems(); index as i" 
             class="option" 
             [attr.data-id]="i" 
-            [attr.data-hint-txt]="this.serial.display(item).hint.text" 
-            [attr.data-hint-col]="this.serial.display(item).hint.color" 
-            [class.hovered]="i == this.hoveredItem()" 
+            [attr.data-hint-txt]="this.serial.display(item).hint.text"
+            [attr.data-hint-col]="this.serial.display(item).hint.color"
+            [class.hovered]="i == this.hoveredItem()"
+            [class.disabled]="this.itemDisabled.isItemDisabled(item)"
             (click)="optionClicked($event)" 
             (mouseover)="optionMouseOver($event)">
 
