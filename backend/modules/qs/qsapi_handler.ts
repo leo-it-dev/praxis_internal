@@ -226,33 +226,33 @@ export class QsApiHandler {
 
             let reference = crypto.randomUUID();
             this.checkAndRenewAccessToken().then(() => {
-                this.logger.info("Sending new drug report to QS!", {drugReport: drugReport, reference:reference});
+                this.logger.info("NewDrugReport> Sending new drug report to QS!", {reference:reference});
                 this.vetDocumentsApi.veterinaryDocumentsPost(drugReport, (error, data, response) => {
                     if (error) {
-                        this.logger.warn("Error posting prescription-row to API (early error): sent data but got an error!", {report: drugReport, error: error.message, responseText: response.text, reference:reference});
+                        logFailure("NewDrugReport> Error posting prescription-row to API (early error): sent data but got an error!", {report: drugReport, error: error.message, responseText: response.text, reference:reference});
                         rej(this.parseErrors(JSON.parse(response.text)));
                     } else {
                         if (response.statusCode == 200) { // OK
                             let rowID = data[0];
-                            this.logger.info("Successfully posted prescription-row to API! Got resulting row ID!", {rowID: rowID, reference:reference});
+                            this.logger.info("NewDrugReport> Successfully posted prescription-row to API! Got resulting row ID!", {report: drugReport, rowID: rowID, reference:reference});
                             res(rowID);
                         } else if(response.statusCode == 400) { // Content is invalid or too short
-                            logFailure("Error posting prescription-row to API (400): sent data but got an error!", {report: drugReport, error: data, reference:reference});
+                            logFailure("NewDrugReport> Error posting prescription-row to API (400): sent data but got an error!", {report: drugReport, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         } else if(response.statusCode == 403) { // Our access token is not allowed to perform this operation
-                            logFailure("Error posting prescription-row to API (403): sent data but got an error!", {report: drugReport, error: data, reference:reference});
+                            logFailure("NewDrugReport> Error posting prescription-row to API (403): sent data but got an error!", {report: drugReport, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         } else if(response.statusCode == 404) { // The given data could not be found
-                            logFailure("Error posting prescription-row to API (404): sent data but got error!", {report: drugReport, error: data, reference:reference});
+                            logFailure("NewDrugReport> Error posting prescription-row to API (404): sent data but got error!", {report: drugReport, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         } else {
-                            logFailure("Error posting prescription-row to API (unknown status-code received while sending data)", {report: drugReport, statusCode: response.statusCode, error: data, reference:reference});
+                            logFailure("NewDrugReport> Error posting prescription-row to API (unknown status-code received while sending data)", {report: drugReport, statusCode: response.statusCode, error: data, reference:reference});
                             rej(this.parseErrors(JSON.parse(response.text)));
                         }
                     }
                 });
             }).catch((err) => {
-                logFailure("Error posting prescription-row to API (error renewing QS access token!)", {error: err, reference:reference});
+                logFailure("NewDrugReport> Error posting prescription-row to API (error renewing QS access token!)", {error: err, reference:reference});
                 rej("Error renewing QS Access-Token!");
             });
         });

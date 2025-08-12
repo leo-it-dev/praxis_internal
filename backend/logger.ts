@@ -52,12 +52,12 @@ const logExporter = new OTLPLogExporter({
     },
 });
 
-const logProcessor = new BatchLogRecordProcessor(logExporter)
+const logProcessor = new BatchLogRecordProcessor(logExporter);
 const loggerProvider = new LoggerProvider({
     resource: resource,
-    processors: [logProcessor]
+    processors: [logProcessor],
+    forceFlushTimeoutMillis: (config.get("logging.OPEN_TELEMETRY_FORCE_FLUSH_INTERVAL_SECONDS") as number) * 1000
 });
-
 
 class OtelWinstonTransporter extends TransportStream {
     constructor(opts: TransportStream.TransportStreamOptions) {

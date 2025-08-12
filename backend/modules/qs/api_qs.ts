@@ -1,6 +1,5 @@
 import { Mutex } from 'async-mutex';
-import * as crypto from 'crypto';
-import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, DrugReport, DrugUnits, ReportableDrug } from '../../../api_common/api_qs';
+import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, castReportReadbackFromVeterinaryDocumentData, DrugReport, DrugReportApiReadback, DrugUnits, ReportableDrug } from '../../../api_common/api_qs';
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
 import { QsFarmerAnimalAgeUsageGroup } from '../../../api_common/qs/qs-farmer-production-age-mapping';
 import { QsFarmerProductionCombination } from '../../../api_common/qs/qs-farmer-production-combinations';
@@ -8,22 +7,30 @@ import { ApiModule } from '../../api_module';
 import { performPatches } from '../../ext_config_patcher';
 import { getApiModule } from '../../index';
 import { getLogger } from '../../logger';
-import { sum } from '../../utilities/utilities';
+import { sleep, sum } from '../../utilities/utilities';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
 import { readReportableDrugListFromHIT } from './hit_drug_crawler';
 import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
 import { Farmer, QsApiHandler } from './qsapi_handler';
+import vetproof = require('vet_proof_external_tools_api');
 const config = require('config');
+
+export class QsApiDocumentReports {
+    qsReportsOfficialPage: Array<DrugReportApiReadback> = [];
+    qsReportsIntranetModule: Array<DrugReportApiReadback> = [];
+}
 
 export class ApiModuleQs extends ApiModule {
 
     MAX_QS_REPORT_NUMBER_LENGTH_CHARS = 20;
     INTRANET_QS_REPORT_NUMBER_WATERMARK = "_A";
+    QS_API_MAX_ENTRIES_PER_REPORT_READ = 100;
 
     private qsApiHandler: QsApiHandler;
     private reportableDrugsPrefered: Array<ReportableDrug> = []; // List of drugs that *should* cover all drugs we use.
     private reportableDrugsFallback: Array<ReportableDrug> = []; // If there are drugs missing though, a vet may also use drugs from the fallback list.
     private farmers: Array<Farmer> = [];
+    private qsApiReports: QsApiDocumentReports = new QsApiDocumentReports();
 
     private updateDrugsMutex = new Mutex();
     private updateFarmersMutex = new Mutex();
@@ -98,7 +105,7 @@ export class ApiModuleQs extends ApiModule {
             });
         }
 
-        logger.debug("Finished drug ZNR verification cycle.", {successfull: {successfullDrugs}, erronous: {erronousDrugs}, reference:reference}); // Grafana can't handle arrays on first layer.
+        logger.info("Finished drug ZNR verification cycle.", {successfull: {successfullDrugs}, erronous: {erronousDrugs}, reference:reference}); // Grafana can't handle arrays on first layer.
     }
 
     async updateDrugs() {
@@ -151,6 +158,49 @@ export class ApiModuleQs extends ApiModule {
         });
     }
 
+    async receiveQsReportsAndGenerateOverview() {
+        let logger = getLogger('qs-report-fetcher');
+        
+        let apiDocumentReports: QsApiDocumentReports = new QsApiDocumentReports();
+        
+        logger.info("Starting new QS-API report read cycle. Extracting all QS drug reports.");
+
+        try {
+            let offset = 0;
+            let data = undefined;
+            let drugReport: vetproof.VeterinaryDocumentData;
+            do {
+                data = await this.qsApiHandler.requestDrugReports(this.QS_API_MAX_ENTRIES_PER_REPORT_READ, offset);
+                let reportCountModule = 0;
+                let reportCountOfficialPage = 0;
+
+                for (drugReport of data.documents) {
+                    
+                    let drugReportOurFormat = castReportReadbackFromVeterinaryDocumentData(drugReport);
+
+                    // TODO: Verify drugReport is compatible with type:DrugReport
+                    if (drugReport.documentNumber.endsWith(this.INTRANET_QS_REPORT_NUMBER_WATERMARK)) {
+                        // Qs report was sent by this module
+                        apiDocumentReports.qsReportsIntranetModule.push(drugReportOurFormat);
+                        reportCountModule++;
+                    } else {
+                        // Qs report was sent by the original webpage
+                        apiDocumentReports.qsReportsOfficialPage.push(drugReportOurFormat);
+                        reportCountOfficialPage++;
+                    }
+                }
+
+                logger.debug("QS-Api report read cycle read next chunk of reports!", {reportCountModule: reportCountModule, reportCountOfficialPage: reportCountOfficialPage});
+                offset += this.QS_API_MAX_ENTRIES_PER_REPORT_READ;
+                await sleep(100);
+            } while(data.moreData);
+            logger.info("Finished QS-API report read cycle.", {documentCountModule: apiDocumentReports.qsReportsIntranetModule.length, documentCountOfficialPage: apiDocumentReports.qsReportsOfficialPage.length});
+        } catch(er) {
+            logger.error("Error reading qs reports from QS-API! " + er);
+        }
+        this.qsApiReports = apiDocumentReports;
+    }
+
     async initialize() {
         this.qsApiHandler = new QsApiHandler();
 
@@ -168,75 +218,9 @@ export class ApiModuleQs extends ApiModule {
             setInterval(this.updateDrugs.bind(this), config.get('generic.DRUGS_CRAWLING_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
             this.updateDrugs();
         });
-
-        // TODO: Remove
-        /*let limit = 100;
-        let offset = 0;
-
-        let filePath = "/tmp/qs_dump.csv";
-        let fileHandle = await fs.promises.open(filePath, 'w');
-
-        let headerWritten = false;
-        let headers = [];
-
-        let drugs = new Set<string>();
-
-        try {
-            while (true) {
-                this.logger().info("a");
-                
-                let resOut = undefined;
-                let prom = new Promise((res, rej) => {resOut = res;})
-                setTimeout(() => resOut(), 100);
-                await prom;
-
-                let data = await this.qsApiHandler.requestDrugReports(limit, offset);
-                // await this.qsApiHandler.requestSingleDrugReport(data.documents[0].id);
-
-                for (let doc of data.documents) {
-                    if (!headerWritten) {
-                        headers = Object.keys(doc).map(e => e.toString());
-                        fileHandle.writeFile(headers.join(';') + "\r\n");
-                        headerWritten = true;
-                    }
-
-                    let serializeEntries = [];
-                    for(let entry of headers) {
-                        serializeEntries.push(doc[entry] || "-");
-                    }
-                    drugs.add(doc["drugDisplayName"]);
-                    fileHandle.writeFile(serializeEntries.join(";") + "\r\n");
-                }
-
-                if (!data.moreData) {
-                    this.logger().info("Done reading all entries!");
-                    fileHandle.close();
-                    break;
-                }
-
-                offset += limit;
-            }
-
-            let found = 0;
-            let notFound = 0;
-            for (let drugDisplayName of Array.from(drugs)) {
-                let foundCountPrimary = this.reportableDrugsPrefered.filter(d => d.name.toLowerCase() == drugDisplayName.toLowerCase()).length;
-                let foundCountSecondary = this.reportableDrugsFallback.filter(d => d.name.toLowerCase() == drugDisplayName.toLowerCase()).length;
-                this.logger().info(Math.max(foundCountPrimary, foundCountSecondary) > 0 ? "+" : "-", drugDisplayName, foundCountPrimary, foundCountSecondary);
-                if (Math.max(foundCountPrimary, foundCountSecondary) > 0) {
-                    found++;
-                } else {
-                    notFound++;
-                }
-            }
-
-
-            this.logger().info("Found: ", found);
-            this.logger().info("Not found:", notFound);
-            this.logger().info("");
-        } catch(er) {
-            this.logger().error(er);
-        }*/
+        
+        setInterval(this.receiveQsReportsAndGenerateOverview.bind(this), config.get('generic.QS_DATABASE_CRAWL_UPDATE_REPORTS_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
+        this.receiveQsReportsAndGenerateOverview();
     }
 
     registerEndpoints() {
@@ -249,10 +233,11 @@ export class ApiModuleQs extends ApiModule {
             return { statusCode: 200, responseObject: {farmers: this.farmers}, error: undefined };
         });
         this.postJson<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>("report", async (req, user) => {
+            let readVetName = "<error>"
             try {
                 let userInfo = await getApiModule(ApiModuleLdapQuery).readUserInfo(user.sid);
                 let expectedVetName = userInfo.vetproofVeterinaryName;
-                let readVetName = req.body.drugReport.veterinary;
+                readVetName = req.body.drugReport.veterinary;
 
                 let maxReportNumberLengthFrontend = this.MAX_QS_REPORT_NUMBER_LENGTH_CHARS - this.INTRANET_QS_REPORT_NUMBER_WATERMARK.length;
                 if (req.body.drugReport.documentNumber.length > maxReportNumberLengthFrontend) {
@@ -264,12 +249,13 @@ export class ApiModuleQs extends ApiModule {
 
                 if (expectedVetName == readVetName) {
                     let response = await this.qsApiHandler.postDrugReport(req.body.drugReport);
+                    this.logger().info("Successfully sent QS document post request by veterinary!", {username: readVetName, drugReport: req.body.drugReport, success:true});
                     return { statusCode: 200, responseObject: {}, error: undefined };
                 } else {
                     throw new Error("Stated veterinary name of drug report does not match vet name registered for user in LDAP!");                    
                 }
             } catch(err) {
-                this.logger().error("Error processing QS veterinary document post request!", {error: err});
+                this.logger().error("Error sending QS document post request by veterinary!", {error: err, success: false, username: readVetName, drugReport: req.body.drugReport});
                 return { statusCode: 500, responseObject: {}, error: "Error posting veterinary document to API! " + err };
             }
         });

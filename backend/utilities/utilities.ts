@@ -46,3 +46,10 @@ export function sum(elements: number[]): number {
 export function sumVA(...elements: number[]): number {
     return sum(elements);
 }
+
+export async function sleep(milliseconds: number) {
+    let resOut = undefined;
+    let prom = new Promise((res, rej) => {resOut = res;})
+    setTimeout(() => resOut(), milliseconds);
+    await prom;
+}

@@ -72,6 +72,46 @@ export type DrugReport = {
 	prescriptionRows: PrescriptionRow[];
 };
 
+export type DrugReportApiReadback = {
+	amount: number,
+	amountUnit: DrugUnitApi,
+	animalCount: number,
+	animalGroup: number,
+	applicationDuration: number,
+	criticalAntibiotics: boolean,
+	deliveryDate: string,
+	documentNumber: string,
+	drugDisplayName: string,
+	farmerDisplayName: string,
+	id: string,
+	locationNumber: string,
+	packageId: number,
+	productionType: number,
+	veterinary: string,
+	veterinaryBnrHit: string,
+};
+export function castReportReadbackFromVeterinaryDocumentData(vetDocumentData: any): DrugReportApiReadback {
+	let ourDrugReportFormat: DrugReportApiReadback = {
+		amount: vetDocumentData.amount,
+		amountUnit: vetDocumentData.amountUnit,
+		animalCount: vetDocumentData.animalCount,
+		animalGroup: vetDocumentData.animalGroup,
+		applicationDuration: vetDocumentData.applicationDuration,
+		criticalAntibiotics: vetDocumentData.criticalAntibiotics,
+		deliveryDate: vetDocumentData.deliveryDate,
+		documentNumber: vetDocumentData.documentNumber,
+		drugDisplayName: vetDocumentData.drugDisplayName,
+		farmerDisplayName: vetDocumentData.farmerDisplayName,
+		id: vetDocumentData.id,
+		locationNumber: vetDocumentData.locationNumber,
+		packageId: vetDocumentData.packageId,
+		productionType: vetDocumentData.productionType,
+		veterinary: vetDocumentData.veterinary,
+		veterinaryBnrHit: vetDocumentData.veterinaryBnrHit
+	};
+	return ourDrugReportFormat;
+}
+
 /* Api endpoints */
 export interface ApiInterfaceDrugsOut   extends ApiModuleInterfaceB2F { prefered: ReportableDrug[]; fallback: ReportableDrug[] };
 export interface ApiInterfaceFarmersOut extends ApiModuleInterfaceB2F { farmers: Farmer[] };
