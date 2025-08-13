@@ -26,6 +26,9 @@ jobs:
         with:
           name: frontend-dist
           path: frontend/intranet/dist
+      - name: Cleanup
+        id: cleanup
+        run: rm -rf .
 
   build-backend:
     runs-on: build
@@ -57,6 +60,9 @@ jobs:
         with:
           name: backend-dist
           path: backend/js
+      - name: Cleanup
+        id: cleanup
+        run: rm -rf .
 
   package-setup-tools:
     runs-on: build
@@ -80,6 +86,10 @@ jobs:
         with:
           name: setup-package
           path: setup_tools.zip
+      - name: Cleanup
+        id: cleanup
+        run: rm -rf .
+
 
   package:
     runs-on: build
@@ -131,12 +141,14 @@ jobs:
         with:
          files: package.zip
 
+      - name: Cleanup
+        id: cleanup
+        run: rm -rf .
+
   build-docker:
     runs-on: build
     needs: [package]
     steps:
-      - name: Remove old artifacts
-        run: rm -rf package
       - name: Download final package
         uses: actions/download-artifact@v4
         with:
