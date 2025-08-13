@@ -47,9 +47,15 @@ export function sumVA(...elements: number[]): number {
     return sum(elements);
 }
 
-export async function sleep(milliseconds: number) {
+export async function sleep(milliseconds: number, callback: (resOut) => void = undefined) {
     let resOut = undefined;
     let prom = new Promise((res, rej) => {resOut = res;})
-    setTimeout(() => resOut(), milliseconds);
+    setTimeout(async () => {
+        if (callback !== undefined) {
+            await callback(resOut);
+        } else {
+            resOut();
+        }
+    }, milliseconds);
     await prom;
 }

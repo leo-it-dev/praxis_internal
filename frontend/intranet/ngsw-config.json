@@ -43,6 +43,19 @@
         "/module/qs/farmers",
         "/module/qs/drugs"
       ]
+    },
+    {
+      "name": "meta",
+      "cacheConfig": {
+        "strategy": "freshness",
+        "timeout": "5s",
+        "maxAge": "14d",
+        "refreshAhead": "1d",
+        "maxSize": 100
+      },
+      "urls": [
+        "/module/meta/meta"
+      ]
     }
   ]
 }

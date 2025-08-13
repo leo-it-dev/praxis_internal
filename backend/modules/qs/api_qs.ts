@@ -87,22 +87,20 @@ export class ApiModuleQs extends ApiModule {
                 ]
             };
 
-            await new Promise<void>((res, _) => {
-                setTimeout(() => {
-                    this.qsApiHandlerTest.postDrugReport(drugReport, false).then((dat) => {
-                        // successfully posted, drugs are all valid.
-                        drug.reportabilityVerifierMarkedErronous = false;
-                        successfullDrugs.push(drug);
-                        logger.debug("Following drug is marked valid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, reference:reference});
-                        res();
-                    }).catch((err) => {
-                        // error posting, drugs contain invalid ZNRs or drug units.
-                        drug.reportabilityVerifierMarkedErronous = true;
-                        erronousDrugs.push({drugReport: drugReport, drug: drug, err: err});
-                        logger.debug("Following drug is marked invalid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, err: err, reference:reference});
-                        res();
-                    });
-                }, config.get('generic.QS_API_AUTOMATED_DRUG_TEST_INTERVAL_SECONDS') * 1000);
+            await sleep(config.get('generic.QS_API_AUTOMATED_DRUG_TEST_INTERVAL_SECONDS') * 1000, (res) => {
+                this.qsApiHandlerTest.postDrugReport(drugReport, false).then((dat) => {
+                    // successfully posted, drugs are all valid.
+                    drug.reportabilityVerifierMarkedErronous = false;
+                    successfullDrugs.push(drug);
+                    logger.debug("Following drug is marked valid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, reference:reference});
+                    res();
+                }).catch((err) => {
+                    // error posting, drugs contain invalid ZNRs or drug units.
+                    drug.reportabilityVerifierMarkedErronous = true;
+                    erronousDrugs.push({drugReport: drugReport, drug: drug, err: err});
+                    logger.debug("Following drug is marked invalid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, err: err, reference:reference});
+                    res();
+                });
             });
         }
 
