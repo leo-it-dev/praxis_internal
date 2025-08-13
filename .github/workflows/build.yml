@@ -14,6 +14,7 @@ jobs:
       run:
         working-directory: frontend/intranet
     steps:
+      - run: mkdir -p frontend/intranet
       - run: apt-get update && apt-get install -y git-lfs
       - uses: actions/checkout@v4
       - run: node --version
@@ -36,6 +37,7 @@ jobs:
       run:
         working-directory: backend
     steps:
+      - run: mkdir -p backend
       - run: apt-get update && apt-get install -y git-lfs
       - uses: actions/checkout@v4
       - run: node --version
