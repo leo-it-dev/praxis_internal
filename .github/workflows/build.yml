@@ -28,7 +28,7 @@ jobs:
           path: frontend/intranet/dist
       - name: Cleanup
         id: cleanup
-        run: rm -rf .
+        run: rm -rf .*
 
   build-backend:
     runs-on: build
@@ -62,7 +62,7 @@ jobs:
           path: backend/js
       - name: Cleanup
         id: cleanup
-        run: rm -rf .
+        run: rm -rf .*
 
   package-setup-tools:
     runs-on: build
@@ -88,7 +88,7 @@ jobs:
           path: setup_tools.zip
       - name: Cleanup
         id: cleanup
-        run: rm -rf .
+        run: rm -rf .*
 
 
   package:
@@ -143,7 +143,7 @@ jobs:
 
       - name: Cleanup
         id: cleanup
-        run: rm -rf .
+        run: rm -rf .*
 
   build-docker:
     runs-on: build
