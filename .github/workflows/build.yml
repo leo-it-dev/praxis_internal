@@ -27,8 +27,10 @@ jobs:
           name: frontend-dist
           path: frontend/intranet/dist
       - name: Cleanup
-        id: cleanup
-        run: rm -rf .*
+        if: always()
+        run: |
+          echo "Cleaning up..."
+          sudo rm -rf "$GITHUB_WORKSPACE"/*
 
   build-backend:
     runs-on: build
@@ -61,8 +63,10 @@ jobs:
           name: backend-dist
           path: backend/js
       - name: Cleanup
-        id: cleanup
-        run: rm -rf .*
+        if: always()
+        run: |
+          echo "Cleaning up..."
+          sudo rm -rf "$GITHUB_WORKSPACE"/*
 
   package-setup-tools:
     runs-on: build
@@ -87,8 +91,10 @@ jobs:
           name: setup-package
           path: setup_tools.zip
       - name: Cleanup
-        id: cleanup
-        run: rm -rf .*
+        if: always()
+        run: |
+          echo "Cleaning up..."
+          sudo rm -rf "$GITHUB_WORKSPACE"/*
 
 
   package:
@@ -142,8 +148,10 @@ jobs:
          files: package.zip
 
       - name: Cleanup
-        id: cleanup
-        run: rm -rf .*
+        if: always()
+        run: |
+          echo "Cleaning up..."
+          sudo rm -rf "$GITHUB_WORKSPACE"/*
 
   build-docker:
     runs-on: build
