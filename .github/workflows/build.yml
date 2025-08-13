@@ -30,7 +30,7 @@ jobs:
         if: always()
         run: |
           echo "Cleaning up..."
-          sudo rm -rf "$GITHUB_WORKSPACE"/*
+          rm -rf "$GITHUB_WORKSPACE"/*
 
   build-backend:
     runs-on: build
@@ -66,7 +66,7 @@ jobs:
         if: always()
         run: |
           echo "Cleaning up..."
-          sudo rm -rf "$GITHUB_WORKSPACE"/*
+          rm -rf "$GITHUB_WORKSPACE"/*
 
   package-setup-tools:
     runs-on: build
@@ -94,7 +94,7 @@ jobs:
         if: always()
         run: |
           echo "Cleaning up..."
-          sudo rm -rf "$GITHUB_WORKSPACE"/*
+          rm -rf "$GITHUB_WORKSPACE"/*
 
 
   package:
@@ -151,7 +151,7 @@ jobs:
         if: always()
         run: |
           echo "Cleaning up..."
-          sudo rm -rf "$GITHUB_WORKSPACE"/*
+          rm -rf "$GITHUB_WORKSPACE"/*
 
   build-docker:
     runs-on: build
