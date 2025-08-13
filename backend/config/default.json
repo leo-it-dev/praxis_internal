@@ -26,6 +26,7 @@
         "DRUGS_CSV_URL_HIT": "https://www.hi-tier.de/Entwicklung/Dateibereich/TAM_ARZNX.CSV",
         "DRUGS_CRAWLING_INTERVAL_DAYS": 20,
         "QS_API_SYSTEM": "https://test.vetproof.de/user-rest",
+        "QS_API_SYSTEM_TEST": "https://test.vetproof.de/user-rest",
         "QS_API_AUTOMATED_DRUG_TEST_USER": "your-drug-test-user",
         "QS_API_AUTOMATED_DRUG_TEST_INTERVAL_SECONDS": 5,
         "QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS": 2,

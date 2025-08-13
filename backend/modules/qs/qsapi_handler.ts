@@ -2,6 +2,7 @@ import vetproof = require('vet_proof_external_tools_api');
 import { DrugReport } from '../../../api_common/api_qs';
 import { getLogger } from '../../logger';
 import { QsAccessToken } from './qs_accesstoken';
+import { Logger } from 'winston';
 const config = require('config');
 const crypto = require('crypto');
 
@@ -20,12 +21,13 @@ export class QsApiHandler {
 
     private accessToken: QsAccessToken | undefined = undefined;
     
-    private logger = getLogger('qs-api-handler');
+    private logger: Logger;
 
-    constructor() {
-        this.client = new vetproof.ApiClient(config.get('generic.QS_API_SYSTEM'));
+    constructor(apiPath: string, loggerSuffix: string) {
+        this.client = new vetproof.ApiClient(apiPath);
         this.authApi = new vetproof.AuthenticationApi(this.client);
         this.vetDocumentsApi = new vetproof.TierarztBelegeApi(this.client);
+        this.logger = getLogger('qs-api-handler-' + loggerSuffix);
     }
 
     requestSingleDrugReport(id: number): Promise<vetproof.VeterinaryDocumentData> {

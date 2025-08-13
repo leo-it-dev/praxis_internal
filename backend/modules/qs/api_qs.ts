@@ -26,7 +26,8 @@ export class ApiModuleQs extends ApiModule {
     INTRANET_QS_REPORT_NUMBER_WATERMARK = "_A";
     QS_API_MAX_ENTRIES_PER_REPORT_READ = 100;
 
-    private qsApiHandler: QsApiHandler;
+    private qsApiHandlerTest: QsApiHandler;
+    private qsApiHandlerProd: QsApiHandler;
     private reportableDrugsPrefered: Array<ReportableDrug> = []; // List of drugs that *should* cover all drugs we use.
     private reportableDrugsFallback: Array<ReportableDrug> = []; // If there are drugs missing though, a vet may also use drugs from the fallback list.
     private farmers: Array<Farmer> = [];
@@ -88,7 +89,7 @@ export class ApiModuleQs extends ApiModule {
 
             await new Promise<void>((res, _) => {
                 setTimeout(() => {
-                    this.qsApiHandler.postDrugReport(drugReport, false).then((dat) => {
+                    this.qsApiHandlerTest.postDrugReport(drugReport, false).then((dat) => {
                         // successfully posted, drugs are all valid.
                         drug.reportabilityVerifierMarkedErronous = false;
                         successfullDrugs.push(drug);
@@ -105,7 +106,7 @@ export class ApiModuleQs extends ApiModule {
             });
         }
 
-        logger.info("Finished drug ZNR verification cycle.", {successfull: {successfullDrugs}, erronous: {erronousDrugs}, reference:reference}); // Grafana can't handle arrays on first layer.
+        logger.info("Finished drug ZNR verification cycle.", {successfull: successfullDrugs.length, erronous: erronousDrugs.length, reference:reference});
     }
 
     async updateDrugs() {
@@ -146,7 +147,7 @@ export class ApiModuleQs extends ApiModule {
             this.logger().info("Scheduled update of internal database of QS informations!");
             await this.updateFarmersMutex.acquire();
     
-            this.qsApiHandler.readFarmers().then(farmers => {
+            this.qsApiHandlerProd.readFarmers().then(farmers => {
                 inst.farmers = farmers;
                 this.logger().info("Successfully updated list of registered farmers!", {entryCount: this.farmers.length});
             }).catch(e => {
@@ -170,7 +171,7 @@ export class ApiModuleQs extends ApiModule {
             let data = undefined;
             let drugReport: vetproof.VeterinaryDocumentData;
             do {
-                data = await this.qsApiHandler.requestDrugReports(this.QS_API_MAX_ENTRIES_PER_REPORT_READ, offset);
+                data = await this.qsApiHandlerProd.requestDrugReports(this.QS_API_MAX_ENTRIES_PER_REPORT_READ, offset);
                 let reportCountModule = 0;
                 let reportCountOfficialPage = 0;
 
@@ -202,13 +203,15 @@ export class ApiModuleQs extends ApiModule {
     }
 
     async initialize() {
-        this.qsApiHandler = new QsApiHandler();
+        this.qsApiHandlerTest = new QsApiHandler(config.get('generic.QS_API_SYSTEM_TEST'), "test");
+        this.qsApiHandlerProd = new QsApiHandler(config.get('generic.QS_API_SYSTEM'), "prod");
 
-        await this.qsApiHandler.renewAccessToken();
+        await this.qsApiHandlerTest.renewAccessToken();
+        await this.qsApiHandlerProd.renewAccessToken();
 
         try {
-            let versionInformation = await this.qsApiHandler.requestVersionInformation();
-            this.logger().info("Detected Vetproof Gateway Version!", {version: versionInformation});
+            this.logger().info("Detected Vetproof Gateway Version (Testsystem)!", {version: await this.qsApiHandlerTest.requestVersionInformation()});
+            this.logger().info("Detected Vetproof Gateway Version (Prodsystem)!", {version: await this.qsApiHandlerProd.requestVersionInformation()});
         } catch (e) {
             this.logger().error("Error detecting Vetproof Gateway Version!", {error: e});
         }
@@ -248,7 +251,7 @@ export class ApiModuleQs extends ApiModule {
                 req.body.drugReport.documentNumber += this.INTRANET_QS_REPORT_NUMBER_WATERMARK;
 
                 if (expectedVetName == readVetName) {
-                    let response = await this.qsApiHandler.postDrugReport(req.body.drugReport);
+                    let response = await this.qsApiHandlerProd.postDrugReport(req.body.drugReport);
                     this.logger().info("Successfully sent QS document post request by veterinary!", {username: readVetName, drugReport: req.body.drugReport, success:true});
                     return { statusCode: 200, responseObject: {}, error: undefined };
                 } else {

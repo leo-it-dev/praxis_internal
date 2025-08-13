@@ -49,10 +49,15 @@ const logExporter = new OTLPLogExporter({
     url: config.get("logging.OPEN_TELEMETRY_COLLECTOR_URL"), // send logs to loki instance in grafana container
     headers: {
         Authorization: 'Basic ' + btoa(_username + ":" + _password),
-    },
+    }
 });
 
-const logProcessor = new BatchLogRecordProcessor(logExporter);
+const logProcessor = new BatchLogRecordProcessor(logExporter, {
+    maxQueueSize: 10000,
+    scheduledDelayMillis: 1000,
+    exportTimeoutMillis: 10000,
+    maxExportBatchSize: 1000
+});
 const loggerProvider = new LoggerProvider({
     resource: resource,
     processors: [logProcessor],
