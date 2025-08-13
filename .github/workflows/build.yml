@@ -10,9 +10,6 @@ jobs:
     outputs:
       artifact-name: ${{ steps.upload.outputs.artifact-name }}
     container: node:18
-    defaults:
-      run:
-        working-directory: frontend/intranet
     steps:
       - run: mkdir -p frontend/intranet
       - run: apt-get update && apt-get install -y git-lfs
@@ -20,7 +17,9 @@ jobs:
       - run: node --version
       - run: npm --version
       - run: npm install
+        working-directory: frontend/intranet
       - run: npm run build-prod
+        working-directory: frontend/intranet
       - name: Upload Frontend Artifact
         id: upload
         uses: actions/upload-artifact@v4
@@ -33,9 +32,6 @@ jobs:
     outputs:
       artifact-name: ${{ steps.upload.outputs.artifact-name }}
     container: node:18
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - run: mkdir -p backend
       - run: apt-get update && apt-get install -y git-lfs
@@ -43,13 +39,18 @@ jobs:
       - run: node --version
       - run: npm --version
       - run: npm install
+        working-directory: backend
       - run: npm run build
+        working-directory: backend
       - name: Copy static assets into build directory
         run: mkdir js/backend/config && cp config/default.json js/backend/config
+        working-directory: backend
       - name: Reinstall node_modules as production run
         run: rm -r node_modules && npm install --production
+        working-directory: backend
       - name: Copy node_modules into build directory
         run: cp -r node_modules js/backend
+        working-directory: backend
       - name: Upload Backend Artifact
         id: upload
         uses: actions/upload-artifact@v4
