@@ -1,0 +1,23 @@
+<div class="section">
+    <label for="modules">Modules</label>
+    <ul name="modules">
+        <li>
+            <label>QS-Modul</label>
+            <div class="splitSection">
+                <app-loading-bar name="loading-bar-1" [value]="this.progress1" [quantize]="this.quantize1" [serializer]="this.serial1" text="Next synchronization"></app-loading-bar>
+                <button class="smallActionButton">Sync now</button>
+            </div>
+            <app-loading-bar name="loading-bar-3" [value]="this.progress2" [quantize]="this.quantize2" [serializer]="this.serial2" text="Current synchronization progress"></app-loading-bar>
+
+            <div class="separator"></div>
+
+            <div class="splitSection">
+                <app-loading-bar name="loading-bar-2" [value]="this.progress1" [quantize]="this.quantize1" [serializer]="this.serial1" text="Next fetch"></app-loading-bar>
+                <button class="smallActionButton">Sync now</button>
+            </div>
+            <app-loading-bar name="loading-bar-4" [value]="this.progress2" [quantize]="this.quantize2" [serializer]="this.serial2" text="Current fetch progress"></app-loading-bar>
+
+        </li>
+
+    </ul>
+</div>

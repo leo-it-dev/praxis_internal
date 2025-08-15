@@ -1,0 +1,60 @@
+:host {
+    margin: 0px;
+    padding: 30px;
+}
+
+.section {
+    margin: 10px;
+    box-shadow: 0px 0px 5px var(--shadeLevel2);
+    border-radius: 3px;
+    padding: 50px 40px;
+}
+
+.section > label {
+    font-size: 20pt;
+    font-weight: lighter;
+    margin-bottom: 20px;
+    display: block;
+}
+
+li {
+    font-size: 10pt;
+    padding: 30px 30px;
+    box-shadow: 0px 0px 5px var(--shadeLevel2);
+    border-radius: 3px;
+}
+
+li > * {
+    margin-bottom: 20px;
+}
+
+li > label {
+    font-size: 20pt;
+    font-weight: lighter;
+    margin-bottom: 20px;
+    display: block;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+.splitSection {
+    display: flex;
+    flex-direction: row;
+    column-gap: 20px;
+    align-items: end;
+}
+
+.splitSection > app-loading-bar {
+    flex: auto;
+}
+.splitSection > button {
+    flex: .1;
+    height: 60px;
+}
+
+.separator {
+    height: 50px;
+}

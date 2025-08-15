@@ -17,6 +17,7 @@ export class ActionbarComponent {
 	isLoggedIn = computed(() => this.sessionService.store.isLoggedIn);
 	profilePhoto = computed(() => this.sessionService.store.thumbnailPhoto ?? "");
 	hasProfilePhoto = computed(() => this.sessionService.store.thumbnailPhoto !== null && this.sessionService.store.thumbnailPhoto !== "");
+	isOnlineSession = computed(() => this.sessionService.isOnlineSession());
 
 	totalUnsyncCount = computed(() => this.offlineStoreService.totalEntryCount());
 

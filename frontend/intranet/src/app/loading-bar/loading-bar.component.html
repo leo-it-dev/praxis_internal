@@ -1,0 +1,5 @@
+<label id="name" for="wrapper">{{text}}</label>
+<label id="value" for="wrapper">{{this.progressText()}}</label>
+<div id="wrapper">
+    <div id="bar" [style]="'--progress:' + this.progress()"></div>
+</div>
