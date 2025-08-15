@@ -5,7 +5,7 @@ import { QsFarmerAnimalAgeUsageGroup } from '../../../api_common/qs/qs-farmer-pr
 import { QsFarmerProductionCombination } from '../../../api_common/qs/qs-farmer-production-combinations';
 import { ApiModule } from '../../api_module';
 import { performPatches } from '../../ext_config_patcher';
-import { getApiModule } from '../../index';
+import { getApiModule, getRepeatedScheduler } from '../../index';
 import { getLogger } from '../../logger';
 import { sleep, sum } from '../../utilities/utilities';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
@@ -107,7 +107,7 @@ export class ApiModuleQs extends ApiModule {
         logger.info("Finished drug ZNR verification cycle.", {successfull: successfullDrugs.length, erronous: erronousDrugs.length, reference:reference});
     }
 
-    async updateDrugs() {
+    async updateDrugs(finished: () => void) {
         const inst = this;
         this.logger().info("Scheduled update of internal databases of reportable drugs!");
 
@@ -135,11 +135,13 @@ export class ApiModuleQs extends ApiModule {
             this.logger().info(logStr);
         
             this.logger().info("Received all drugs, starting reportability check of approval numbers of primary drug list!");
-            this.verifyReportabilityOfDrugList(this.reportableDrugsPrefered);
+            this.verifyReportabilityOfDrugList(this.reportableDrugsPrefered).then(() => {
+                finished();
+            });
         });
     }
 
-    async updateQsDatabase() {
+    async updateQsDatabase(finished: () => void) {
         const inst = this;
         return new Promise<void>(async (res, rej) => {
             this.logger().info("Scheduled update of internal database of QS informations!");
@@ -152,12 +154,13 @@ export class ApiModuleQs extends ApiModule {
                 this.logger().error("Error updating internal database of registered farmers!", {error: e});
             }).finally(() => {
                 this.updateFarmersMutex.release();
+                finished();
                 res();
             });
         });
     }
 
-    async receiveQsReportsAndGenerateOverview() {
+    async receiveQsReportsAndGenerateOverview(finished: () => void) {
         let logger = getLogger('qs-report-fetcher');
         
         let apiDocumentReports: QsApiDocumentReports = new QsApiDocumentReports();
@@ -198,6 +201,7 @@ export class ApiModuleQs extends ApiModule {
             logger.error("Error reading qs reports from QS-API! " + er);
         }
         this.qsApiReports = apiDocumentReports;
+        finished();
     }
 
     async initialize() {
@@ -214,14 +218,18 @@ export class ApiModuleQs extends ApiModule {
             this.logger().error("Error detecting Vetproof Gateway Version!", {error: e});
         }
 
-        setInterval(this.updateQsDatabase.bind(this), config.get('generic.QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
-        this.updateQsDatabase().then(() => {
-            setInterval(this.updateDrugs.bind(this), config.get('generic.DRUGS_CRAWLING_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
-            this.updateDrugs();
+        getRepeatedScheduler().scheduleRepeatedEvent(this, "qs-report-overview", config.get('generic.QS_DATABASE_CRAWL_UPDATE_REPORTS_INTERVAL_DAYS') * 24 * 60 * 60, this.receiveQsReportsAndGenerateOverview.bind(this), true);
+
+        this.updateQsDatabase(() => null).then(() => {
+            this.updateDrugs(() => {
+
+                // we don't immediately trigger update-qs-database and update-drugs, as the second one requires the first one to have run at least once. Therefore we start them ourselves the first time in a specified order of execution.
+                getRepeatedScheduler().scheduleRepeatedEvent(this, "update-qs-database", config.get('generic.QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS') * 24 * 60 * 60, this.updateQsDatabase.bind(this), false);
+                getRepeatedScheduler().scheduleRepeatedEvent(this, "update-drugs", config.get('generic.DRUGS_CRAWLING_INTERVAL_DAYS') * 24 * 60 * 60, this.updateDrugs.bind(this), false);
+
+            });
         });
         
-        setInterval(this.receiveQsReportsAndGenerateOverview.bind(this), config.get('generic.QS_DATABASE_CRAWL_UPDATE_REPORTS_INTERVAL_DAYS') * 24 * 60 * 60 * 1000);
-        this.receiveQsReportsAndGenerateOverview();
     }
 
     registerEndpoints() {

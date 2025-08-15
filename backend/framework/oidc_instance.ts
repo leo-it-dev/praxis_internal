@@ -4,12 +4,14 @@ import jwt = require('jsonwebtoken');
 import { Mutex } from 'async-mutex';
 import { JwtError, JwtErrorType } from '../../api_common/api_auth';
 import { getLogger } from '../logger';
+import { ScheduledRepeatedEvent } from './scheduled_events';
+import { getRepeatedScheduler } from '..';
 const config = require('config');
 
 export class OidcInstance {
 
     private configuration: OidcConfigurationResolved;
-    private jwksUpdateInterval: NodeJS.Timeout;
+    private jwksUpdateInterval: ScheduledRepeatedEvent;
     private jwksUpdateMutex: Mutex;
 
     private logger = getLogger('oidc-instance');
@@ -17,9 +19,13 @@ export class OidcInstance {
     private constructor(configResolved: OidcConfigurationResolved) {
         this.configuration = configResolved;
         this.jwksUpdateMutex = new Mutex();
-        this.jwksUpdateInterval = setInterval(this.updateJwksKeyStore.bind(this), config.get('generic.JWKS_UPDATE_INTERVAL_MINUTES') * 60 * 1000);
+        this.jwksUpdateInterval = getRepeatedScheduler().scheduleRepeatedEvent(
+            null,
+            "jwks-keystore-update", 
+            config.get('generic.JWKS_UPDATE_INTERVAL_MINUTES') * 60, 
+            this.updateJwksKeyStore.bind(this), 
+            true);
         this.logger.info("OIDC registered automatic jwks key store renew interval.", {host: this.configuration.hostname, updateIntervalMinutes: config.get('generic.JWKS_UPDATE_INTERVAL_MINUTES')});
-        this.updateJwksKeyStore();
     }
 
     static construct(config: OidcConfigurationRaw): Promise<OidcInstance> {
@@ -32,20 +38,19 @@ export class OidcInstance {
         });
     }
 
-    updateJwksKeyStore() {
+    updateJwksKeyStore(finished: () => void) {
         this.logger.info("Scheduled jwks update for oidc instance!", {host: this.configuration.hostname});
         const inst = this;
-        this.jwksUpdateMutex.runExclusive(() => {
+        this.jwksUpdateMutex.runExclusive(async () => {
             this.logger.info("Mutex released. Starting jwks update for oidc instance!", {host: inst.configuration.hostname});
-            updateJwksCertificates(inst.configuration).then(() => {
-                this.logger.info("Successfully updated jwks certificates in store!", {host: inst.configuration.hostname, certCount: inst.configuration.jwksCertificates.length});
-            }).catch(err => {
-                this.logger.error("Error updating jwks certificate store! ", {error: err});
-            });
+            await updateJwksCertificates(inst.configuration);
+            this.logger.info("Successfully updated jwks certificates in store!", {host: inst.configuration.hostname, certCount: inst.configuration.jwksCertificates.length});
         }).then(() => {
             this.logger.info("Finished jwks update for oidc instance!", {host: inst.configuration.hostname});
         }).catch((err) => {
             this.logger.error("Error updating jwks store!", {error: err});
+        }).finally(() => {
+            finished();
         });
     }
 

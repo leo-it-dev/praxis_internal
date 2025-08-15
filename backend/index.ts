@@ -16,12 +16,15 @@ import { ApiModuleLdapQuery } from './modules/ldapquery/api_ldapquery';
 import { DeploymentType } from './deployment';
 import { ApiModuleMeta } from './modules/meta/api_meta';
 import { getLogger } from './logger';
+import { RepeatedTaskScheduler } from './framework/scheduled_events';
 
 let apiModulesInstances = [];
 
 let deploymentType: DeploymentType = DeploymentType.DEVELOPMENT;
 
 let moduleLogger = getLogger('index');
+
+let repeatedTaskScheduler = new RepeatedTaskScheduler();
 
 function initializeDevelopmentBuildEnvironment(projectRoot: string) {
     moduleLogger.info("--- Preparing development environment ---");
@@ -67,7 +70,6 @@ async function startup() {
     const filePathFrontendDev = '../frontend/intranet/dist/intranet/browser';
     const filePathFrontendDepl = '../frontend/intranet/browser';
 
-
     if (fs.existsSync(filePathFrontendDev)) {
         deploymentType = DeploymentType.DEVELOPMENT;
         moduleLogger.info("File structure indicates deployment mode", {mode: "DEVELOPMENT"});
@@ -95,6 +97,7 @@ async function startup() {
     ];
 
     ssl.initSSL();
+    repeatedTaskScheduler.schedulerInit();
 
     // Initialize framework classes needed by modules below ------
     await AdfsOidc.initialize();
@@ -150,4 +153,8 @@ export function getApiModule<T = ApiModule>(apiModuleClass: { new(...args: any[]
 
 export function getDeploymentType(): DeploymentType {
     return deploymentType;
+}
+
+export function getRepeatedScheduler(): RepeatedTaskScheduler {
+    return repeatedTaskScheduler;
 }
