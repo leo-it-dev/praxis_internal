@@ -9,6 +9,7 @@ export enum DrugUnitApi {
 	SPRAY = "SPRAY",
 	KILOGRAM = "KILOGRAM",
 	LITER = "LITER",
+	PIECE = "PIECE",
 }
 
 export type DrugUnit = {
@@ -25,7 +26,8 @@ export const DrugUnits = {
 	baton: { id: DrugUnitApi.BATON, name: "Stab" },
 	spray: { id: DrugUnitApi.SPRAY, name: "Spraydose" },
 	kilogram: { id: DrugUnitApi.KILOGRAM, name: "Kilogramm", abbrev: "kg" },
-	liter: { id: DrugUnitApi.LITER, name: "Liter", abbrev: "l" }
+	liter: { id: DrugUnitApi.LITER, name: "Liter", abbrev: "l" },
+	piece: { id: DrugUnitApi.PIECE, name: "Stück", abbrev: "st" }
 };
 
 export type DrugPackage = {
