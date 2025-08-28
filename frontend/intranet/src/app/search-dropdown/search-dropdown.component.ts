@@ -7,10 +7,9 @@ export type Hint = {
 	color: string;
 	text: string;
 };
-export const NO_HINT: Hint = {
-	color: 'black',
-	text: ''
-};
+export const NO_HINT: Hint = { color: 'black', text: '' };
+export const HINT_OK: Hint = { color: 'var(--notification)', text: '✓' }
+export const HINT_WARN: Hint = { color: 'orange', text: '✗' }
 
 export type RowDisplay = {
 	text: string;

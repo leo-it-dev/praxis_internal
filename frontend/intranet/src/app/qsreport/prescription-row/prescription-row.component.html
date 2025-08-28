@@ -5,7 +5,7 @@
             <label for="holder-name">Nutzungsart</label>
             <div class="flexRow">
                 <app-search-dropdown #productionDropdown placeholder="Haltungsart auswählen..." [items]="this.selectedFarmerProductionTypes()" [serial]="this.farmerProductionTypeSerializer" [formControl]="qsFormGroup.controls['productionType']"></app-search-dropdown>
-                <app-search-dropdown #usageDropdown placeholder="Gruppe auswählen..." [items]="this.selectedProductionUsageGroups()" [serial]="this.usageGroupSerializer" [formControl]="qsFormGroup.controls['usageGroup']"></app-search-dropdown>
+                <app-search-dropdown #usageDropdown placeholder="Gruppe auswählen..." [items]="this.selectedProductionUsageGroups()" [serial]="this.usageGroupSerializer" [formControl]="qsFormGroup.controls['usageGroup']" ></app-search-dropdown>
             </div>
         </div>
         <div class="cont">

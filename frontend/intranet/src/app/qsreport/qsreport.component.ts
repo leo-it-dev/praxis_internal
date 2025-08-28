@@ -9,7 +9,7 @@ import { BackendService } from '../api/backend.service';
 import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
 import { DatepickerComponent } from '../datepicker/datepicker.component';
 import { HintComponent } from "../hint-ok/hint.component";
-import { Hint, IStringify, NO_HINT, SearchDropdownComponent } from '../search-dropdown/search-dropdown.component';
+import { Hint, HINT_OK, HINT_WARN, IStringify, NO_HINT, SearchDropdownComponent } from '../search-dropdown/search-dropdown.component';
 import { OfflineEntry } from '../shared-service/offline-sync/offline-entry';
 import { OfflineModuleStore } from '../shared-service/offline-sync/offline-module-store';
 import { OfflineStoreService } from '../shared-service/offline-sync/offline-store.service';
@@ -24,9 +24,6 @@ import { LoadingoverlayService } from '../loadingoverlay/loadingoverlay.service'
 
 export const DRUG_CATEGORY_OK = "moveta";
 export const DRUG_CATEGORY_WARN = "hit";
-
-export const HINT_OK: Hint = { color: 'var(--notification)', text: 'OK' }
-export const HINT_WARN: Hint = { color: 'orange', text: 'WARN' }
 
 @Component({
 	selector: 'app-qsreport',
