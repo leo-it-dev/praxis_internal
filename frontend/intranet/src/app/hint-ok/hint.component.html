@@ -1,3 +1,4 @@
-@if(this.hintText !== '') {
-    <div [style.background-color]="this.hintColor" class="dropdownRowHint">{{this.hintText}}</div>
+@if(this.hintModel.text !== '') {
+    <div [style.background-color]="this.hintModel.color" class="dropdownRowHint" (mouseover)="showTooltip($event)">{{this.hintModel.text}}</div>
+    <div #tooltip class="tooltip">{{this.hintModel.tooltip}}</div>
 }

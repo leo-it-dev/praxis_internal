@@ -2,6 +2,7 @@ import { ApiModule } from "../api_module";
 import { getLogger } from "../logger";
 
 let SCHEDULER_CYCLE_SECONDS = 10;
+let SCHEDULER_CYCLES_ON_ONE_DAY = 60 * 60 * 24 / SCHEDULER_CYCLE_SECONDS;
 let logger = getLogger("scheduler");
 
 export class ScheduledRepeatedEvent {
@@ -29,9 +30,15 @@ export class RepeatedTaskScheduler {
 
     schedulerInit() {
         if (this.interval == undefined) {
+            let schedulerLogCounter = 0;
+
             this.interval = setInterval(() => {
-                logger.debug("Scheduler handling schedule cycle");
+                if ((++schedulerLogCounter) % SCHEDULER_CYCLES_ON_ONE_DAY == 0) {
+                    logger.debug("Scheduler handled another day of event cycles.", { logCycles: schedulerLogCounter });
+                    schedulerLogCounter = 0;
+                }
                 this.handleCycle();
+
             }, SCHEDULER_CYCLE_SECONDS * 1000);
             logger.info("Initialized repeated task scheduler!", { cycleTimeSeconds: SCHEDULER_CYCLE_SECONDS });
 

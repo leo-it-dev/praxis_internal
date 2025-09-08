@@ -1,15 +1,14 @@
 import { CommonModule, NgFor } from '@angular/common';
-import { AfterViewInit, ChangeDetectorRef, Component, computed, ElementRef, EventEmitter, Input, Output, QueryList, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, computed, ElementRef, EventEmitter, Input, Output, QueryList, Signal, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
 import { ControlValueAccessor, FormControl, NgControl, ReactiveFormsModule } from '@angular/forms';
-import { HintComponent } from "../hint-ok/hint.component";
+import { Hint, HintComponent, NO_HINT } from "../hint-ok/hint.component";
+import { findThisOrParentWithAttribute, findThisOrParentWithClass } from '../utilities/dom-util';
 
-export type Hint = {
-	color: string;
-	text: string;
-};
-export const NO_HINT: Hint = { color: 'black', text: '' };
-export const HINT_OK: Hint = { color: 'var(--notification)', text: '✓' }
-export const HINT_WARN: Hint = { color: 'orange', text: '✗' }
+export const HINT_OK_COL = 'var(--notification)';
+export const HINT_OK_TXT = '✓';
+
+export const HINT_WARN_COL = 'orange';
+export const HINT_WARN_TXT = '✗';
 
 export type RowDisplay = {
 	text: string;
@@ -43,8 +42,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 	hintText: WritableSignal<String> = signal(this.placeholder);
 
 	recommendedItems: WritableSignal<Array<TItem>> = signal([] as TItem[]);
-
-	currentItemRowDisplay = computed(() => this.lastItemSelectedEventItem() ? this.serial.display(this.lastItemSelectedEventItem()!) : {text: '', hint: {color: '', text: ''}});
+	currentItemRowDisplay: Signal<RowDisplay> = computed(() => this.lastItemSelectedEventItem() ? this.serial.display(this.lastItemSelectedEventItem()!) : {text: "", hint: NO_HINT});
 
 	constructor(private controlDir: NgControl,
 		private changeDetRef: ChangeDetectorRef
@@ -336,16 +334,21 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 	}
 
 	getDropdownWrapperFromDOMElement(domElement: HTMLElement) {
-		return this.recommendedItems()[parseInt(domElement.getAttribute("data-id")!)];
+		let dom = findThisOrParentWithAttribute(domElement, "data-id");
+		if (dom) {
+			return this.recommendedItems()[parseInt(dom.getAttribute("data-id")!)];
+		} else {
+			return undefined;
+		}
 	}
 
 	optionClicked(event: Event) {
-		let option = (event.target as HTMLElement);
+		let option = findThisOrParentWithClass(event.target as HTMLElement, "option")!;
 		let input = this.inputElement!.nativeElement as HTMLInputElement;
 		let value = option.getElementsByClassName("dropdownRowText")[0].textContent || "";
 		let selectedItem = this.getDropdownWrapperFromDOMElement(option);
 
-		if (!this.itemDisabled.isItemDisabled(selectedItem)) {
+		if (selectedItem && !this.itemDisabled.isItemDisabled(selectedItem)) {
 			input.value = value;
 			new Promise((res, _) => {
 				this.handleTextChangeFinished = res;
@@ -376,7 +379,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	optionMouseOver(event: Event) {
 		let optionId = this.getDropdownWrapperFromDOMElement(event.target as HTMLElement);
-		if (!this.itemDisabled.isItemDisabled(optionId)) {
+		if (optionId && !this.itemDisabled.isItemDisabled(optionId)) {
 			this.hoveredItem.set(this.recommendedItems().indexOf(optionId));
 			this.hoveredItemChanged(false);
 		}

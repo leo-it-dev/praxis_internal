@@ -7,9 +7,9 @@
             }]'
             (selectionMade)="this.drugErrorOverlayShown.set(false)">
             Dieses Medikament gehört nicht zu unserer Moveta-Datenbank!
-            Handelt es sich um ein bereits länger verwendetes Medikament? Bitte alternatives Medikament mit <app-hint [hintColor]='this.HINT_OK_local.color' [hintText]="this.HINT_OK_local.text" /> Markierung selektieren!<br>
-            Neues Medikament? Hier kann es einige Tage dauern, bis das Medikament in der Pegasus Datenbank aufgenommen wurde und die Markierung <app-hint [hintColor]='this.HINT_OK_local.color' [hintText]="this.HINT_OK_local.text" /> erhält.
-            In diesem Falle darf ein <app-hint [hintColor]='HINT_WARN_local.color' [hintText]="HINT_WARN_local.text" /> Medikament der HIT Datenbank selektiert werden!
+            Handelt es sich um ein bereits länger verwendetes Medikament? Bitte alternatives Medikament mit <app-hint [hintModel]=HINT_OK_drug_local/> Markierung selektieren!<br>
+            Neues Medikament? Hier kann es einige Tage dauern, bis das Medikament in der Pegasus Datenbank aufgenommen wurde und die Markierung <app-hint [hintModel]=this.HINT_OK_drug_local /> erhält.
+            In diesem Falle darf ein <app-hint [hintModel]='HINT_WARN_drug_local' /> Medikament der HIT Datenbank selektiert werden!
         </app-blockingoverlay>
     }
 

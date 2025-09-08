@@ -15,4 +15,37 @@
     text-align: center;
     display: inline-block;
     width: min-content;
+    position: relative;
+}
+
+.tooltip {
+    position: fixed;
+    border-radius: 5px;
+    background-color: var(--background);
+    padding: 5px;
+    font-size: 15px;
+    visibility: hidden;
+    color: black;
+    white-space: nowrap;
+    transition: visibility .2s ease-in-out;
+    margin-bottom: 15px;
+    filter: drop-shadow(3px 3px 4px var(--shadeLevel2));
+    border: 1px solid var(--shadeLevel2);
+    z-index: 1000;
+}
+
+.tooltip:after {
+    display: block;
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    height: 10px;
+    width: 10px;
+    transform: translate(-50%, -5px) rotate(45deg);
+    background-color: var(--background);
+}
+
+.dropdownRowHint:hover + .tooltip {
+    visibility: visible;
 }

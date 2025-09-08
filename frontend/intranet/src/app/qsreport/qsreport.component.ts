@@ -8,8 +8,8 @@ import { ApiInterfaceEmptyOut } from '../../../../../api_common/backend_call';
 import { BackendService } from '../api/backend.service';
 import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
 import { DatepickerComponent } from '../datepicker/datepicker.component';
-import { HintComponent } from "../hint-ok/hint.component";
-import { Hint, HINT_OK, HINT_WARN, IStringify, NO_HINT, SearchDropdownComponent } from '../search-dropdown/search-dropdown.component';
+import { HintComponent, NO_HINT, Hint } from "../hint-ok/hint.component";
+import { HINT_OK_COL, HINT_OK_TXT, HINT_WARN_COL, HINT_WARN_TXT, IStringify, SearchDropdownComponent } from '../search-dropdown/search-dropdown.component';
 import { OfflineEntry } from '../shared-service/offline-sync/offline-entry';
 import { OfflineModuleStore } from '../shared-service/offline-sync/offline-module-store';
 import { OfflineStoreService } from '../shared-service/offline-sync/offline-store.service';
@@ -19,11 +19,16 @@ import { CategorizedList } from '../utilities/categorized-list';
 import { PrescriptionRowComponent } from "./prescription-row/prescription-row.component";
 import { QsreportBackendService } from './qsreport-backend.service';
 import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
-import { LoadingoverlayComponent } from '../loadingoverlay/loadingoverlay.component';
 import { LoadingoverlayService } from '../loadingoverlay/loadingoverlay.service';
 
 export const DRUG_CATEGORY_OK = "moveta";
 export const DRUG_CATEGORY_WARN = "hit";
+
+export const HINT_OK_drug: Hint = {text: HINT_OK_TXT, color: HINT_OK_COL, tooltip: 'Bevorzugtes Medikament aus Pegasus'};
+export const HINT_WARN_drug: Hint = {text: HINT_WARN_TXT, color: HINT_WARN_COL, tooltip: '(HIT) Medikament mit ' + HINT_OK_TXT + " bevorzugen!"};
+
+export const HINT_OK_usageGroup: Hint = {text: HINT_OK_TXT, color: HINT_OK_COL, tooltip: 'Muss gemeldet werden!'};
+export const HINT_WARN_usageGroup: Hint = {text: HINT_WARN_TXT, color: HINT_WARN_COL, tooltip: 'Meldung nicht verpflichtend'};
 
 @Component({
 	selector: 'app-qsreport',
@@ -35,15 +40,15 @@ export class QsreportComponent implements AfterViewInit {
 
 	@ViewChildren(PrescriptionRowComponent) prescriptionRowsDOM!: QueryList<PrescriptionRowComponent>;
 
+	HINT_OK_drug_local = HINT_OK_drug
+	HINT_WARN_drug_local = HINT_WARN_drug
+
 	selectedFarmer: Signal<Farmer | undefined | null>;
 	farmerSerializer: IStringify<Farmer> = { display: (farmer) => ({ text: farmer.name.replaceAll("  ", " "), hint: NO_HINT }) };
 
 	pageInitFinished: Subject<void> = new Subject<void>();
 
 	static API_URL_POST_REPORT = "/module/qs/report"
-
-	HINT_OK_local = HINT_OK;
-	HINT_WARN_local = HINT_WARN;
 
 	offlineModuleStore: OfflineModuleStore;
 	currentSyncEntry: OfflineEntry | undefined = undefined;

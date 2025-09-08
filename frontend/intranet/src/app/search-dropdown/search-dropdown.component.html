@@ -20,7 +20,7 @@
                             /><!-- We fake the value of this control, therefore we must manually fix the disabled and error functions. !-->
                             <span #searchTooltip id="inputTooltip">{{hintText()}}</span>
         </div>
-    <app-hint id="inputHint" [hintColor]="currentItemRowDisplay().hint.color" [hintText]="currentItemRowDisplay().hint.text"></app-hint>
+    <app-hint id="inputHint" [hintModel]="currentItemRowDisplay().hint"></app-hint>
     <button id="quickDelete" tabindex="-1" (click)="performQuickDelete($event)"></button>
 </div>
 <span id="selected"></span>
@@ -31,6 +31,7 @@
             [attr.data-id]="i" 
             [attr.data-hint-txt]="this.serial.display(item).hint.text"
             [attr.data-hint-col]="this.serial.display(item).hint.color"
+            [attr.data-hint-tooltip]="this.serial.display(item).hint.tooltip"
             [class.hovered]="i == this.hoveredItem()"
             [class.disabled]="this.itemDisabled.isItemDisabled(item)"
             (click)="optionClicked($event)" 
@@ -38,7 +39,7 @@
 
         <div class="dropdownRowText">{{this.serial.display(item).text}}</div>
         @if(this.serial.display(item).hint.text != "") {
-            <app-hint [hintColor]="this.serial.display(item).hint.color!" [hintText]="this.serial.display(item).hint.text!" ></app-hint>
+            <app-hint [hintModel]="this.serial.display(item).hint" ></app-hint>
         }
     </div>
 </div>

@@ -32,24 +32,28 @@ export class QsApiHandler {
 
     requestSingleDrugReport(id: number): Promise<vetproof.VeterinaryDocumentData> {
         return new Promise((res, rej) => {
-            new vetproof.TierarztBelegeApi(this.client).veterinaryDocumentsIdGet({id: id}, (error, data, resp) => {
-                if (error) {
-                    rej(error);
-                } else {
-                    res(data);
-                }
+            this.checkAndRenewAccessToken().then(() => {
+                new vetproof.TierarztBelegeApi(this.client).veterinaryDocumentsIdGet({id: id}, (error, data, resp) => {
+                    if (error) {
+                        rej(error);
+                    } else {
+                        res(data);
+                    }
+                });
             });
         });
     }
 
     requestDrugReports(limit: number, offset: number): Promise<vetproof.VeterinaryDocumentDataList> {
         return new Promise((res, rej) => {
-            new vetproof.TierarztBelegeApi(this.client).veterinaryDocumentsGet({limit: limit, offset: offset}, (error, data, resp) => {
-                if (error) {
-                    rej(error);
-                } else {
-                    res(data);
-                }
+            this.checkAndRenewAccessToken().then(() => {
+                new vetproof.TierarztBelegeApi(this.client).veterinaryDocumentsGet({limit: limit, offset: offset}, (error, data, resp) => {
+                    if (error) {
+                        rej(error);
+                    } else {
+                        res(data);
+                    }
+                });
             });
         });
     }
@@ -147,7 +151,7 @@ export class QsApiHandler {
     readFarmers(): Promise<Array<Farmer>> {
         return new Promise<Array<Farmer>>(async (res, rej) => {
             let farmers: Array<Farmer> = [];
-
+            
             const farmerLinkApi = new vetproof.FreigeschalteteTierhalterApi(this.client);
             // vetproof.AnimalBranchEnum.CATTLE_BRANCH
             let branches = ["CATTLE_BRANCH", "PIG_BRANCH"];
