@@ -99,7 +99,7 @@ export class OidcInstance {
                 return;
             }
 
-            jwt.verify(jwtToken, certificate.publicKey, (err, user) => {
+            jwt.verify(jwtToken, certificate.publicKey, { clockTolerance: 10 }, (err, user) => {
                 if (err == null) {
                     // Success
                     this.logger.debug("Successfully validated JWT token!", {userSid: user.sid, userEmail: user.email});
