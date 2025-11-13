@@ -3,25 +3,38 @@ import { ApiModuleBody, ApiModuleInterfaceB2F, ApiModuleInterfaceF2B } from '../
 import { SessionProviderService, SessionType } from '../shared-service/session/session-provider.service';
 import { OfflineCacheService } from '../shared-service/offline-cache.service';
 import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
+import { IModule } from '../module/module.service';
+import { UserPermission } from '../../../../../api_common/permission_types';
 
 @Injectable({
 	providedIn: 'root'
 })
-export class BackendService {
+export abstract class BackendService implements IModule {
 
 	constructor(
-		private errorlistService: ErrorlistService,
 		private offlineCacheService: OfflineCacheService,
 		private injector: Injector
 	) { };
 
 	private sessionService!: SessionProviderService;
+	private errorlistService!: ErrorlistService;
 
 	getSessionService() {
 		if (!this.sessionService) {
 			this.sessionService = this.injector.get(SessionProviderService);
 		}
 		return this.sessionService;
+	}
+
+	getErrorlistService() {
+		if(!this.errorlistService) {
+			this.errorlistService = this.injector.get(ErrorlistService);
+		}
+		return this.errorlistService;
+	}
+
+	userHasPermission() {
+		return this.getSessionService().store.lazyloadUserPermissions?.userHasPermission(this.modulePermission());
 	}
 
 	anonymousBackendCall<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(url: string, body: REQ|undefined = undefined): Promise<RES> {
@@ -91,4 +104,16 @@ export class BackendService {
 			}
 		});
 	}
+
+	fetchBackendDataFilter(): Promise<any> {
+		if (this.getSessionService().store.lazyloadUserPermissions?.userHasPermission(this.modulePermission())) {
+			return this.fetchBackendData();
+		} else {
+			return Promise.resolve();
+		}
+	}
+
+	abstract fetchBackendData(): Promise<any>;
+	abstract modulePermission(): UserPermission | undefined;
+	abstract name(): string;
 }

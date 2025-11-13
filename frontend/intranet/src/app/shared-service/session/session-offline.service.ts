@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { SessionProviderPlugin } from './session-provider-plugin';
 import { SessionProviderService, SessionType } from './session-provider.service';
+import { UserPermission, UserPermissionList } from '../../../../../../api_common/permission_types';
 
 @Injectable({
     providedIn: 'root'
@@ -10,6 +11,7 @@ export class SessionOfflineService extends SessionProviderPlugin {
     override authorizeSession() {
         let storage = SessionProviderService.instance;
         storage.store.lazyloadUserInfo = {thumbnail: "", vetproofVeterinaryName: "Offline Session", accName: "OFF"};
+        storage.store.lazyloadUserPermissions = UserPermissionList.grantAll();
         storage.store.accessToken = "-";
         storage.store.idToken = "-";
         storage.store.refreshToken = "-";

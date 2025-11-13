@@ -6,6 +6,7 @@ import { SessionOnlineService } from './session-online.service';
 import { SessionProviderPlugin } from './session-provider-plugin';
 import { SessionStore } from './session-store';
 import { ErrorlistService } from '../../timed-popups/popuplist/errorlist.service';
+import { UserPermissionList } from '../../../../../../api_common/permission_types';
 
 export enum SessionType {
 	ONLINE = "Online",
@@ -109,6 +110,7 @@ export class SessionProviderService {
 		this.store.accessToken = undefined;
 		this.store.refreshToken = undefined;
 		this.store.lazyloadUserInfo = undefined;
+		this.store.lazyloadUserPermissions = undefined;
 	}
 
     authorizeSession(): void {
@@ -134,18 +136,20 @@ export class SessionProviderService {
 	}
 
 	storeSessionInStore(sessionType: SessionType) {
-        if (this.store.idToken && this.store._rawAccessToken() && this.store.refreshToken && this.store.lazyloadUserInfo) {
+        if (this.store.idToken && this.store._rawAccessToken() && this.store.refreshToken && this.store.lazyloadUserInfo && this.store.lazyloadUserPermissions) {
 			sessionStorage.setItem("sessionType", sessionType);
 			sessionStorage.setItem("id", this.store.idToken!);
             sessionStorage.setItem("access", this.store._rawAccessToken()!);
             sessionStorage.setItem("refresh", this.store.refreshToken);
             sessionStorage.setItem("info", JSON.stringify(this.store.lazyloadUserInfo));
+            sessionStorage.setItem("permissions", this.store.lazyloadUserPermissions.serial());
         } else {
 			sessionStorage.removeItem("sessionType");
             sessionStorage.removeItem("id");
             sessionStorage.removeItem("access");
             sessionStorage.removeItem("refresh");
             sessionStorage.removeItem("info");
+            sessionStorage.removeItem("permissions");
         }
     }
 
@@ -184,12 +188,14 @@ export class SessionProviderService {
 			const rawAccessToken = sessionStorage.getItem("access");
 			const rawRefreshToken = sessionStorage.getItem("refresh");
 			const userInfo = JSON.parse(sessionStorage.getItem("info") || "{}");
+			const permissions = UserPermissionList.parseSerial(sessionStorage.getItem("permissions"));
 
-			if (rawIdToken !== null && rawAccessToken !== null && rawRefreshToken !== null && userInfo !== null) {
+			if (rawIdToken !== null && rawAccessToken !== null && rawRefreshToken !== null && userInfo !== null && permissions != null) {
 				this.store.idToken = rawIdToken;
 				this.store.accessToken = rawAccessToken;
 				this.store.refreshToken = rawRefreshToken;
 				this.store.lazyloadUserInfo = userInfo;
+				this.store.lazyloadUserPermissions = permissions;
 				this.store.isLoggedIn = true;
 				console.log("logged in !");
 				res();

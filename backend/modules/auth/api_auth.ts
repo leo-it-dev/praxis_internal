@@ -4,6 +4,7 @@ import { AdfsSessionToken } from "../../framework/adfs_sessiontoken";
 import { ApiInterfaceGenerateTokenIn, ApiInterfaceGenerateTokenOut, ApiInterfaceRefreshTokenIn, ApiInterfaceRefreshTokenOut, ApiInterfaceRevokeTokenIn, JwtError, JwtErrorType } from "../../../api_common/api_auth"
 import * as ssl from '../../ssl/ssl'
 import { ApiInterfaceEmptyOut } from "../../../api_common/backend_call";
+import { UserPermission } from "../../../api_common/permission_types";
 const config = require('config');
 
 export class ApiModuleAuth extends ApiModule {
@@ -16,6 +17,10 @@ export class ApiModuleAuth extends ApiModule {
 
     loginRequired(): boolean {
         return false;
+    }
+
+    permissionRequired(): UserPermission | undefined {
+        return undefined;
     }
 
     registerEndpoints(): void {

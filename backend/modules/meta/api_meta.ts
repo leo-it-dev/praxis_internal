@@ -3,6 +3,7 @@ import { ApiInterfaceMetaOut } from "../../../api_common/api_meta"
 import { ApiInterfaceEmptyIn, ApiModuleResponse } from "../../../api_common/backend_call";
 import { getDeploymentType } from '../../index';
 import { DeploymentType } from "../../deployment";
+import { UserPermission } from "../../../api_common/permission_types";
 
 export class ApiModuleMeta extends ApiModule {
 
@@ -14,6 +15,10 @@ export class ApiModuleMeta extends ApiModule {
 
     loginRequired(): boolean {
         return false;
+    }
+
+    permissionRequired(): UserPermission | undefined {
+        return undefined;
     }
 
     registerEndpoints(): void {

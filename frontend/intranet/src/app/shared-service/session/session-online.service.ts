@@ -4,6 +4,7 @@ import { ApiInterfaceUserInfoOut } from "../../../../../../api_common/api_ldapqu
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../../../../api_common/backend_call';
 import { SessionProviderPlugin } from './session-provider-plugin';
 import { SessionProviderService, SessionType } from './session-provider.service';
+import { UserPermissionList } from '../../../../../../api_common/permission_types';
 
 @Injectable({
     providedIn: 'root'
@@ -99,6 +100,7 @@ export class SessionOnlineService extends SessionProviderPlugin {
             this.backend.authorizedBackendCall<ApiInterfaceEmptyIn, ApiInterfaceUserInfoOut>(SessionOnlineService.USERINFO_URL).then(json => {
                 let storage = SessionProviderService.instance;
                 storage.store.lazyloadUserInfo = json.userinfo;
+                storage.store.lazyloadUserPermissions = new UserPermissionList(json.usergrants);
                 res();
             }).catch(err => {
                 rej(err);

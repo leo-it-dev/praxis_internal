@@ -3,6 +3,7 @@ import { ApiInterfaceUserInfoOut, UserInfo } from "../../../api_common/api_ldapq
 import { ApiInterfaceEmptyIn, ApiModuleResponse } from "../../../api_common/backend_call";
 import ldapjs = require('ldapjs');
 import { Mutex } from "async-mutex";
+import { UserPermission } from "../../../api_common/permission_types";
 const config = require('config');
 
 export class ApiModuleLdapQuery extends ApiModule {
@@ -17,6 +18,10 @@ export class ApiModuleLdapQuery extends ApiModule {
 
     modname(): string {
         return "ldapquery";
+    }
+
+    permissionRequired(): UserPermission | undefined {
+        return undefined;
     }
 
     async assureLdapConnected() {
@@ -84,7 +89,7 @@ export class ApiModuleLdapQuery extends ApiModule {
                     // Append additional ActiveDirectory attributes needed here to add to the response
                     thumbnail: thumbnail !== undefined ? "data:image/jpg;base64," + (thumbnail?.buffers[0].toString('base64')) : null,
                     vetproofVeterinaryName: this.findAttr(userSID, ldapEntry.attributes, config.get('generic.AD_ATTRIBUTE_QS_VETERINARY_ID'))?.values[0] ?? "<default>",
-                    accName: this.findAttr(userSID, ldapEntry.attributes, config.get('generic.AD_ATTRIBUTE_QS_DOCUMENT_NUMBER_USER_NAME_PREFIX'))?.values[0] ?? "<default>"
+                    accName: this.findAttr(userSID, ldapEntry.attributes, config.get('generic.AD_ATTRIBUTE_QS_DOCUMENT_NUMBER_USER_NAME_PREFIX'))?.values[0] ?? "<default>",
                 });
             } catch(err) {
                 rej(err);
@@ -96,10 +101,10 @@ export class ApiModuleLdapQuery extends ApiModule {
         this.get<ApiInterfaceEmptyIn, ApiInterfaceUserInfoOut>("userinfo", async (req, user) => {
             let result: ApiModuleResponse<ApiInterfaceUserInfoOut>;
             try {
-                let userInfo = await this.readUserInfo(user.sid);
-                result = { statusCode: 200, responseObject: {userinfo: userInfo}, error: undefined};
+                let userInfo = await this.readUserInfo(user.userTokenData.sid);
+                result = { statusCode: 200, responseObject: {userinfo: userInfo, usergrants: user.userPermissions.values()}, error: undefined};
             } catch(err) {
-                result = { statusCode: 400, responseObject: {userinfo: undefined}, error: err };
+                result = { statusCode: 400, responseObject: {userinfo: undefined, usergrants: undefined}, error: err };
             }
             return result;
         });

@@ -20,6 +20,7 @@ import { PrescriptionRowComponent } from "./prescription-row/prescription-row.co
 import { QsreportBackendService } from './qsreport-backend.service';
 import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
 import { LoadingoverlayService } from '../loadingoverlay/loadingoverlay.service';
+import { ModuleComponent } from '../module/module/module.component';
 
 export const DRUG_CATEGORY_OK = "moveta";
 export const DRUG_CATEGORY_WARN = "hit";
@@ -36,7 +37,7 @@ export const HINT_WARN_usageGroup: Hint = {text: HINT_WARN_TXT, color: HINT_WARN
 	templateUrl: './qsreport.component.html',
 	styleUrl: './qsreport.component.scss'
 })
-export class QsreportComponent implements AfterViewInit {
+export class QsreportComponent extends ModuleComponent {
 
 	@ViewChildren(PrescriptionRowComponent) prescriptionRowsDOM!: QueryList<PrescriptionRowComponent>;
 
@@ -72,20 +73,18 @@ export class QsreportComponent implements AfterViewInit {
 	reportableDrugList: WritableSignal<CategorizedList<ReportableDrug>> = signal(new CategorizedList<ReportableDrug>());
 	farmers: WritableSignal<Farmer[]> = signal([]);
 
-	_sessionService: SessionProviderService;
-
-	ngAfterViewInit(): void {
+	afterViewInit(): void {
 		this.loadUiFinishedCallback();
 	}
 
 	async loadApiData() {
-		if (this.sessionService.store.qsVeterinaryName) {
+		if (this.getSessionService().store.qsVeterinaryName) {
 			let control = this.qsFormGroup.controls["vetName"];
-			control.setValue(this.sessionService.store.qsVeterinaryName || "<unknown>");
+			control.setValue(this.getSessionService().store.qsVeterinaryName || "<unknown>");
 			control.disable();
 		}
 
-		Promise.allSettled([this.qsreportBackend.fetchBackendData(), this.loadUiFinished]).then((proms) => {
+		Promise.allSettled([this.getBackendService().fetchBackendData(), this.loadUiFinished]).then((proms) => {
 			let backendFetchProm = proms[0];
 			if (backendFetchProm.status == 'fulfilled') {
 				this.reportableDrugList.set(backendFetchProm.value.drugs);
@@ -120,22 +119,15 @@ export class QsreportComponent implements AfterViewInit {
 
 	constructor(
 		private errorlistService: ErrorlistService,
-		private backendService: BackendService,
-		private sessionService: SessionProviderService,
 		private offlineStore: OfflineStoreService,
 		private changeDetectorRef: ChangeDetectorRef,
-		private qsreportBackend: QsreportBackendService,
 		private loadingService: LoadingoverlayService
 	) {
-		this._sessionService = sessionService;
+		super(QsreportBackendService);
+
 		this.loadApiData();
 		this.offlineModuleStore = this.offlineStore.getStore("qs")!;
 		this.offlineModuleStore.recall();
-
-		if (!sessionService.store.isLoggedIn) {
-			sessionService.redirectClientToLoginPage("This service requires you to be logged in!");
-		}
-
 		this.selectedFarmer = toSignal(this.qsFormGroup.controls["locationNumber"].valueChanges)
 	}
 
@@ -175,7 +167,7 @@ export class QsreportComponent implements AfterViewInit {
 
 	async deserializeObjectToForm(object: ApiInterfacePutPrescriptionRowsIn) {
 		// Vet name is just a placeholder in the stored object. We need to ensure, noone can just store QS entries for another vet. Therefore we set it here to the current sessions vet name!
-		this.qsFormGroup.controls["vetName"].setValue(this.sessionService.store.qsVeterinaryName || "<unknown>");
+		this.qsFormGroup.controls["vetName"].setValue(this.getSessionService().store.qsVeterinaryName || "<unknown>");
 		this.qsFormGroup.controls["deliveryDate"].setValue(DatepickerComponent.serializeDateGerman(this.fromDateString(object.drugReport.deliveryDate)));
 		this.qsFormGroup.controls["locationNumber"].setValue(this.farmers().find(f => f.locationNumber == object.drugReport.locationNumber)!);
 
@@ -216,7 +208,7 @@ export class QsreportComponent implements AfterViewInit {
 	}
 
 	serializeFormToObject(): ApiInterfacePutPrescriptionRowsIn {
-		let userShort = this.sessionService.store.lazyloadUserInfo?.accName.toUpperCase().substring(0, 3) || "<unknown>";
+		let userShort = this.getSessionService().store.lazyloadUserInfo?.accName.toUpperCase().substring(0, 3) || "<unknown>";
 		let documentNumber = userShort + parseInt(String(new Date().getTime()));
 
 		return {
@@ -241,8 +233,8 @@ export class QsreportComponent implements AfterViewInit {
 				this.loadingService.showLoadingOverlay();
 
 				let putRequest = this.serializeFormToObject();
-				if (this.sessionService.getSessionType() == SessionType.ONLINE) {
-					this.backendService.authorizedBackendCall<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>(QsreportComponent.API_URL_POST_REPORT, putRequest
+				if (this.getSessionService().getSessionType() == SessionType.ONLINE) {
+					this.getBackendService().authorizedBackendCall<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>(QsreportComponent.API_URL_POST_REPORT, putRequest
 					).then(dat => {
 						this.errorlistService.showErrorMessage("Abgabebeleg erfolgreich übermittelt!");
 						if (this.syncController?.isSyncMode() && this.currentSyncEntry) {
@@ -256,7 +248,7 @@ export class QsreportComponent implements AfterViewInit {
 						rej();
 					});
 				}
-				else if (this.sessionService.getSessionType() == SessionType.OFFLINE) {
+				else if (this.getSessionService().getSessionType() == SessionType.OFFLINE) {
 					let offlineEntry = new OfflineEntry(putRequest);
 					this.offlineModuleStore.appendEntry(offlineEntry);
 					this.errorlistService.showErrorMessage("Element als Offline-Synchronisierungseintrag gespeichert!");

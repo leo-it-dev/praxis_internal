@@ -1,10 +1,13 @@
 import { Injectable, signal, WritableSignal } from '@angular/core';
-import { QsreportComponent } from '../qsreport/qsreport.component';
 import { QsreportBackendService } from '../qsreport/qsreport-backend.service';
+import { UserPermission } from '../../../../../api_common/permission_types';
+import { BackendService } from '../api/backend.service';
 
 export interface IModule {
+	fetchBackendDataFilter(): Promise<any>;
 	fetchBackendData(): Promise<any>;
 	name(): string;
+	modulePermission(): UserPermission | undefined;
 }
 
 export type Module = {
@@ -21,13 +24,12 @@ export class ModuleService {
 	private _modules: Module[] = [];
 
 	constructor(
-		private qsreportBackendModule: QsreportBackendService
+		private qsreportBackendModule: QsreportBackendService,
 	) {
 		// Append future modules here to auto-cache backend information upon online-login.
-		let modules: IModule[] = [
+		let modules: BackendService[] = [
 			qsreportBackendModule
 		];
-
 
 		modules.forEach(m => this._modules.push({
 			imodule: m,
@@ -42,7 +44,7 @@ export class ModuleService {
 			this._modules.forEach(m => m.backendCacheUpdateInProgress.set(true));
 
 			Promise.allSettled(this._modules.map(m => 
-				m.imodule.fetchBackendData().then(() => {
+				m.imodule.fetchBackendDataFilter().then(() => {
 					m.backendCacheUpdateInProgress.set(false);
 					m.backendCacheUpdateResult.set(true);
 				}).catch(() => {

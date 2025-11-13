@@ -63,5 +63,8 @@
         "OPEN_TELEMETRY_COLLECTOR_BASICAUTH_USER": "username",
         "OPEN_TELEMETRY_COLLECTOR_BASICAUTH_PASS": "password",
         "OPEN_TELEMETRY_FORCE_FLUSH_INTERVAL_SECONDS": 5
-   }
+    },
+    "userPermissions": {
+         "SECURITY_GROUP_ALLOW_QS_REPORTS": "SomeAdSecurityGroup"
+    }
 }

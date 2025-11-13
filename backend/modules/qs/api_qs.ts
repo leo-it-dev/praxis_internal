@@ -13,6 +13,7 @@ import { readReportableDrugListFromHIT } from './hit_drug_crawler';
 import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
 import { Farmer, QsApiHandler } from './qsapi_handler';
 import vetproof = require('vet_proof_external_tools_api');
+import { UserPermission } from '../../../api_common/permission_types';
 const config = require('config');
 
 export class QsApiDocumentReports {
@@ -50,6 +51,10 @@ export class ApiModuleQs extends ApiModule {
             // create a backup of the placeholder file variants and resolve all placeholders with the <movetaOdbcConnection> configuration section.
             {configurationBase: "movetaOdbcConnection", patchPaths: ["/etc/odbc.ini", "/opt/Unify/SQLBase/sql.ini"]}
         ]);
+    }
+
+    permissionRequired(): UserPermission | undefined {
+        return UserPermission.QS_REPORT;
     }
 
     async verifyReportabilityOfDrugList(drugList: Array<ReportableDrug>) {
@@ -244,7 +249,7 @@ export class ApiModuleQs extends ApiModule {
         this.postJson<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>("report", async (req, user) => {
             let readVetName = "<error>"
             try {
-                let userInfo = await getApiModule(ApiModuleLdapQuery).readUserInfo(user.sid);
+                let userInfo = await getApiModule(ApiModuleLdapQuery).readUserInfo(user.userTokenData.sid);
                 let expectedVetName = userInfo.vetproofVeterinaryName;
                 readVetName = req.body.drugReport.veterinary;
 

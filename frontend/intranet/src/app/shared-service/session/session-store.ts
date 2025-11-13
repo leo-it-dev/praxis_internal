@@ -1,6 +1,7 @@
 import { signal, WritableSignal } from "@angular/core";
 import { UserInfo } from "../../../../../../api_common/api_ldapquery";
 import { SessionProviderService } from "./session-provider.service";
+import { UserPermission, UserPermissionList } from "../../../../../../api_common/permission_types";
 
 export class SessionStore {
     _provider: SessionProviderService;
@@ -12,6 +13,7 @@ export class SessionStore {
             _rawAccessToken: WritableSignal<string | undefined> = signal(undefined);
     private _rawRefreshToken: WritableSignal<string | undefined> = signal(undefined);
     private _lazyloadUserInfo: WritableSignal<UserInfo | undefined> = signal(undefined);
+    private _lazyloadUserPermissions: WritableSignal<UserPermissionList | undefined> = signal(undefined);
     private _givenName: WritableSignal<string> = signal("<unset>");
     private _familyName: WritableSignal<string> = signal("<unset>");
     private _email: WritableSignal<string> = signal("<unset>");
@@ -28,6 +30,7 @@ export class SessionStore {
     public get qsVeterinaryName() { return this._lazyloadUserInfo()?.vetproofVeterinaryName };
     public get refreshToken(): string|undefined { return this._rawRefreshToken(); }
     public get lazyloadUserInfo(): UserInfo|undefined { return this._lazyloadUserInfo(); };
+    public get lazyloadUserPermissions(): UserPermissionList|undefined { return this._lazyloadUserPermissions(); };
     public get accessToken(): Promise<string> {
         console.log("User app requested access token...");
         if (this._rawAccessToken() == undefined) {
@@ -51,6 +54,7 @@ export class SessionStore {
     public set isLoggedIn(loggedIn: boolean) { this._isLoggedIn.set(loggedIn); }
     public set sid(sid: string) { this._sid.set(sid); };
     public set lazyloadUserInfo(lazyload: UserInfo|undefined) { this._lazyloadUserInfo.set(lazyload); };
+    public set lazyloadUserPermissions(lazyload: UserPermissionList|undefined) { this._lazyloadUserPermissions.set(lazyload); };
     public set refreshToken(refreshToken: string|undefined) { this._rawRefreshToken.set(refreshToken); }
     public set accessToken(accessToken: string|undefined) { this._rawAccessToken.set(accessToken); }
 }

@@ -6,6 +6,7 @@ import { SessionProviderService } from '../shared-service/session/session-provid
 import { UserAccountPopupComponent } from '../user-account-popup/user-account-popup.component';
 import { SyncPopupComponent } from "../sync-popup/sync-popup.component";
 import { OfflineStoreService } from '../shared-service/offline-sync/offline-store.service';
+import { UserPermission } from '../../../../../api_common/permission_types';
 
 @Component({
 	selector: 'app-actionbar',
@@ -18,6 +19,8 @@ export class ActionbarComponent {
 	profilePhoto = computed(() => this.sessionService.store.thumbnailPhoto ?? "");
 	hasProfilePhoto = computed(() => this.sessionService.store.thumbnailPhoto !== null && this.sessionService.store.thumbnailPhoto !== "");
 	isOnlineSession = computed(() => this.sessionService.isOnlineSession());
+
+	hasQsPermission = computed(() => this.sessionService.store.lazyloadUserPermissions?.userHasPermission(UserPermission.QS_REPORT))
 
 	totalUnsyncCount = computed(() => this.offlineStoreService.totalEntryCount());
 
