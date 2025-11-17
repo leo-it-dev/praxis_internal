@@ -22,6 +22,6 @@ export function NullUserInfo(): UserInfo {
 };
 
 /* Api endpoints */
-export interface ApiInterfaceUserInfoOut extends ApiModuleInterfaceB2F { userinfo: UserInfo, usergrants: UserPermission[] };
+export interface ApiInterfaceUserInfoOut extends ApiModuleInterfaceB2F { userinfo: UserInfo };
 
 export interface ApiInterfaceUsersListInfoOut extends ApiModuleInterfaceB2F { userinfos: UserInfo[] };

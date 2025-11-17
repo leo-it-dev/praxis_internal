@@ -147,9 +147,9 @@ export class ApiModuleLdapQuery extends ApiModule {
             let result: ApiModuleResponse<ApiInterfaceUserInfoOut>;
             try {
                 let userInfo = await this.readUserInfo(user.userTokenData.sid);
-                result = { statusCode: 200, responseObject: {userinfo: userInfo, usergrants: user.userPermissions.values()}, error: undefined};
+                result = { statusCode: 200, responseObject: {userinfo: userInfo }, error: undefined};
             } catch(err) {
-                result = { statusCode: 400, responseObject: {userinfo: undefined, usergrants: undefined}, error: err };
+                result = { statusCode: 400, responseObject: {userinfo: undefined }, error: err };
             }
             return result;
         });
