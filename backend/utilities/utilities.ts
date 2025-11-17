@@ -59,3 +59,7 @@ export async function sleep(milliseconds: number, callback: (resOut) => void = u
     }, milliseconds);
     await prom;
 }
+
+export function ensureIsList<T>(obj: T | T[]): T[] {
+    return Array.isArray(obj) ? obj : [obj];
+}

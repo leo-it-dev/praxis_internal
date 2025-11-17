@@ -41,6 +41,7 @@
     "ldapjs": "^3.0.7",
     "node": "^18.20.5",
     "odbc": "^2.4.9",
+    "sqlite3": "^5.1.7",
     "vet_proof_external_tools_api": "1.2.1",
     "windows-1252": "^3.0.4",
     "winston": "^3.17.0",

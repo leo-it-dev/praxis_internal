@@ -20,21 +20,21 @@ export abstract class BackendService implements IModule {
 	private errorlistService!: ErrorlistService;
 
 	getSessionService() {
-		if (!this.sessionService) {
+		if (this.sessionService == undefined) {
 			this.sessionService = this.injector.get(SessionProviderService);
 		}
 		return this.sessionService;
 	}
 
 	getErrorlistService() {
-		if(!this.errorlistService) {
+		if (this.errorlistService == undefined) {
 			this.errorlistService = this.injector.get(ErrorlistService);
 		}
 		return this.errorlistService;
 	}
 
 	userHasPermission() {
-		return this.getSessionService().store.lazyloadUserPermissions?.userHasPermission(this.modulePermission());
+		return this.getSessionService().store.lazyloadUserInfo?.permissions.userHasPermission(this.modulePermission());
 	}
 
 	anonymousBackendCall<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(url: string, body: REQ|undefined = undefined): Promise<RES> {
@@ -54,7 +54,7 @@ export abstract class BackendService implements IModule {
 					throw new Error(resp.status + ": " + json.error);
 				}
 			}).catch(e => {
-				this.errorlistService.showErrorMessage("Error performing backend call: " + e);
+				this.getErrorlistService().showErrorMessage("Error performing backend call: " + e);
 				rej(e);
 			});
 		});
@@ -82,7 +82,7 @@ export abstract class BackendService implements IModule {
 							throw new Error("Error during online backend request: " + resp.status + ": " + json.error);
 						}
 					}).catch(e => {
-						this.errorlistService.showErrorMessage("Error performing backend call: " + e);
+						this.getErrorlistService().showErrorMessage("Error performing backend call: " + e);
 						rej(e);
 					});
 				});
@@ -98,7 +98,7 @@ export abstract class BackendService implements IModule {
 						throw new Error("Error checking cache-based backend call: " + resp.status + ": " + json.error);
 					}
 				}).catch(e => {
-					this.errorlistService.showErrorMessage("Error receiving cached backend call: " + e);
+					this.getErrorlistService().showErrorMessage("Error receiving cached backend call: " + e);
 					rej(e);
 				});
 			}
@@ -106,7 +106,7 @@ export abstract class BackendService implements IModule {
 	}
 
 	fetchBackendDataFilter(): Promise<any> {
-		if (this.getSessionService().store.lazyloadUserPermissions?.userHasPermission(this.modulePermission())) {
+		if (this.getSessionService().store.lazyloadUserInfo?.permissions.userHasPermission(this.modulePermission())) {
 			return this.fetchBackendData();
 		} else {
 			return Promise.resolve();

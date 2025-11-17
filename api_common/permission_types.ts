@@ -4,7 +4,7 @@ export enum UserPermission {
 
 export class UserPermissionList {
 
-    private userPermissions: UserPermission[] = [];
+    userPermissions: UserPermission[] = [];
 
     constructor(permissions: UserPermission[]) {
         this.userPermissions = permissions;

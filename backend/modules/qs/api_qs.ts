@@ -14,11 +14,18 @@ import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
 import { Farmer, QsApiHandler } from './qsapi_handler';
 import vetproof = require('vet_proof_external_tools_api');
 import { UserPermission } from '../../../api_common/permission_types';
+import { SqlUpdate } from '../../framework/sqlite_database';
 const config = require('config');
 
 export class QsApiDocumentReports {
     qsReportsOfficialPage: Array<DrugReportApiReadback> = [];
     qsReportsIntranetModule: Array<DrugReportApiReadback> = [];
+}
+
+export type DrugReportability = {
+    znr: string,
+    pid: number,
+    reportable: boolean
 }
 
 export class ApiModuleQs extends ApiModule {
@@ -57,6 +64,36 @@ export class ApiModuleQs extends ApiModule {
         return UserPermission.QS_REPORT;
     }
 
+    sqliteTableCreate(): SqlUpdate | undefined {
+        return {
+            update: "CREATE TABLE IF NOT EXISTS qs ( \
+                znr varchar(32) NOT NULL, \
+                pid integer NOT NULL, \
+                reportable BOOLEAN NOT NULL,\
+                PRIMARY KEY (znr, pid)\
+            );",
+            params: [],
+        }
+    }
+
+    async sqliteStoreDrugVerifiabilityCache(drugList: Array<DrugReportability>) {
+        for(let drug of drugList) {
+            await this.sqlite().sqlUpdate({
+                update: "INSERT OR REPLACE INTO qs (znr, pid, reportable) VALUES (?, ?, ?);",
+                params: [ drug.znr, drug.pid, drug.reportable ],
+            });
+        }
+    }
+
+    async sqliteReadDrugVerifiabilityCache(): Promise<Array<DrugReportability>> {
+        let rows = await this.sqlite().sqlFetchAll("SELECT znr,reportable FROM qs", []);
+        return rows.map(row => ({
+            reportable: row["reportable"],
+            pid: row["pid"],
+            znr: row["znr"]
+        }));
+    }
+
     async verifyReportabilityOfDrugList(drugList: Array<ReportableDrug>) {
         let logger = getLogger('qs-znr-validator');
         let reference = new Date().getTime();
@@ -69,47 +106,67 @@ export class ApiModuleQs extends ApiModule {
         let erronousDrugs = [];
         let successfullDrugs = [];
 
+        let drugReportVerifiabilityCache = await this.sqliteReadDrugVerifiabilityCache();
+
         for(let drugNumber = 0; drugNumber < drugList.length; drugNumber++) {
             let drug = drugList[drugNumber];
-            let date = new Date();
-            let drugReport: DrugReport = {
-                deliveryDate: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0'),
-                documentNumber: '_V' + date.getTime(),
-                locationNumber: farmer.locationNumber,
-                veterinary: config.get('generic.QS_API_AUTOMATED_DRUG_TEST_USER'),
-                prescriptionRows: [{
-                    animalCount: 1,
-                    animalGroup: usageGroup.usageGroup,
-                    drugs: [
-                        {
-                            amount: 1,
-                            applicationDuration: 1,
-                            packageId: drug.forms[0].pid,
-                            amountUnit: (drug.forms[0].unitSuggestion || DrugUnits.injector).id,
-                            approvalNumber: drug.znr
-                        }
-                    ]}
-                ]
-            };
+            let drugVerifiabilityCache = drugReportVerifiabilityCache.find(cacheEntry => cacheEntry.znr.toLowerCase() == drug.znr.toLowerCase());
 
-            await sleep(config.get('generic.QS_API_AUTOMATED_DRUG_TEST_INTERVAL_SECONDS') * 1000, (res) => {
-                this.qsApiHandlerTest.postDrugReport(drugReport, false).then((dat) => {
-                    // successfully posted, drugs are all valid.
-                    drug.reportabilityVerifierMarkedErronous = false;
+            if (drugVerifiabilityCache != undefined) {
+
+                drug.reportabilityVerifierMarkedErronous = !drugVerifiabilityCache.reportable;
+                if (drug.reportabilityVerifierMarkedErronous) {
+                    logger.debug("Following drug is marked invalid cached (" + drugNumber + "/" + drugList.length + "): ", {drug: drug, reference:reference});
+                    erronousDrugs.push(drug);
+                } else {
+                    logger.debug("Following drug is marked valid cached (" + drugNumber + "/" + drugList.length + "): ", {drug: drug, reference:reference});
                     successfullDrugs.push(drug);
-                    logger.debug("Following drug is marked valid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, reference:reference});
-                    res();
-                }).catch((err) => {
-                    // error posting, drugs contain invalid ZNRs or drug units.
-                    drug.reportabilityVerifierMarkedErronous = true;
-                    erronousDrugs.push({drugReport: drugReport, drug: drug, err: err});
-                    logger.debug("Following drug is marked invalid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, err: err, reference:reference});
-                    res();
-                });
-            });
-        }
+                }
+            } else {
+                let date = new Date();
+                let drugReport: DrugReport = {
+                    deliveryDate: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0'),
+                    documentNumber: '_V' + date.getTime(),
+                    locationNumber: farmer.locationNumber,
+                    veterinary: config.get('generic.QS_API_AUTOMATED_DRUG_TEST_USER'),
+                    prescriptionRows: [{
+                        animalCount: 1,
+                        animalGroup: usageGroup.usageGroup,
+                        drugs: [
+                            {
+                                amount: 1,
+                                applicationDuration: 1,
+                                packageId: drug.forms[0].pid,
+                                amountUnit: (drug.forms[0].unitSuggestion || DrugUnits.injector).id,
+                                approvalNumber: drug.znr
+                            }
+                        ]}
+                    ]
+                };
 
+                await sleep(config.get('generic.QS_API_AUTOMATED_DRUG_TEST_INTERVAL_SECONDS') * 1000, (res) => {
+                    this.qsApiHandlerTest.postDrugReport(drugReport, false).then((dat) => {
+                        // successfully posted, drugs are all valid.
+                        drug.reportabilityVerifierMarkedErronous = false;
+                        successfullDrugs.push(drug);
+                        logger.debug("Following drug is marked valid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, reference:reference});
+                        res();
+                    }).catch((err) => {
+                        // error posting, drugs contain invalid ZNRs or drug units.
+                        drug.reportabilityVerifierMarkedErronous = true;
+                        erronousDrugs.push(drug);
+                        logger.debug("Following drug is marked invalid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, err: err, reference:reference});
+                        res();
+                    });
+                });
+            }
+        }
         logger.info("Finished drug ZNR verification cycle.", {successfull: successfullDrugs.length, erronous: erronousDrugs.length, reference:reference});
+        await this.sqliteStoreDrugVerifiabilityCache(drugList.map(drug => ({
+            reportable: !drug.reportabilityVerifierMarkedErronous,
+            pid: drug.forms[0].pid,
+            znr: drug.znr
+        })));
     }
 
     async updateDrugs(finished: () => void) {
@@ -250,7 +307,6 @@ export class ApiModuleQs extends ApiModule {
             let readVetName = "<error>"
             try {
                 let userInfo = await getApiModule(ApiModuleLdapQuery).readUserInfo(user.userTokenData.sid);
-                let expectedVetName = userInfo.vetproofVeterinaryName;
                 readVetName = req.body.drugReport.veterinary;
 
                 let maxReportNumberLengthFrontend = this.MAX_QS_REPORT_NUMBER_LENGTH_CHARS - this.INTRANET_QS_REPORT_NUMBER_WATERMARK.length;
@@ -261,13 +317,14 @@ export class ApiModuleQs extends ApiModule {
                 // append watermark suffix to report number, in order for grafana analytics to separate between reports generated by our intranet frontend and reports generated on the official web page.
                 req.body.drugReport.documentNumber += this.INTRANET_QS_REPORT_NUMBER_WATERMARK;
 
-                if (expectedVetName == readVetName) {
-                    let response = await this.qsApiHandlerProd.postDrugReport(req.body.drugReport);
-                    this.logger().info("Successfully sent QS document post request by veterinary!", {username: readVetName, drugReport: req.body.drugReport, success:true});
-                    return { statusCode: 200, responseObject: {}, error: undefined };
-                } else {
-                    throw new Error("Stated veterinary name of drug report does not match vet name registered for user in LDAP!");                    
+                // Request by vets: Every vet should be able to send reports in the name of another vet. Therefore we don't explicitly check the stated vet name in the report, but just accept it blindly.
+                if (userInfo.vetproofVeterinaryName != readVetName) {
+                    this.logger().info("Veterinary sent drug report in the name of another vet. This message is purely informative.", { actualVet: userInfo.vetproofVeterinaryName, statedVet: readVetName });
                 }
+
+                await this.qsApiHandlerProd.postDrugReport(req.body.drugReport);
+                this.logger().info("Successfully sent QS document post request by veterinary!", {username: readVetName, drugReport: req.body.drugReport, success:true});
+                return { statusCode: 200, responseObject: {}, error: undefined };
             } catch(err) {
                 this.logger().error("Error sending QS document post request by veterinary!", {error: err, success: false, username: readVetName, drugReport: req.body.drugReport});
                 return { statusCode: 500, responseObject: {}, error: "Error posting veterinary document to API! " + err };

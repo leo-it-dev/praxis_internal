@@ -20,7 +20,7 @@ export class ActionbarComponent {
 	hasProfilePhoto = computed(() => this.sessionService.store.thumbnailPhoto !== null && this.sessionService.store.thumbnailPhoto !== "");
 	isOnlineSession = computed(() => this.sessionService.isOnlineSession());
 
-	hasQsPermission = computed(() => this.sessionService.store.lazyloadUserPermissions?.userHasPermission(UserPermission.QS_REPORT))
+	hasQsPermission = computed(() => this.sessionService.store.lazyloadUserInfo?.permissions.userHasPermission(UserPermission.QS_REPORT))
 
 	totalUnsyncCount = computed(() => this.offlineStoreService.totalEntryCount());
 

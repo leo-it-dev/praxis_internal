@@ -88,7 +88,7 @@ function processRows(rows: row[]): ReportableDrug[] {
 
 export async function readReportableDrugListFromMovetaDB(): Promise<Array<ReportableDrug>> {
     return new Promise((res, rej) => {
-        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select ASUCH,ABEZ,AMEN,APCK,AZULASSUNG,APACKUNGSID from SYSADM.ARZNEIEN WHERE AZULASSUNG IS NOT NULL").then(rows => {
+        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select ASUCH,ABEZ,AMEN,APCK,AZULASSUNG,APACKUNGSID from SYSADM.ARZNEIEN WHERE AZULASSUNG IS NOT NULL AND AHIDDEN=0").then(rows => {
             let drugs = processRows(rows);
             res(drugs);
         }).catch(err => {

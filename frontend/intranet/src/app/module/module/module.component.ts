@@ -20,7 +20,7 @@ export abstract class ModuleComponent implements AfterViewInit {
 
 	ngAfterViewInit(): void {
 		const requiredPermission = this._backendService.modulePermission();
-		const permissionStore = this._sessionService.store.lazyloadUserPermissions;
+		const permissionStore = this._sessionService.store.lazyloadUserInfo?.permissions;
 
 		if (!this._sessionService.store.isLoggedIn) {
 			this._sessionService.redirectClientToLoginPage("This service requires you to be logged in!");

@@ -1,6 +1,5 @@
 import { computed, Injectable, Signal } from '@angular/core';
 import { OfflineModuleStore } from './offline-module-store';
-import { QsreportComponent } from '../../qsreport/qsreport.component';
 import { ErrorlistService } from '../../timed-popups/popuplist/errorlist.service';
 
 @Injectable({

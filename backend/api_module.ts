@@ -1,19 +1,30 @@
 import bodyParser = require("body-parser");
 import { Express } from "express";
-import { AdfsOidc } from "./framework/adfs_oidc_instance";
-import { ApiModuleResponse, ApiModuleBody, ApiModuleInterfaceF2B, ApiModuleInterfaceB2F, RequestTyped } from "../api_common/backend_call"
 import { Logger } from "winston";
+import { ApiModuleBody, ApiModuleInterfaceB2F, ApiModuleInterfaceF2B, ApiModuleResponse, RequestTyped } from "../api_common/backend_call";
+import { UserPermission } from "../api_common/permission_types";
+import { AdfsOidc } from "./framework/adfs_oidc_instance";
 import { getLogger } from "./logger";
-import { UserPermission, UserPermissionList } from "../api_common/permission_types";
-import { User } from "./user";
-const config = require('config');
+import { User, userPermissionsFromSecurityGroupNames } from "./user";
+import { SQLiteDB, SqlUpdate } from "./framework/sqlite_database";
 
 export abstract class ApiModule {
     private _app: Express;
     private _logger: Logger;
+    private _sqlite: SQLiteDB;
 
     constructor(app: Express) {
         this._app = app;
+    }
+
+    async initializeModuleInternal() {
+        this._sqlite = new SQLiteDB();
+        this._sqlite.sqliteInit(this.modname());
+
+        const sqliteCreateTable = this.sqliteTableCreate();
+        if (sqliteCreateTable != undefined) {
+            await this._sqlite.sqlUpdate(sqliteCreateTable);
+        }
     }
 
     abstract modname(): string;
@@ -33,17 +44,12 @@ export abstract class ApiModule {
         return this._logger;
     }
 
-    parseUserPermissions(user: JsonObject): UserPermissionList {
-        const userRoles = user["roles"] as String[];
-        let permissions = [];
-        for (let role of userRoles) {
-            switch(role) {
-                case config.get('userPermissions.SECURITY_GROUP_ALLOW_QS_REPORTS'):
-                    permissions.push(UserPermission.QS_REPORT);
-                    break;
-            }
-        }
-        return new UserPermissionList(permissions);
+    protected sqliteTableCreate(): SqlUpdate | undefined {
+        return undefined;
+    };
+
+    protected sqlite() {
+        return this._sqlite;
     }
 
     postJson<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user: User) => Promise<ApiModuleResponse<RES>>) {
@@ -57,7 +63,7 @@ export abstract class ApiModule {
                 validationResult = await AdfsOidc.validateTokenInRequest(req);
 
                 if (validationResult instanceof Object) {
-                    let userPermissions = this.parseUserPermissions(validationResult);
+                    let userPermissions = userPermissionsFromSecurityGroupNames(validationResult["roles"] as string[]);
 
                     if (!userPermissions.userHasPermission(this.permissionRequired())) {
                         moduleResponse = { error: "unauthorized: " + validationResult, statusCode: 401, responseObject: undefined }
@@ -91,7 +97,7 @@ export abstract class ApiModule {
                 validationResult = await AdfsOidc.validateTokenInRequest(req);
 
                 if (validationResult instanceof Object) {
-                    let userPermissions = this.parseUserPermissions(validationResult);
+                    let userPermissions = userPermissionsFromSecurityGroupNames(validationResult["roles"] as string[]);
 
                     if (!userPermissions.userHasPermission(this.permissionRequired())) {
                         moduleResponse = { error: "unauthorized: " + validationResult, statusCode: 401, responseObject: undefined }

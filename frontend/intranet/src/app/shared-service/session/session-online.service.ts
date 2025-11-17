@@ -100,7 +100,7 @@ export class SessionOnlineService extends SessionProviderPlugin {
             this.backend.authorizedBackendCall<ApiInterfaceEmptyIn, ApiInterfaceUserInfoOut>(SessionOnlineService.USERINFO_URL).then(json => {
                 let storage = SessionProviderService.instance;
                 storage.store.lazyloadUserInfo = json.userinfo;
-                storage.store.lazyloadUserPermissions = new UserPermissionList(json.usergrants);
+                storage.store.lazyloadUserInfo.permissions = new UserPermissionList((storage.store.lazyloadUserInfo.permissions as UserPermissionList).userPermissions)
                 res();
             }).catch(err => {
                 rej(err);

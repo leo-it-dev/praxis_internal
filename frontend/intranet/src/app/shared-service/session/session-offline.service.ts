@@ -10,8 +10,7 @@ export class SessionOfflineService extends SessionProviderPlugin {
 
     override authorizeSession() {
         let storage = SessionProviderService.instance;
-        storage.store.lazyloadUserInfo = {thumbnail: "", vetproofVeterinaryName: "Offline Session", accName: "OFF"};
-        storage.store.lazyloadUserPermissions = UserPermissionList.grantAll();
+        storage.store.lazyloadUserInfo = {thumbnail: "", vetproofVeterinaryName: "Offline Session", accName: "OFF", permissions: UserPermissionList.grantAll(), firstName: "offline", givenName: "offline"};
         storage.store.accessToken = "-";
         storage.store.idToken = "-";
         storage.store.refreshToken = "-";

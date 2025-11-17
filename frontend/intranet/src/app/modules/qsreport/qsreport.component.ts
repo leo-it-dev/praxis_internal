@@ -1,26 +1,28 @@
 import { NgFor } from '@angular/common';
-import { AfterViewInit, ChangeDetectorRef, Component, inject, QueryList, Signal, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, QueryList, Signal, signal, ViewChild, ViewChildren, WritableSignal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
-import { ApiInterfacePutPrescriptionRowsIn, Farmer, PrescriptionRow, ReportableDrug } from "../../../../../api_common/api_qs";
-import { ApiInterfaceEmptyOut } from '../../../../../api_common/backend_call';
-import { BackendService } from '../api/backend.service';
-import { BlockingoverlayComponent, OverlayButtonDesign } from '../blockingoverlay/blockingoverlay.component';
-import { DatepickerComponent } from '../datepicker/datepicker.component';
-import { HintComponent, NO_HINT, Hint } from "../hint-ok/hint.component";
-import { HINT_OK_COL, HINT_OK_TXT, HINT_WARN_COL, HINT_WARN_TXT, IStringify, SearchDropdownComponent } from '../search-dropdown/search-dropdown.component';
-import { OfflineEntry } from '../shared-service/offline-sync/offline-entry';
-import { OfflineModuleStore } from '../shared-service/offline-sync/offline-module-store';
-import { OfflineStoreService } from '../shared-service/offline-sync/offline-store.service';
-import { SessionProviderService, SessionType } from '../shared-service/session/session-provider.service';
-import { ApplyEntryEvent, CommitSynchronizeEntryEvent, SyncOnlineControllerComponent } from "../sync-online-controller/sync-online-controller.component";
-import { CategorizedList } from '../utilities/categorized-list';
+import { NullUserInfo, UserInfo } from '../../../../../../api_common/api_ldapquery';
+import { ApiInterfacePutPrescriptionRowsIn, Farmer, PrescriptionRow, ReportableDrug } from '../../../../../../api_common/api_qs';
+import { ApiInterfaceEmptyOut } from '../../../../../../api_common/backend_call';
+import { UserPermission } from '../../../../../../api_common/permission_types';
+import { BlockingoverlayComponent, OverlayButtonDesign } from '../../blockingoverlay/blockingoverlay.component';
+import { DatepickerComponent } from '../../datepicker/datepicker.component';
+import { Hint, HintComponent, NO_HINT } from '../../hint-ok/hint.component';
+import { LoadingoverlayService } from '../../loadingoverlay/loadingoverlay.service';
+import { ModuleComponent } from '../../module/module/module.component';
+import { HINT_OK_COL, HINT_OK_TXT, HINT_WARN_COL, HINT_WARN_TXT, IStringify, SearchDropdownComponent } from '../../search-dropdown/search-dropdown.component';
+import { OfflineEntry } from '../../shared-service/offline-sync/offline-entry';
+import { OfflineModuleStore } from '../../shared-service/offline-sync/offline-module-store';
+import { OfflineStoreService } from '../../shared-service/offline-sync/offline-store.service';
+import { SessionType } from '../../shared-service/session/session-provider.service';
+import { ApplyEntryEvent, CommitSynchronizeEntryEvent, SyncOnlineControllerComponent } from '../../sync-online-controller/sync-online-controller.component';
+import { ErrorlistService } from '../../timed-popups/popuplist/errorlist.service';
+import { CategorizedList } from '../../utilities/categorized-list';
+import { LdapQueryBackendFetch, LdapqueryBackendService } from '../ldapquery/ldapquery-backend.service';
 import { PrescriptionRowComponent } from "./prescription-row/prescription-row.component";
-import { QsreportBackendService } from './qsreport-backend.service';
-import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
-import { LoadingoverlayService } from '../loadingoverlay/loadingoverlay.service';
-import { ModuleComponent } from '../module/module/module.component';
+import { QsBackendFetch, QsreportBackendService } from './qsreport-backend.service';
 
 export const DRUG_CATEGORY_OK = "moveta";
 export const DRUG_CATEGORY_WARN = "hit";
@@ -73,30 +75,57 @@ export class QsreportComponent extends ModuleComponent {
 	reportableDrugList: WritableSignal<CategorizedList<ReportableDrug>> = signal(new CategorizedList<ReportableDrug>());
 	farmers: WritableSignal<Farmer[]> = signal([]);
 
+	vets: WritableSignal<UserInfo[]> = signal([]);
+	vetsSerializer: IStringify<UserInfo> = { display: (user) => ({ text: user.firstName + " " + user.givenName, hint: NO_HINT }) };
+
+	offlineNullVet: UserInfo;
+
 	afterViewInit(): void {
 		this.loadUiFinishedCallback();
 	}
 
 	async loadApiData() {
-		if (this.getSessionService().store.qsVeterinaryName) {
-			let control = this.qsFormGroup.controls["vetName"];
-			control.setValue(this.getSessionService().store.qsVeterinaryName || "<unknown>");
-			control.disable();
-		}
 
-		Promise.allSettled([this.getBackendService().fetchBackendData(), this.loadUiFinished]).then((proms) => {
-			let backendFetchProm = proms[0];
-			if (backendFetchProm.status == 'fulfilled') {
-				this.reportableDrugList.set(backendFetchProm.value.drugs);
+		Promise.allSettled([this.getBackendService().fetchBackendData(), this.ldapBackendService.fetchBackendData(), this.loadUiFinished]).then((proms) => {
+			let backendQsFetchProm = proms[0] as PromiseSettledResult<QsBackendFetch>;
+			let backendLdapFetchProm = proms[1] as PromiseSettledResult<LdapQueryBackendFetch>;
+
+			if (backendQsFetchProm.status == 'fulfilled') {
+				this.reportableDrugList.set(backendQsFetchProm.value.drugs);
 				console.log("Loaded " + this.reportableDrugList().length + " drugs!");
-				this.farmers.set(backendFetchProm.value.farmers);
+				this.farmers.set(backendQsFetchProm.value.farmers);
 				console.log("Loaded " + this.farmers().length + " farmers!");
 			}
 
+			if (backendLdapFetchProm.status == 'fulfilled') {
+				this.vets.set(backendLdapFetchProm.value.userlist.filter(
+					user => user.permissions.userHasPermission(UserPermission.QS_REPORT)
+				));
+
+				if (this.getSessionService().getSessionType() == SessionType.OFFLINE) {
+					this.vets().push(this.offlineNullVet);
+				}
+
+				console.log("Loaded " + this.vets().length + " vets!");
+			}
+
 			setTimeout(() => {
+				this.qsFormGroup.controls.vetName.setValue(this.determineVetName());
 				this.pageInitFinished.next();
 			}, 1);
 		});
+	}
+
+	findVetByQsName(qsName: string): UserInfo | null {
+		return this.vets().find(v => v.vetproofVeterinaryName == qsName) || null;
+	}
+
+	determineVetName() {
+		if (this.getSessionService().getSessionType() == SessionType.OFFLINE) {
+			return this.offlineNullVet;
+		} else {
+			return this.findVetByQsName(this.getSessionService().store.qsVeterinaryName ?? "") || null;
+		}
 	}
 
 	buildPatternThisAndPreviousYear() {
@@ -107,7 +136,7 @@ export class QsreportComponent extends ModuleComponent {
 
 	private formBuilder = inject(FormBuilder);
 	qsFormGroup = this.formBuilder.group({
-		vetName: ['', Validators.required],
+		vetName: new FormControl<UserInfo | null>(null, Validators.required),
 		deliveryDate: ['', [Validators.required, Validators.pattern(this.buildPatternThisAndPreviousYear())]],
 		locationNumber: new FormControl<Farmer|null>(null),
 		prescriptionRows: this.formBuilder.array([new FormControl<PrescriptionRow>({} as PrescriptionRow, Validators.required)])
@@ -121,14 +150,19 @@ export class QsreportComponent extends ModuleComponent {
 		private errorlistService: ErrorlistService,
 		private offlineStore: OfflineStoreService,
 		private changeDetectorRef: ChangeDetectorRef,
-		private loadingService: LoadingoverlayService
+		private loadingService: LoadingoverlayService,
+		private ldapBackendService: LdapqueryBackendService
 	) {
 		super(QsreportBackendService);
 
 		this.loadApiData();
 		this.offlineModuleStore = this.offlineStore.getStore("qs")!;
 		this.offlineModuleStore.recall();
-		this.selectedFarmer = toSignal(this.qsFormGroup.controls["locationNumber"].valueChanges)
+		this.selectedFarmer = toSignal(this.qsFormGroup.controls["locationNumber"].valueChanges);
+		
+		this.offlineNullVet = NullUserInfo();
+		this.offlineNullVet.firstName = "Automatisch bei nächster Online-Anmeldung";
+		this.offlineNullVet.givenName = "";
 	}
 
 	toDateString(date: Date) {
@@ -156,6 +190,7 @@ export class QsreportComponent extends ModuleComponent {
 	resetForm(fullClear: boolean) {
 		if (fullClear) {
 			this.qsFormGroup.controls.deliveryDate.setValue(DatepickerComponent.serializeDateGerman(new Date()));
+			this.qsFormGroup.controls.vetName.setValue(this.determineVetName());
 		}
 		this.prescriptionRowsDOM.forEach(e => {
 			e.resetForm(fullClear);
@@ -167,7 +202,7 @@ export class QsreportComponent extends ModuleComponent {
 
 	async deserializeObjectToForm(object: ApiInterfacePutPrescriptionRowsIn) {
 		// Vet name is just a placeholder in the stored object. We need to ensure, noone can just store QS entries for another vet. Therefore we set it here to the current sessions vet name!
-		this.qsFormGroup.controls["vetName"].setValue(this.getSessionService().store.qsVeterinaryName || "<unknown>");
+		this.qsFormGroup.controls["vetName"].setValue(object.drugReport.veterinary != "" ? this.findVetByQsName(object.drugReport.veterinary) : this.determineVetName());
 		this.qsFormGroup.controls["deliveryDate"].setValue(DatepickerComponent.serializeDateGerman(this.fromDateString(object.drugReport.deliveryDate)));
 		this.qsFormGroup.controls["locationNumber"].setValue(this.farmers().find(f => f.locationNumber == object.drugReport.locationNumber)!);
 
@@ -211,10 +246,12 @@ export class QsreportComponent extends ModuleComponent {
 		let userShort = this.getSessionService().store.lazyloadUserInfo?.accName.toUpperCase().substring(0, 3) || "<unknown>";
 		let documentNumber = userShort + parseInt(String(new Date().getTime()));
 
+		let vet = this.qsFormGroup.controls["vetName"].value;
+
 		return {
 			cacheTillOnline: true,
 			drugReport: {
-				veterinary: this.qsFormGroup.controls["vetName"].value!,
+				veterinary: (vet != null) ? vet.vetproofVeterinaryName : "",
 				deliveryDate: this.toDateString(DatepickerComponent.parseDateGerman(this.qsFormGroup.controls["deliveryDate"].value!)!),
 				documentNumber: documentNumber,
 				locationNumber: this.selectedFarmer()!.locationNumber,

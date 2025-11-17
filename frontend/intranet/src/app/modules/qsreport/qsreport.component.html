@@ -17,7 +17,8 @@
     <form [formGroup]="qsFormGroup" #qsForm id="qsForm" (submit)="submitForm()">
         <div class="cont">
             <label for="vet-name">Tierarztname</label>
-            <input name="vet-name" type="text" id="vet-name" formControlName="vetName" />
+            <!-- <input name="vet-name" type="text" id="vet-name" formControlName="vetName" /> -->
+            <app-search-dropdown name="vetDropdown" #vetDropdown placeholder="Tierarzt auswählen..." [items]="this.vets()" [serial]="this.vetsSerializer" [formControl]="qsFormGroup.controls['vetName']"></app-search-dropdown>
         </div>
         <div class="cont">
             <label for="delivery-date">Abgabedatum</label>

@@ -1,15 +1,14 @@
 import { ChangeDetectorRef, Component, computed, EventEmitter, inject, Injector, input, Input, OnInit, Output, Signal, signal, ViewChild, WritableSignal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, NgControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { DrugPackage, DrugUnit, DrugUnits, Farmer, PrescriptionRow, ReportableDrug } from '../../../../../../api_common/api_qs';
-import { IItemDisable, IStringify, SearchDropdownComponent } from '../../search-dropdown/search-dropdown.component';
-import { computedIsUpdated } from '../../utilities/angular-util';
-import { CategorizedItem, CategorizedList } from '../../utilities/categorized-list';
-import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from '../../../../../../api_common/qs/qs-farmer-production-age-mapping';
-import { ApiCompatibleProductionType, QsFarmerProductionCombination } from '../../../../../../api_common/qs/qs-farmer-production-combinations';
 import { DRUG_CATEGORY_OK, DRUG_CATEGORY_WARN, HINT_OK_drug, HINT_OK_usageGroup, HINT_WARN_drug, HINT_WARN_usageGroup } from '../qsreport.component';
 import { toSignal } from '@angular/core/rxjs-interop'
-import { NO_HINT } from '../../hint-ok/hint.component';
-
+import { IItemDisable, IStringify, SearchDropdownComponent } from '../../../search-dropdown/search-dropdown.component';
+import { DrugPackage, DrugUnit, DrugUnits, Farmer, PrescriptionRow, ReportableDrug } from '../../../../../../../api_common/api_qs';
+import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from "../../../../../../../api_common/qs/qs-farmer-production-age-mapping"
+import { ApiCompatibleProductionType, QsFarmerProductionCombination } from '../../../../../../../api_common/qs/qs-farmer-production-combinations';
+import { CategorizedItem, CategorizedList } from '../../../utilities/categorized-list';
+import { NO_HINT } from '../../../hint-ok/hint.component';
+import { computedIsUpdated } from '../../../utilities/angular-util';
 
 @Component({
 	selector: 'app-prescription-row',

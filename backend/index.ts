@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as ssl from './ssl/ssl'
 import * as fs from 'fs';
 import * as config from 'config';
+import * as sqlite from './framework/sqlite_database';
 
 /**
  * Endpoint modules
@@ -34,6 +35,10 @@ function initializeDevelopmentBuildEnvironment(projectRoot: string) {
         {
             src: path.join(projectRoot, 'ssl', 'certs'),
             dest: path.join(runtimeRoot, 'ssl', 'certs')
+        },
+        {
+            src: path.join(projectRoot, 'framework', 'databases'),
+            dest: path.join(runtimeRoot, 'framework', 'databases')
         }
     ]
 
@@ -109,6 +114,7 @@ async function startup() {
     for (let apiModuleClass of apiModules) {
         let apiModule = new apiModuleClass(app);
         moduleLoaderLogger.info("Loading Api Backend Module on basepath: ", {module: apiModuleClass.name, basepath: apiModule.basepath()});
+        await apiModule.initializeModuleInternal();
         await apiModule.initialize();
         apiModule.registerEndpoints();
         apiModulesInstances.push(apiModule);

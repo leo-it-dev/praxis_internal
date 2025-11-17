@@ -33,7 +33,6 @@ export class LoginComponent implements OnInit {
 		} else if(window.location.search.includes("error_description")) {
 			let error = window.location.search.split("error_description")[1].split("&")[0];
 			this.router.navigateByUrl("/login").then(() => {
-				console.log(window.location.search);
 				this.errorlistService.showErrorMessage("You don't have permissions to use the intranet service.");
 			});
 		}
