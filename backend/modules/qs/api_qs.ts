@@ -86,7 +86,7 @@ export class ApiModuleQs extends ApiModule {
     }
 
     async sqliteReadDrugVerifiabilityCache(): Promise<Array<DrugReportability>> {
-        let rows = await this.sqlite().sqlFetchAll("SELECT znr,reportable FROM qs", []);
+        let rows = await this.sqlite().sqlFetchAll("SELECT znr,pid,reportable FROM qs", []);
         return rows.map(row => ({
             reportable: row["reportable"],
             pid: row["pid"],
@@ -110,7 +110,8 @@ export class ApiModuleQs extends ApiModule {
 
         for(let drugNumber = 0; drugNumber < drugList.length; drugNumber++) {
             let drug = drugList[drugNumber];
-            let drugVerifiabilityCache = drugReportVerifiabilityCache.find(cacheEntry => cacheEntry.znr.toLowerCase() == drug.znr.toLowerCase());
+            let drugVerifiabilityCache = drugReportVerifiabilityCache.find(cacheEntry => cacheEntry.znr.toLowerCase() == drug.znr.toLowerCase()
+                                                                                        && cacheEntry.pid == drug.forms[0].pid);
 
             if (drugVerifiabilityCache != undefined) {
 

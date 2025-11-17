@@ -198,4 +198,4 @@ jobs:
       - name: Delete old container (if not already gone)
         run: docker rm vet_internal || true
       - name: Run image
-        run: script -q -c "docker run -d -it --name vet_internal --restart always -p 80:80 -p 443:443 -v ~/dynamic/ssl/:/app/package/backend/ssl/certs -v ~/dynamic/config:/app/package/backend/config ${{ secrets.DOCKER_REGISTRY_URL }}/vet_internal:${{ env.RELEASE_VERSION }}"
+        run: script -q -c "docker run -d -it --name vet_internal --restart always -p 80:80 -p 443:443 -v ~/dynamic/ssl/:/app/package/backend/ssl/certs -v ~/dynamic/config:/app/package/backend/config -v ~/dynamic/databases/:/app/package/backend/framework/databases ${{ secrets.DOCKER_REGISTRY_URL }}/vet_internal:${{ env.RELEASE_VERSION }}"
