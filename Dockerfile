@@ -2,6 +2,7 @@ FROM debian:latest
 WORKDIR /app
 VOLUME /app/package/backend/ssl/config
 VOLUME /app/package/backend/config
+VOLUME /app/package/backend/framework/databases
 
 COPY . /app/package
 
@@ -17,6 +18,9 @@ RUN cp /app/package/setup_tools/odbc/odbcinst.ini /etc/odbcinst.ini
 # Link libraries
 RUN ln -s /usr/lib/x86_64-linux-gnu/libssl.so.3 /usr/lib/x86_64-linux-gnu/libssl.so.6
 RUN ln -s /lib/x86_64-linux-gnu/libodbcinst.so.2 /lib/x86_64-linux-gnu/libodbcinst.so.1
+
+# Fix timezone
+RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 
 RUN echo "export NODE_ENV=deployment" >> ~/.bashrc # Set node configuration to use
 RUN echo "export NODE_CONFIG_DIR=/app/package/backend/config" >> ~/.bashrc # Set node configuration to use
