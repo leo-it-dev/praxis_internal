@@ -18,6 +18,7 @@ import { DeploymentType } from './deployment';
 import { ApiModuleMeta } from './modules/meta/api_meta';
 import { getLogger } from './logger';
 import { RepeatedTaskScheduler } from './framework/scheduled_events';
+import { DrugReport } from '../api_common/api_qs';
 
 let apiModulesInstances = [];
 
@@ -43,10 +44,13 @@ function initializeDevelopmentBuildEnvironment(projectRoot: string) {
     ]
 
     for (let copyPath of copyPaths) {
-        moduleLogger.info("    - Copying path ", {src: copyPath.src, dst: copyPath.dest});
-        fs.cpSync(copyPath.src, copyPath.dest, { recursive: true });
+        if (!fs.existsSync(copyPath.dest)) {
+            moduleLogger.info("    - Copying path ", { src: copyPath.src, dst: copyPath.dest });
+            fs.cpSync(copyPath.src, copyPath.dest, { recursive: true });
+        } else {
+            moduleLogger.info("    - Skipping path. - already exists - ", { src: copyPath.src, dst: copyPath.dest });
+        }
     }
-
     moduleLogger.info("--- Preparing development environment finished ---");
 }
 
@@ -56,7 +60,7 @@ async function runSecureRedirectServer() {
     redirectionLogger.info("Starting up secure redirection server on port 80...");
     const app = express();
     // redirect every single incoming request to https
-    app.use(function(req, res) {
+    app.use(function (req, res) {
         redirectionLogger.debug("Redirected request to " + req.url + " from HTTP to HTTPS!");
         res.redirect('https://' + config.get('generic.SERVE_DOMAIN') + req.originalUrl);
     });
@@ -77,18 +81,18 @@ async function startup() {
 
     if (fs.existsSync(filePathFrontendDev)) {
         deploymentType = DeploymentType.DEVELOPMENT;
-        moduleLogger.info("File structure indicates deployment mode", {mode: "DEVELOPMENT"});
+        moduleLogger.info("File structure indicates deployment mode", { mode: "DEVELOPMENT" });
         initializeDevelopmentBuildEnvironment(projectRoot);
     } else if (fs.existsSync(filePathFrontendDepl)) {
         deploymentType = DeploymentType.PRODUCTION;
-        moduleLogger.info("File structure indicates deployment mode", {mode: "PRODUCTION"});
+        moduleLogger.info("File structure indicates deployment mode", { mode: "PRODUCTION" });
     } else {
         moduleLogger.error("File structure seems odd. Can't find frontend, won't start!");
         return;
     }
 
-    moduleLogger.debug("Env: ", {env: process.env});
-    moduleLogger.info("Loading configuration file: ", {configFileName: process.env.NODE_ENV});
+    moduleLogger.debug("Env: ", { env: process.env });
+    moduleLogger.info("Loading configuration file: ", { configFileName: process.env.NODE_ENV });
 
     const filePathFrontend = deploymentType == DeploymentType.PRODUCTION ? filePathFrontendDepl : filePathFrontendDev;
     const app = express();
@@ -108,12 +112,12 @@ async function startup() {
     await AdfsOidc.initialize();
 
     // Now initialize all intranet modules -------
-    let moduleLoaderLogger = moduleLogger.child({service: 'module-loader'});
+    let moduleLoaderLogger = moduleLogger.child({ service: 'module-loader' });
     moduleLoaderLogger.info("Starting module loader ---");
 
     for (let apiModuleClass of apiModules) {
         let apiModule = new apiModuleClass(app);
-        moduleLoaderLogger.info("Loading Api Backend Module on basepath: ", {module: apiModuleClass.name, basepath: apiModule.basepath()});
+        moduleLoaderLogger.info("Loading Api Backend Module on basepath: ", { module: apiModuleClass.name, basepath: apiModule.basepath() });
         await apiModule.initializeModuleInternal();
         await apiModule.initialize();
         apiModule.registerEndpoints();
