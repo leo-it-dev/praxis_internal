@@ -1,11 +1,12 @@
 import { Component, signal } from '@angular/core';
 import { LoadingBarComponent } from '../loading-bar/loading-bar.component';
+import { WebMapComponent } from '../web-map/web-map.component';
 
 let test = ["A", "B", "C", "D", "E"];
 
 @Component({
 	selector: 'app-system-overview',
-	imports: [LoadingBarComponent],
+	imports: [LoadingBarComponent, WebMapComponent],
 	templateUrl: './system-overview.component.html',
 	styleUrl: './system-overview.component.scss'
 })
