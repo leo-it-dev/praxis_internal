@@ -1,0 +1,22 @@
+@if (this.permissionToPostNews()) {
+    <form id="post-container" class="section" (submit)="this.postNews($event)">
+        <h3>Neue Nachricht veröffentlichen...</h3>
+        <div id="post-inputs">
+            <textarea placeholder="Nachricht formulieren..." rows="4" #postText [formControl]="this.postFormGroup.controls.message" ></textarea>
+            <button type="submit" id="post-message" [disabled]="!postFormGroup.valid || !this.getSessionService().isOnlineSession()">Nachricht posten</button>
+        </div>
+    </form>
+}
+
+@for(news of this.newsList().newsList; track news.text) {
+    <div class="section">
+        <h5 class="timestamp">{{formatTimestamp(news.created)}} | {{news.creator}}</h5>
+        @for(lne of news.text.split("\n"); track lne) {
+            {{lne}}
+            <br/>
+        }
+        @if(news.creatorSID.toLowerCase() == this.getSessionService().store.sid?.toLowerCase() && this.getSessionService().isOnlineSession()) {
+            <app-trash-svg (click)="deletePost(news)"></app-trash-svg>
+        }
+    </div>
+}

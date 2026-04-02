@@ -35,7 +35,8 @@
         "AD_ATTRIBUTE_QS_VETERINARY_ID": "msDS-cloudExtensionAttribute1",
         "AD_ATTRIBUTE_QS_DOCUMENT_NUMBER_USER_NAME_PREFIX": "sAMAccountName",
         "AD_ATTRIBUTE_GIVEN_NAME": "givenName",
-        "AD_ATTRIBUTE_FIRST_NAME": "sn"
+        "AD_ATTRIBUTE_FIRST_NAME": "sn",
+        "NEWS_UPDATE_INTERVAL_MINUTES": 30
     },
     "adfsOidcConfiguration": {
         "oidcRoot": "/adfs",
@@ -68,6 +69,8 @@
     },
     "userPermissions": {
         "SECURITY_GROUP_ALLOW_INTRANET_LOGIN": "SomeAdSecurityGroup",
-        "SECURITY_GROUP_ALLOW_QS_REPORTS": "SomeAdSecurityGroup"
+        "SECURITY_GROUP_ALLOW_QS_REPORTS": "SomeAdSecurityGroup",
+        "SECURITY_GROUP_ALLOW_NEWS": "SomeAdSecurityGroup",
+        "SECURITY_GROUP_ALLOW_POST_NEWS": "SomeAdSecurityGroup"
     }
 }

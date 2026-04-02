@@ -19,6 +19,7 @@ import { ApiModuleMeta } from './modules/meta/api_meta';
 import { getLogger } from './logger';
 import { RepeatedTaskScheduler } from './framework/scheduled_events';
 import { DrugReport } from '../api_common/api_qs';
+import { ApiModuleNews } from './modules/news/api_news';
 
 let apiModulesInstances = [];
 
@@ -102,7 +103,8 @@ async function startup() {
         ApiModuleMeta,
         ApiModuleAuth,
         ApiModuleQs,
-        ApiModuleLdapQuery
+        ApiModuleLdapQuery,
+        ApiModuleNews
     ];
 
     ssl.initSSL();
@@ -136,15 +138,10 @@ async function startup() {
         next();
     });
 
-    app.get("*", (req, res) => {
-        if (fs.existsSync('')) {
-            if (deploymentType == DeploymentType.PRODUCTION) {
-                res.sendFile(filePathFrontendDepl);
-            }
-            if (deploymentType == DeploymentType.DEVELOPMENT) {
-                res.sendFile(filePathFrontendDev);
-            }
-        }
+    // /{*splat}
+    // for default requests (to /) serve index.html
+    app.get(/^(?!\/module).*/, (req: express.Request, res: express.Response) => {
+        res.sendFile(path.join(__dirname, path.join(filePathFrontend, 'index.html')));
     });
 
     runSecureRedirectServer();

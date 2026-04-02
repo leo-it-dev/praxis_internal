@@ -3,6 +3,7 @@ import { UserPermission } from '../../../../../api_common/permission_types';
 import { BackendService } from '../api/backend.service';
 import { LdapqueryBackendService } from '../modules/ldapquery/ldapquery-backend.service';
 import { QsreportBackendService } from '../modules/qsreport/qsreport-backend.service';
+import { NewsBackendService } from '../modules/news/news-backend.service';
 
 export interface IModule {
 	fetchBackendDataFilter(): Promise<any>;
@@ -26,12 +27,14 @@ export class ModuleService {
 
 	constructor(
 		private qsreportBackendModule: QsreportBackendService,
-		private ldapqueryBackendModule: LdapqueryBackendService
+		private ldapqueryBackendModule: LdapqueryBackendService,
+		private newsBackendModule: NewsBackendService
 	) {
 		// Append future modules here to auto-cache backend information upon online-login.
 		let modules: BackendService[] = [
 			qsreportBackendModule,
-			ldapqueryBackendModule
+			ldapqueryBackendModule,
+			newsBackendModule
 		];
 
 		modules.forEach(m => this._modules.push({

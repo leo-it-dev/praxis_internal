@@ -5,7 +5,7 @@
 }
 
 
-html, button, input {
+html, button, input, textarea {
     font-family: comfortaa;
 }
 input, button {
@@ -24,6 +24,13 @@ button:hover {
 input:focus {
     outline: none !important;
     box-shadow: 0 0 3px gray;
+}
+
+textarea {
+    border: 1px solid transparent;
+    box-shadow: 0px 0px 2px black;
+    border-radius: 3px;
+    padding: 5px;
 }
 
 html {

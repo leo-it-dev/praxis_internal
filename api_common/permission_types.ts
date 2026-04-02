@@ -1,5 +1,7 @@
 export enum UserPermission {
-    QS_REPORT
+    QS_REPORT,
+    NEWS,
+    POST_NEWS
 }
 
 export class UserPermissionList {

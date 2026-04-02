@@ -22,7 +22,7 @@ export class UserAccountPopupComponent {
 	}
 
 	@HostListener('click', ['$event'])
-	openProfilePage() {
+	openProfilePage(evt: Event) {
 		this.router.navigateByUrl("/login");
 	}
 }

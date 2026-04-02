@@ -21,6 +21,7 @@ export class ActionbarComponent {
 	isOnlineSession = computed(() => this.sessionService.isOnlineSession());
 
 	hasQsPermission = computed(() => this.sessionService.store.lazyloadUserInfo?.permissions.userHasPermission(UserPermission.QS_REPORT))
+	hasNewsPermission = computed(() => this.sessionService.store.lazyloadUserInfo?.permissions.userHasPermission(UserPermission.NEWS))
 
 	totalUnsyncCount = computed(() => this.offlineStoreService.totalEntryCount());
 

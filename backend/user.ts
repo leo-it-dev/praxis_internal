@@ -12,7 +12,9 @@ export function expandSecurityGroupNameToFullDN(securityGroupName: string) {
 }
 
 export const UserPermissionToSecurityGroup = {
-    [UserPermission.QS_REPORT]: expandSecurityGroupNameToFullDN(config.get("userPermissions.SECURITY_GROUP_ALLOW_QS_REPORTS"))
+    [UserPermission.QS_REPORT]: expandSecurityGroupNameToFullDN(config.get("userPermissions.SECURITY_GROUP_ALLOW_QS_REPORTS")),
+    [UserPermission.NEWS]: expandSecurityGroupNameToFullDN(config.get("userPermissions.SECURITY_GROUP_ALLOW_NEWS")),
+    [UserPermission.POST_NEWS]: expandSecurityGroupNameToFullDN(config.get("userPermissions.SECURITY_GROUP_ALLOW_POST_NEWS")),
 }
 export const SecurityGroupToUserPermission = Object.fromEntries(Object.entries(UserPermissionToSecurityGroup).map(a => a.reverse()))
 
