@@ -15,7 +15,7 @@ export class ApiModuleNews extends ApiModule {
     }
 
     async initialize() {
-        getRepeatedScheduler().scheduleRepeatedEvent(this, "update-news", (config.get('generic.NEWS_UPDATE_INTERVAL_MINUTES') as number) * 60, this.updateNews.bind(this), true);
+        getRepeatedScheduler().scheduleRepeatedEvent(this, "update-news", (config.get('generic.NEWS_UPDATE_INTERVAL_MINUTES') as number) * 60, (finish) => {this.updateNews.bind(this); finish()}, true);
     }
 
     loginRequired(): boolean {
