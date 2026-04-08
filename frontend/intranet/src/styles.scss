@@ -180,3 +180,9 @@ li {
     background-color: var(--background);
     z-index: 1001;
 }
+
+.gradient-text {
+    background: linear-gradient(90deg, var(--action-button-gradient-left), var(--action-button-gradient-right));
+    background-clip: text;
+    color: transparent;
+}

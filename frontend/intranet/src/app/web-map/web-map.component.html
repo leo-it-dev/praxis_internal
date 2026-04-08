@@ -1,1 +1,6 @@
 <div id="map"></div>
+
+<div id="map-controls">
+    <button (click)="this.centerMapAroundTiles()">✛</button>
+    <button (click)="this.centerAroundSelectedPoly()" [disabled]="!this.selectedPoly">◉</button>
+</div>

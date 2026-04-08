@@ -1,3 +1,5 @@
+@use '../../variables.scss' as *;
+
 :host {
     background: linear-gradient(90deg, var(--action-button-gradient-left), var(--action-button-gradient-right));
     margin: 0px;
@@ -108,4 +110,14 @@ app-sync-popup {
     width: 20px;
     height: 20px;
     background-repeat: no-repeat;
+}
+
+#mobile-hamburger {
+    display: none;
+}
+
+@media screen and (max-width: $switchToMobileWidthPx) {
+    #mobile-hamburger {
+        display: unset !important;
+    }
 }

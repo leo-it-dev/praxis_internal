@@ -1,0 +1,101 @@
+@use '../../variables.scss' as *;
+
+:host {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    overflow-y: hidden;
+    position: relative;
+}
+
+#statusContainer {
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    border-radius: 10px;
+    background-color: white;
+    padding: 30px 45px 10px 45px;
+    box-sizing: border-box;
+    box-shadow: 0px 0px 10px gray;
+    cursor: pointer;
+    max-height: calc(100% - 60px);
+    overflow-y: scroll;
+}
+
+h3 {
+    margin: 0px;
+    margin-bottom: 5px;
+}
+
+h5 {
+    margin: 0px;
+}
+
+h3:nth-child(1n+2) {
+    margin-top: 15px;
+}
+
+h1 {
+    font-size: 30pt;
+    margin-bottom: 0;
+    text-align: center;
+}
+
+h2 {
+    margin-top: 10px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+hr {
+    margin: 0px 0px 30px 0px;
+    border: 1px solid #ddd;
+}
+
+h6 {
+    margin-top: 8px;
+}
+
+td {
+    padding: 3px 15px 3px 0px;
+    border-bottom: 1px solid #ddd;
+}
+
+#expand-view-button {
+    display: block;
+    width: min-content;
+    position: relative;
+    left: 50%;
+    font-size: 15pt;
+    height: 15pt;
+    line-height: 15pt;
+    transition: transform .3s ease-in-out;
+    padding: 10px;
+    color: gray;
+    transform: translateX(-50%) rotate(90deg);
+}
+
+.expand-view-button-invert {
+    transform: translateX(-50%) rotate(-90deg) !important;
+}
+
+#expandable-cont {
+    transition: max-height .3s ease-in-out;
+    max-height: 0px;
+    overflow: hidden;
+}
+
+.expand-cont {
+    max-height: 100vh !important;
+}
+
+
+@media screen and (max-width: $switchToMobileWidthPx) {
+    #statusContainer {
+        bottom: 0;
+        top: unset;
+        left: 0;
+        right: 0;
+        border-radius: 30px 30px 0px 0px;
+    }
+}

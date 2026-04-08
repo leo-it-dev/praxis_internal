@@ -6,7 +6,7 @@ let test = ["A", "B", "C", "D", "E"];
 
 @Component({
 	selector: 'app-system-overview',
-	imports: [LoadingBarComponent, WebMapComponent],
+	imports: [LoadingBarComponent],
 	templateUrl: './system-overview.component.html',
 	styleUrl: './system-overview.component.scss'
 })

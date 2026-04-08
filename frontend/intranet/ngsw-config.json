@@ -14,7 +14,8 @@
           "/*.css",
           "/*.js",
           "!/Books/**/*.*",
-          "!*.pmtiles"
+          "!*.pmtiles",
+          "!/map"
         ]
       }
     },
@@ -26,7 +27,18 @@
         "files": [
           "/**/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)",
           "!/Books/**/*.*",
-          "!*.pmtiles"
+          "!*.pmtiles",
+          "!/map"
+        ]
+      }
+    },
+    {
+      "name": "map-assets",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/map/**/*.(pbf|json|png|geojson)"
         ]
       }
     }
@@ -83,6 +95,19 @@
       },
       "urls": [
         "/module/news/news"
+      ]
+    },
+    {
+      "name": "travelexpenses",
+      "cacheConfig": {
+        "strategy": "freshness",
+        "timeout": "5s",
+        "maxAge": "14d",
+        "refreshAhead": "1d",
+        "maxSize": 100
+      },
+      "urls": [
+        "/module/travel-expenses/travelmeta"
       ]
     }
   ]

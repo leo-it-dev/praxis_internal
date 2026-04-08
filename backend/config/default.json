@@ -71,6 +71,24 @@
         "SECURITY_GROUP_ALLOW_INTRANET_LOGIN": "SomeAdSecurityGroup",
         "SECURITY_GROUP_ALLOW_QS_REPORTS": "SomeAdSecurityGroup",
         "SECURITY_GROUP_ALLOW_NEWS": "SomeAdSecurityGroup",
-        "SECURITY_GROUP_ALLOW_POST_NEWS": "SomeAdSecurityGroup"
+        "SECURITY_GROUP_ALLOW_POST_NEWS": "SomeAdSecurityGroup",
+        "SECURITY_GROUP_ALLOW_TRAVEL_EXPENSES_MAP": "SomeAdSecurityGroup"
+    },
+    "map": {
+        "CENTER_OF_EARTH_LAT": 48.13879175912195,
+        "CENTER_OF_EARTH_LON": 11.574673978339986,
+        "OPEN_ROUTE_SERVICE_ENDPOINT_URL": "http://ors.some-host.de:8080/ors/v2",
+        "OPEN_ROUTE_SERVICE_PROFILE": "driving-car"
+    },
+    "travel-expenses": {
+        "COST_STAGES": [
+            { "distanceKm": 4, "travelExpense": "10.3", "color": "#2f4858" },
+            { "distanceKm": 10, "travelExpense": "12.6", "color": "#345081" },
+            { "distanceKm": 20, "travelExpense": "15.9", "color": "#6c4c99" },
+            { "distanceKm": 30, "travelExpense": "20.3", "color": "#b33191" },
+            { "distanceKm": 40, "travelExpense": "25.2", "color": "#eb0064" },
+            { "distanceKm": 60, "travelExpense": "30.12", "color": "#ff1414" }
+        ],
+        "TRAVEL_EXPENSE_ISOCHRONES_RECALCULATION_INTERVAL_MINUTES": 1440
     }
 }

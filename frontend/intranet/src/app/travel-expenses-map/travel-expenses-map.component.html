@@ -1,0 +1,54 @@
+<app-web-map #map></app-web-map>
+<div id="statusContainer" (click)="this.expandedView = !this.expandedView" >
+    <h1 class="gradient-text">
+        {{this.formatCost(this.detectedTravelExpensesStage?.stageCost)}}
+    </h1>
+    <h2>
+        @if(!this.detectedTravelExpensesStage) {
+            Warte auf Standort
+        }
+        @else {
+            Kostenkreis: 
+            <span class="gradient-text">
+                {{this.detectedTravelExpensesStage.stageID}}
+            </span>
+            <h6>({{this.detectedTravelExpensesStage.travelDistanceStartKm}}km - {{this.detectedTravelExpensesStage.travelDistanceEndKm}}km Fahrtweg)</h6>
+        }
+    </h2>
+
+    <div id="expandable-cont" [class.expand-cont]="this.expandedView">
+        <hr/>
+        <h3>
+            Aktuelle Position: 
+        </h3>
+        <h5>
+            @if(!this.currentLocation) {
+                <span class="gradient-text">Wird bestimmt, bitte warten...</span>
+            }
+            @else {
+                Lat: 
+                <span class="gradient-text">{{this.currentLocation.lat}}</span>
+                <br/>
+                Lon: 
+                <span class="gradient-text">{{this.currentLocation.lon}}</span>
+            }
+        </h5>
+        <h3>
+            Staffelung:
+        </h3>
+        <h5>
+            <tr>
+                <td>Kostenkreis</td>
+                <td>Anfahrtskosten</td>
+            </tr>
+            @for(travelExpensesStage of this.metaData.travelExpenseStages; track travelExpensesStage.stageID) {
+                <tr>
+                    <td>{{travelExpensesStage.stageID}}</td>
+                    <td>{{this.formatCost(travelExpensesStage.stageCost)}}</td>
+                </tr>
+            }
+        </h5>
+    </div>
+
+    <div id="expand-view-button" [class.expand-view-button-invert]="this.expandedView">❯</div>
+</div>

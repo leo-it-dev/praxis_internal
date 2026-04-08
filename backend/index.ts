@@ -20,6 +20,8 @@ import { getLogger } from './logger';
 import { RepeatedTaskScheduler } from './framework/scheduled_events';
 import { DrugReport } from '../api_common/api_qs';
 import { ApiModuleNews } from './modules/news/api_news';
+import { ApiModuleTravelExpenses } from './modules/travel-expenses/api_travel-expenses';
+import * as ors from './framework/openrouteservice';
 
 let apiModulesInstances = [];
 
@@ -104,11 +106,13 @@ async function startup() {
         ApiModuleAuth,
         ApiModuleQs,
         ApiModuleLdapQuery,
-        ApiModuleNews
+        ApiModuleNews,
+        ApiModuleTravelExpenses
     ];
 
     ssl.initSSL();
     repeatedTaskScheduler.schedulerInit();
+    ors.init();
 
     // Initialize framework classes needed by modules below ------
     await AdfsOidc.initialize();

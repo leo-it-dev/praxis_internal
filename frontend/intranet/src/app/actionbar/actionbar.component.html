@@ -1,6 +1,10 @@
-<a [routerLink]="isLoggedIn() ? '/' : null"><span class="action-item" id="logo" src="/favicon.ico"></span></a>
+<a [routerLink]="isLoggedIn() ? '/' : null">
+    <span class="action-item" id="logo" src="/favicon.ico"></span>
+    <span id="mobile-hamburger">☰</span>
+</a>
 <span class="action-item lockedItem"><a [routerLink]="isLoggedIn() && hasQsPermission() ? '/qs' : null">QS-Meldung</a></span>
 <span class="action-item lockedItem"><a [routerLink]="isLoggedIn() && hasNewsPermission() ? '/news' : null">Praxis-News</a></span>
+<span class="action-item lockedItem"><a [routerLink]="isLoggedIn() && hasTravelExpensesPermission() ? '/travel-expenses' : null">Anfahrtskosten</a></span>
 <span class="spreader"></span>
 
 <span class="action-item" id="sync" (click)="updatePopup('sync')">

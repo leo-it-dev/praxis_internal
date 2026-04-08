@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@angular/cli": "^19.0.2",
+    "@turf/turf": "^7.3.4",
     "maplibre-gl": "^5.19.0",
     "pmtiles": "^4.4.0"
   }
