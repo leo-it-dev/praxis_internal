@@ -27,6 +27,9 @@ export class ActionbarComponent {
 	totalUnsyncCount = computed(() => this.offlineStoreService.totalEntryCount());
 
 	activePopup: string | undefined = undefined;
+
+	mobileViewHamburgerExpanded = false;
+
 	updatePopup(name: string) {
 		if (this.activePopup != name) {
 			this.activePopup = name;

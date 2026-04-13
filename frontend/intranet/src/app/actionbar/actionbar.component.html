@@ -1,10 +1,13 @@
-<a [routerLink]="isLoggedIn() ? '/' : null">
-    <span class="action-item" id="logo" src="/favicon.ico"></span>
-    <span id="mobile-hamburger">☰</span>
+<a id="logo-wrapper">
+    <span class="action-item" id="logo" [routerLink]="isLoggedIn() ? '/' : null"><img src="/favicon.ico" /></span>
+    <span id="mobile-hamburger" (click)="this.mobileViewHamburgerExpanded = !this.mobileViewHamburgerExpanded">☰</span>
 </a>
-<span class="action-item lockedItem"><a [routerLink]="isLoggedIn() && hasQsPermission() ? '/qs' : null">QS-Meldung</a></span>
-<span class="action-item lockedItem"><a [routerLink]="isLoggedIn() && hasNewsPermission() ? '/news' : null">Praxis-News</a></span>
-<span class="action-item lockedItem"><a [routerLink]="isLoggedIn() && hasTravelExpensesPermission() ? '/travel-expenses' : null">Anfahrtskosten</a></span>
+
+<div id="action-items" [class.hamburgerExpanded]="this.mobileViewHamburgerExpanded">
+    <span class="action-item lockedItem"><a (click)="this.mobileViewHamburgerExpanded=false" [routerLink]="isLoggedIn() && hasQsPermission() ? '/qs' : null">QS-Meldung</a></span>
+    <span class="action-item lockedItem"><a (click)="this.mobileViewHamburgerExpanded=false" [routerLink]="isLoggedIn() && hasNewsPermission() ? '/news' : null">Praxis-News</a></span>
+    <span class="action-item lockedItem"><a (click)="this.mobileViewHamburgerExpanded=false" [routerLink]="isLoggedIn() && hasTravelExpensesPermission() ? '/travel-expenses' : null">Anfahrtskosten</a></span>
+</div>
 <span class="spreader"></span>
 
 <span class="action-item" id="sync" (click)="updatePopup('sync')">

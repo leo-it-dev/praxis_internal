@@ -10,43 +10,78 @@
     flex-direction: row;
     flex-wrap: nowrap;
     column-gap: 10px;
+    align-items: center;
     box-shadow: 0px 0px 10px gray;
     z-index: 100;
 }
 
 .spreader {
-    flex: 1;
+    width: 100%;
     background: none !important;
     cursor: auto !important;
 }
 
-#logo {
-    padding: 0;
-    background-color: white;
-    background-image: url("/favicon.ico");
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
+#logo-wrapper {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
     border-radius: 100%;
-    display: block;
-    aspect-ratio: 1;
-    border: 6px solid transparent;
+    background-color: white;
+    margin-left: 6px;
+    padding: 0px;
+    height: 80%;
+    box-sizing: border-box;
+    padding: 4px;
+}
+
+#logo-wrapper * {
+    border: 4px solid transparent;
     box-sizing: border-box;
 }
 
-:host > .action-item,
+#action-items {
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    column-gap: 10px;
+}
+
+#action-items .action-item {
+    padding: 7px;
+    text-wrap: nowrap;
+    box-sizing: border-box;
+}
+
+#logo {
+    padding: 0;
+    display: block;
+    box-sizing: border-box;
+}
+
+#logo img {
+    object-fit: contain;
+    object-position: center;
+    height: 34px;
+    border: none;
+}
+
+:host>.action-item,
 a {
     text-decoration: none;
     height: 40px;
     cursor: pointer;
     border-radius: 10px;
     padding: 10px;
+    padding-right: 25px;
     line-height: 40px;
     font-size: 15pt;
     color: white;
+    position: relative;
 }
 
-:host > a > .action-item {
+:host>a>.action-item {
     height: 100%;
 }
 
@@ -98,7 +133,8 @@ app-sync-popup {
 .action-item:has(a:not([href])) {
     position: relative;
 }
-.action-item:has(a:not([href]))::after {
+
+.action-item:has(a:not([href])) a::after {
     display: block;
     content: '';
     background-image: url("/images/lock.svg");
@@ -114,10 +150,71 @@ app-sync-popup {
 
 #mobile-hamburger {
     display: none;
+    color: black;
+    height: 100%;
+    line-height: normal;
 }
 
 @media screen and (max-width: $switchToMobileWidthPx) {
     #mobile-hamburger {
         display: unset !important;
+    }
+
+    #logo-wrapper {
+        border-radius: 10px;
+        padding: 4px 6px;
+    }
+
+    #action-items {
+        display: none;
+        height: unset;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        flex-direction: column;
+        backdrop-filter: blur(10px);
+    }
+
+    .hamburgerExpanded {
+        display: flex !important;
+    }
+
+    #action-items .action-item {
+        width: 100%;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+    }
+
+    #action-items .action-item a {
+        background: linear-gradient(90deg, var(--action-button-gradient-left), var(--action-button-gradient-right));
+        background-clip: text;
+        color: transparent;
+        font-weight: bolder;
+        width: 100%;
+    }
+
+    #action-items .action-item a::after {
+        filter: invert(1);
+    }
+
+    #logo {
+        border-width: 4px 10px;
+    }
+
+
+    #logo-wrapper *:nth-child(1n+2)::before {
+        content: '';
+        position: relative;
+        width: 0px;
+        height: 100%;
+        border-left: 1px solid #ddd;
+        margin: 0px 10px 0px 0px;
+    }
+    #logo-wrapper * {
+        display: flex !important;
+        flex-direction: row;
+        flex-wrap: nowrap;
     }
 }
