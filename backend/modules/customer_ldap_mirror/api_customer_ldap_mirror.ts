@@ -1,8 +1,10 @@
 import { getRepeatedScheduler } from "../..";
 import { UserPermission } from "../../../api_common/permission_types";
 import { ApiModule } from "../../api_module";
-import { LdapMemoryServer } from "../../framework/ldap/ldap_memory_server";
+import { validateKerberosTicket } from "../../framework/kerberos-handler";
+import { AuthenticationResult, LdapMemoryServer } from "../../framework/ldap/ldap_memory_server";
 import { constructLdapEntry, LdapStore } from "../../framework/ldap/ldap_store";
+import { AuthenticationChoiceSasl } from "../../framework/ldap/messages/bind_request";
 import { readCustomersFromMovetaDB } from "../../framework/moveta/moveta_functions";
 
 const config = require('config');
@@ -30,16 +32,22 @@ export class ApiModuleCustomerLdapMirror extends ApiModule {
         this.memoryStore = new LdapStore();
         this.memoryLdap = new LdapMemoryServer(ldapPort, ldapHost, ldapSSL, ldapBase, {
             authenticateUser: (name, authentication) => {
-                // ---------------------------------------------------
-                // ---------------------------------------------------
-                // ---------------------------------------------------
-                // ---------------------------------------------------
-                //        TODO: Integrate Kerberos Authentication
-                // ---------------------------------------------------
-                // ---------------------------------------------------
-                // ---------------------------------------------------
-                // ---------------------------------------------------
-                return true;
+                return new Promise<AuthenticationResult>((res, _) => {
+                    if (authentication instanceof AuthenticationChoiceSasl && authentication.mechanism == "GSSAPI") {
+                        validateKerberosTicket(authentication.credentials).then(dat => {
+                            this.logger().info("User successfully authenticated using Kerberos!", {username: dat.username})
+                            res(AuthenticationResult.SUCCESS);
+                            return;
+                        }).catch(err => {
+                            this.logger().warn("User failed authenticating using Kerberos!", {error: err})
+                            res(AuthenticationResult.FAILURE);
+                            return;
+                        });
+                    } else {
+                        this.logger().warn("User tried authenticated to ldap mirror using unsupported auth method!", {type: JSON.stringify(authentication)})
+                        res(AuthenticationResult.METHOD_UNSUPPORTED);
+                    }
+                });
             }
         }, this.memoryStore);
 
@@ -54,7 +62,6 @@ export class ApiModuleCustomerLdapMirror extends ApiModule {
         this.logger().info("Scheduled update of internal database of customers!");
         
         readCustomersFromMovetaDB().then(customers => {
-            console.log(customers);
             this.memoryStore.replace(customers.map(cust => {
                 let firstName = cust.givenName.trim() != "" ? cust.firstName.trim() : cust.firstName.trim().split(" ")[0];
                 let surName = cust.givenName.trim() != "" ? cust.givenName.trim() : cust.firstName.trim().split(" ").splice(1).join(' ');

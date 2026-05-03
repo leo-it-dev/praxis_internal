@@ -9,21 +9,15 @@ export function initializeKerberos() {
     process.env.KRB5_KTNAME = path.resolve(__dirname + '/auth/service.keytab');
 }
 
-export async function validateKerberosAuthHeader(authHeader: string) {
-    if (!authHeader || !authHeader.startsWith('Negotiate ')) {
-        throw new Error('Missing or invalid Authorization header');
-    }
-
-    const token = authHeader.split(' ')[1];
-
+export async function validateKerberosTicket(ticket: Uint8Array): Promise<{username: string, responseToken: string}> {
     return new Promise((resolve, reject) => {
         kerberos.initializeServer(servicePrincipalName).then(server => {
-            server.step(token).then(response => {
+            server.step(Buffer.from(ticket).toString('base64')).then(response => {
                 // If successful, user is authenticated
                 const username = server.username;
 
                 resolve({
-                    username,
+                    username: username,
                     responseToken: response // send back if needed
                 });
             }).catch(err => {

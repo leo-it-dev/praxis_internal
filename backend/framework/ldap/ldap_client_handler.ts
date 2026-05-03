@@ -1,7 +1,7 @@
 import * as asn1js from 'asn1js';
 import { Socket } from "net";
 import { getLogger } from "../../logger";
-import { LdapMemoryServer } from "./ldap_memory_server";
+import { AuthenticationResult, LdapMemoryServer } from "./ldap_memory_server";
 import { readBindRequest } from "./messages/bind_request";
 import { BindResponse, buildBindResponse } from "./messages/bind_response";
 import { buildLdapMessage, ProtocolOpCode, readLdapMessage } from "./messages/ldap_message";
@@ -34,7 +34,7 @@ export class LdapClientHandler {
     handleClientConnection(socket: Socket) {
         this.logger.info("Client connected: ", { address: socket.remoteAddress });
 
-        socket.on('data', d => {
+        socket.on('data', async d => {
             const nodes = asn1js.fromBER(d);
             if (nodes.offset == -1 || !(nodes.result instanceof asn1js.Constructed)) {
                 this.terminate();
@@ -53,13 +53,12 @@ export class LdapClientHandler {
                     this.terminate();
                     return;
                 }
-                this.logger.info("Read bind request: ", { request: bindRequest });
 
-                let authenticationSuccessfull = this.ldapServer.delegateAuthentication(bindRequest.name, bindRequest.authentication);
+                let authenticationResult = await this.ldapServer.delegateAuthentication(bindRequest.name, bindRequest.authentication);
 
                 let bindResponse = buildLdapMessage({
                     messageID: ldapMessage.messageID,
-                    protocolOp: authenticationSuccessfull ?
+                    protocolOp: authenticationResult == AuthenticationResult.SUCCESS ?
                         buildBindResponse(
                             new BindResponse(new LdapResult(
                                 LdapResultCode.success,
@@ -69,6 +68,7 @@ export class LdapClientHandler {
                             ), undefined)
                         )
                         :
+                        (authenticationResult == AuthenticationResult.FAILURE ?
                         buildBindResponse(
                             new BindResponse(new LdapResult(
                                 LdapResultCode.invalidCredentials,
@@ -77,10 +77,18 @@ export class LdapClientHandler {
                                 undefined
                             ), undefined)
                         )
+                        : 
+                        buildBindResponse(
+                            new BindResponse(new LdapResult(
+                                LdapResultCode.authMethodNotSupported,
+                                "",
+                                "",
+                                undefined
+                            ), undefined)
+                        ))
                 });
 
                 this.sendLdapMessage(bindResponse);
-                this.logger.info("Responded with bind response: ", { response: bindResponse });
             }
 
             if (ldapMessage.protocolOp.idBlock.tagNumber == ProtocolOpCode.unbindRequest) {

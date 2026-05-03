@@ -12,19 +12,16 @@ import * as ssl from './ssl/ssl';
 import { ApiModule } from './api_module';
 import { DeploymentType } from './deployment';
 import { AdfsOidc } from './framework/adfs_oidc_instance';
-import { LdapMemoryServer } from './framework/ldap/ldap_memory_server';
 import * as ors from './framework/openrouteservice';
 import { RepeatedTaskScheduler } from './framework/scheduled_events';
 import { getLogger } from './logger';
 import { ApiModuleAuth } from './modules/auth/api_auth';
+import { ApiModuleCustomerLdapMirror } from './modules/customer_ldap_mirror/api_customer_ldap_mirror';
 import { ApiModuleLdapQuery } from './modules/ldapquery/api_ldapquery';
 import { ApiModuleMeta } from './modules/meta/api_meta';
 import { ApiModuleNews } from './modules/news/api_news';
 import { ApiModuleQs } from './modules/qs/api_qs';
 import { ApiModuleTravelExpenses } from './modules/travel-expenses/api_travel-expenses';
-import { constructLdapEntry, LdapEntry, LdapStore } from './framework/ldap/ldap_store';
-import { encodeLdapString, OctetString } from './framework/ldap/utils';
-import { ApiModuleCustomerLdapMirror } from './modules/customer_ldap_mirror/api_customer_ldap_mirror';
 
 let apiModulesInstances: ApiModule[] = [];
 

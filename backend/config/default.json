@@ -92,7 +92,7 @@
         "TRAVEL_EXPENSE_ISOCHRONES_RECALCULATION_INTERVAL_MINUTES": 1440
     },
     "kerberos": {
-        "SERVICE_PRINCIPAL_NAME": "HTTP/some-principal-name"
+        "SERVICE_PRINCIPAL_NAME": "HTTP@some-principal-name"
     },
     "ldap-mirror": {
         "PORT": 389,

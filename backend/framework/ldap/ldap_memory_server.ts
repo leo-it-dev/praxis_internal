@@ -13,8 +13,14 @@ import { LdapStore } from './ldap_store';
 
 let logger = getLogger('ldap-memory-server');
 
+export enum AuthenticationResult {
+    SUCCESS,
+    FAILURE,
+    METHOD_UNSUPPORTED
+}
+
 export interface ILdapAuthentication {
-    authenticateUser(name: string, authentication: AuthenticationChoiceSimple | AuthenticationChoiceSasl): boolean;
+    authenticateUser(name: string, authentication: AuthenticationChoiceSimple | AuthenticationChoiceSasl): Promise<AuthenticationResult>;
 }
 
 export class LdapMemoryServer {
