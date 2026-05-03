@@ -1,29 +1,32 @@
 import https = require('node:https');
 import express = require('express');
-import * as path from 'path';
-import * as ssl from './ssl/ssl'
-import * as fs from 'fs';
 import * as config from 'config';
-import * as sqlite from './framework/sqlite_database';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as kerberos from './framework/kerberos-handler';
+import * as ssl from './ssl/ssl';
 
 /**
  * Endpoint modules
  */
-import { ApiModuleQs } from './modules/qs/api_qs';
-import { ApiModuleAuth } from './modules/auth/api_auth';
 import { ApiModule } from './api_module';
-import { AdfsOidc } from './framework/adfs_oidc_instance';
-import { ApiModuleLdapQuery } from './modules/ldapquery/api_ldapquery';
 import { DeploymentType } from './deployment';
-import { ApiModuleMeta } from './modules/meta/api_meta';
-import { getLogger } from './logger';
-import { RepeatedTaskScheduler } from './framework/scheduled_events';
-import { DrugReport } from '../api_common/api_qs';
-import { ApiModuleNews } from './modules/news/api_news';
-import { ApiModuleTravelExpenses } from './modules/travel-expenses/api_travel-expenses';
+import { AdfsOidc } from './framework/adfs_oidc_instance';
+import { LdapMemoryServer } from './framework/ldap/ldap_memory_server';
 import * as ors from './framework/openrouteservice';
+import { RepeatedTaskScheduler } from './framework/scheduled_events';
+import { getLogger } from './logger';
+import { ApiModuleAuth } from './modules/auth/api_auth';
+import { ApiModuleLdapQuery } from './modules/ldapquery/api_ldapquery';
+import { ApiModuleMeta } from './modules/meta/api_meta';
+import { ApiModuleNews } from './modules/news/api_news';
+import { ApiModuleQs } from './modules/qs/api_qs';
+import { ApiModuleTravelExpenses } from './modules/travel-expenses/api_travel-expenses';
+import { constructLdapEntry, LdapEntry, LdapStore } from './framework/ldap/ldap_store';
+import { encodeLdapString, OctetString } from './framework/ldap/utils';
+import { ApiModuleCustomerLdapMirror } from './modules/customer_ldap_mirror/api_customer_ldap_mirror';
 
-let apiModulesInstances = [];
+let apiModulesInstances: ApiModule[] = [];
 
 let deploymentType: DeploymentType = DeploymentType.DEVELOPMENT;
 
@@ -43,6 +46,10 @@ function initializeDevelopmentBuildEnvironment(projectRoot: string) {
         {
             src: path.join(projectRoot, 'framework', 'databases'),
             dest: path.join(runtimeRoot, 'framework', 'databases')
+        },
+        {
+            src: path.join(projectRoot, 'framework', 'auth'),
+            dest: path.join(runtimeRoot, 'framework', 'auth')
         }
     ]
 
@@ -107,12 +114,14 @@ async function startup() {
         ApiModuleQs,
         ApiModuleLdapQuery,
         ApiModuleNews,
-        ApiModuleTravelExpenses
+        ApiModuleTravelExpenses,
+        ApiModuleCustomerLdapMirror
     ];
 
     ssl.initSSL();
     repeatedTaskScheduler.schedulerInit();
     ors.init();
+    kerberos.initializeKerberos();
 
     // Initialize framework classes needed by modules below ------
     await AdfsOidc.initialize();

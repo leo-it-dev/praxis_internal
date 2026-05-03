@@ -15,11 +15,10 @@ export const SSL_OPTIONS = {
 const logger = getLogger('ssl');
 
 export function initSSL() {
-    this.CA_CERT = fs.readFileSync(__dirname + '/certs/ca.crt');
-    this.ADFS_CERT = fs.readFileSync(__dirname + '/certs/adfs.crt');
-    this.intranetCertificate = fs.readFileSync(__dirname + '/certs/internal-praxisnet.crt');
-    this.intranetPrivateKey = fs.readFileSync(__dirname + '/certs/internal-praxisnet.key');
-
+    CA_CERT = fs.readFileSync(__dirname + '/certs/ca.crt', 'utf-8');
+    ADFS_CERT = fs.readFileSync(__dirname + '/certs/adfs.crt', 'utf-8');
+    intranetCertificate = fs.readFileSync(__dirname + '/certs/internal-praxisnet.crt', 'utf-8');
+    intranetPrivateKey = fs.readFileSync(__dirname + '/certs/internal-praxisnet.key', 'utf-8');
     SSL_OPTIONS.key = intranetPrivateKey;
     SSL_OPTIONS.cert = intranetCertificate;
 }

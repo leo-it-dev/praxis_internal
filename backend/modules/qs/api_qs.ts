@@ -10,11 +10,12 @@ import { getLogger } from '../../logger';
 import { sleep, sum } from '../../utilities/utilities';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
 import { readReportableDrugListFromHIT } from './hit_drug_crawler';
-import { readReportableDrugListFromMovetaDB } from './moveta_drug_crawler';
 import { Farmer, QsApiHandler } from './qsapi_handler';
 import vetproof = require('vet_proof_external_tools_api');
 import { UserPermission } from '../../../api_common/permission_types';
 import { SqlUpdate } from '../../framework/sqlite_database';
+import { readReportableDrugListFromMovetaDB } from '../../framework/moveta/moveta_functions';
+import { row } from '../../framework/moveta/pegasus_connection';
 const config = require('config');
 
 export class QsApiDocumentReports {
@@ -34,8 +35,8 @@ export class ApiModuleQs extends ApiModule {
     INTRANET_QS_REPORT_NUMBER_WATERMARK = "_A";
     QS_API_MAX_ENTRIES_PER_REPORT_READ = 100;
 
-    private qsApiHandlerTest: QsApiHandler;
-    private qsApiHandlerProd: QsApiHandler;
+    private qsApiHandlerTest!: QsApiHandler;
+    private qsApiHandlerProd!: QsApiHandler;
     private reportableDrugsPrefered: Array<ReportableDrug> = []; // List of drugs that *should* cover all drugs we use.
     private reportableDrugsFallback: Array<ReportableDrug> = []; // If there are drugs missing though, a vet may also use drugs from the fallback list.
     private farmers: Array<Farmer> = [];
@@ -86,12 +87,12 @@ export class ApiModuleQs extends ApiModule {
     }
 
     async sqliteReadDrugVerifiabilityCache(): Promise<Array<DrugReportability>> {
-        let rows = await this.sqlite().sqlFetchAll("SELECT znr,pid,reportable FROM qs", []);
+        let rows = await this.sqlite().sqlFetchAll("SELECT znr,pid,reportable FROM qs", []) as row[];
         return rows.map(row => ({
-            reportable: row["reportable"],
-            pid: row["pid"],
-            znr: row["znr"]
-        }));
+            reportable: row["reportable"] as boolean,
+            pid: row["pid"] as number,
+            znr: row["znr"] as string
+        } as DrugReportability));
     }
 
     async verifyReportabilityOfDrugList(drugList: Array<ReportableDrug>) {
@@ -178,8 +179,8 @@ export class ApiModuleQs extends ApiModule {
 
         await this.updateDrugsMutex.acquire();
         let databases = [
-            {logname: "Moveta", promise: readReportableDrugListFromMovetaDB(), store: (drugs) => inst.reportableDrugsPrefered = drugs},
-            {logname: "HIT",    promise: readReportableDrugListFromHIT(),      store: (drugs) => inst.reportableDrugsFallback = drugs}
+            {logname: "Moveta", promise: readReportableDrugListFromMovetaDB(), store: (drugs: ReportableDrug[]) => inst.reportableDrugsPrefered = drugs},
+            {logname: "HIT",    promise: readReportableDrugListFromHIT(),      store: (drugs: ReportableDrug[]) => inst.reportableDrugsFallback = drugs}
         ];
 
         Promise.allSettled(databases.map(d => d.promise)).then(drugs => {
@@ -307,7 +308,7 @@ export class ApiModuleQs extends ApiModule {
         this.postJson<ApiInterfacePutPrescriptionRowsIn, ApiInterfaceEmptyOut>("report", async (req, user) => {
             let readVetName = "<error>"
             try {
-                let userInfo = await getApiModule(ApiModuleLdapQuery).readUserInfo(user.userTokenData.sid);
+                let userInfo = await getApiModule(ApiModuleLdapQuery)!.readUserInfo(user.userTokenData.sid);
                 readVetName = req.body.drugReport.veterinary;
 
                 let maxReportNumberLengthFrontend = this.MAX_QS_REPORT_NUMBER_LENGTH_CHARS - this.INTRANET_QS_REPORT_NUMBER_WATERMARK.length;

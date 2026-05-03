@@ -3,9 +3,13 @@ vetproof_api/
 **/*.key
 **/*.req
 **/*.log
+**/*.tsbuildinfo
+**/*.keytab
 **/node_modules/
 backend/js
 backend/framework/databases
 frontend/dist
 backend/config/development.json
 frontend/intranet/public/Books
+api_common/**/*.d.ts
+api_common/**/*.js

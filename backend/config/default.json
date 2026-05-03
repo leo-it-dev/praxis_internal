@@ -90,5 +90,15 @@
             { "distanceKm": 60, "travelExpense": "30.12", "color": "#ff1414" }
         ],
         "TRAVEL_EXPENSE_ISOCHRONES_RECALCULATION_INTERVAL_MINUTES": 1440
+    },
+    "kerberos": {
+        "SERVICE_PRINCIPAL_NAME": "HTTP/some-principal-name"
+    },
+    "ldap-mirror": {
+        "PORT": 389,
+        "HOST": "0.0.0.0",
+        "BASE_DN": "DC=some-dc,DC=some-dc",
+        "SSL": false,
+        "SCRAPE_INTERVAL_MINUTES": 1440
     }
 }

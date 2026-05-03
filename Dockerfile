@@ -3,10 +3,11 @@ WORKDIR /app
 VOLUME /app/package/backend/ssl/config
 VOLUME /app/package/backend/config
 VOLUME /app/package/backend/framework/databases
+VOLUME /app/package/backend/framework/auth
 
 COPY . /app/package
 
-RUN apt-get update && apt-get install -y unzip unixodbc nodejs
+RUN apt-get update && apt-get install -y unzip unixodbc nodejs libkrb5-dev
 
 RUN cd /app && mkdir package/setup_tools && mv package/setup_tools.zip package/setup_tools/setup_tools.zip && unzip package/setup_tools/setup_tools.zip -d package/setup_tools
 RUN dpkg --install package/setup_tools/odbc/*.deb

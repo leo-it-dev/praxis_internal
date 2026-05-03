@@ -10,8 +10,8 @@ import { SQLiteDB, SqlUpdate } from "./framework/sqlite_database";
 
 export abstract class ApiModule {
     private _app: Express;
-    private _logger: Logger;
-    private _sqlite: SQLiteDB;
+    private _logger!: Logger;
+    private _sqlite!: SQLiteDB;
 
     constructor(app: Express) {
         this._app = app;
@@ -52,13 +52,13 @@ export abstract class ApiModule {
         return this._sqlite;
     }
 
-    postJson<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user: User) => Promise<ApiModuleResponse<RES>>) {
+    postJson<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user?: User) => Promise<ApiModuleResponse<RES>>) {
         this._app.post(this.basepath() + "/" + route, bodyParser.json(), async (req, res) => {
-            let validationResult: string|JsonObject = undefined;
+            let validationResult: string|JsonObject|undefined = undefined;
             let moduleResponse: ApiModuleResponse<RES>;
 
             if (!this.loginRequired()) {
-                moduleResponse = await handler(new RequestTyped<REQ>(req), {userTokenData: undefined, userPermissions: undefined});
+                moduleResponse = await handler(new RequestTyped<REQ>(req), undefined);
             } else {
                 validationResult = await AdfsOidc.validateTokenInRequest(req);
 
@@ -86,13 +86,13 @@ export abstract class ApiModule {
         });
     }
 
-    get<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user: User) => Promise<ApiModuleResponse<RES>>) {
+    get<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user?: User) => Promise<ApiModuleResponse<RES>>) {
         this._app.get(this.basepath() + "/" + route, async (req, res) => {
-            let validationResult: string|JsonObject = undefined;
+            let validationResult: string|JsonObject|undefined = undefined;
             let moduleResponse: ApiModuleResponse<RES>;
 
             if (!this.loginRequired()) {
-                moduleResponse = await handler(new RequestTyped<REQ>(req), {userTokenData: undefined, userPermissions: undefined});
+                moduleResponse = await handler(new RequestTyped<REQ>(req), undefined);
             } else {
                 validationResult = await AdfsOidc.validateTokenInRequest(req);
 

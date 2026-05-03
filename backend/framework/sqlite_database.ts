@@ -11,7 +11,7 @@ export class SQLiteDB {
 
 	logger = getLogger("sqlite");
 
-	database: sqlite.Database = undefined;
+	database: sqlite.Database | undefined = undefined;
 	moduleName: string = "";
 	
 	sqliteInit(moduleName: string) {
@@ -31,12 +31,12 @@ export class SQLiteDB {
 		return new Promise<void>((resolve, reject) => {
 			try {
 				if (update.params.length == 0) {
-					this.database.exec(update.update, (err) => {
+					this.database!.exec(update.update, (err) => {
 						if (err) reject(err);
 						resolve();
 					});
 				} else {
-					this.database.run(update.update, update.params, (err) => {
+					this.database!.run(update.update, update.params, (err) => {
 						if (err) reject(err);
 						resolve();
 					});
@@ -47,7 +47,7 @@ export class SQLiteDB {
 		});
 	}
 	
-	sqlFetchAll(query, params): Promise<unknown[]> {
+	sqlFetchAll(query: string, params: any[]): Promise<unknown[]> {
 		if (this.database == undefined) {
 			this.logger.error("Can't perform operation on sqlite database as it is not initialized!", { dbname: this.moduleName, op: "query-all", query: query, params: params });
 			return Promise.reject();
@@ -55,7 +55,7 @@ export class SQLiteDB {
 		
 		return new Promise<unknown[]>((resolve, reject) => {
 			try {
-				this.database.all(query, params, (err, rows) => {
+				this.database!.all(query, params, (err, rows) => {
 					if (err) reject(err);
 					resolve(rows);
 				});
@@ -65,7 +65,7 @@ export class SQLiteDB {
 		});
 	};
 	
-	sqlFetchFirst(query, params): Promise<unknown> {
+	sqlFetchFirst(query: string, params: any[]): Promise<unknown> {
 		if (this.database == undefined) {
 			this.logger.error("Can't perform operation on sqlite database as it is not initialized!", { dbname: this.moduleName, op: "query-first", query: query, params: params });
 			return Promise.reject();
@@ -73,7 +73,7 @@ export class SQLiteDB {
 		
 		return new Promise<unknown>((resolve, reject) => {
 			try {
-				this.database.get(query, params, (err, row) => {
+				this.database!.get(query, params, (err, row) => {
 					if (err) reject(err);
 					resolve(row);
 				});
