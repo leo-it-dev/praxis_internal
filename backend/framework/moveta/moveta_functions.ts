@@ -55,7 +55,8 @@ function processCustomerRows(rows: row[]): Customer[] {
             memo: row.KTEXT + " " + row.KMEMO,
             fax: row.KTELFAX,
             email: row.KEMAIL,
-            birthday: new Date(row.KGEBDAT) || undefined
+            birthday: new Date(row.KGEBDAT) || undefined,
+            uid: row.KNR
         })
     };
 
@@ -76,7 +77,7 @@ export async function readReportableDrugListFromMovetaDB(): Promise<Array<Report
 
 export async function readCustomersFromMovetaDB(): Promise<Array<Customer>> {
     return new Promise((res, rej) => {
-        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select KNAM1,KNAM2,KSUCH,KSTR,KPLZ,KORT,KTEL,KTEXT,KMEMO,KTELFAX,KEMAIL,KGEBDAT FROM SYSADM.KUNDEN WHERE KHIDDEN=0").then(rows => {
+        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select KNR,KNAM1,KNAM2,KSUCH,KSTR,KPLZ,KORT,KTEL,KTEXT,KMEMO,KTELFAX,KEMAIL,KGEBDAT FROM SYSADM.KUNDEN WHERE KHIDDEN=0").then(rows => {
             let customers = processCustomerRows(rows);
             res(customers);
         }).catch(err => {

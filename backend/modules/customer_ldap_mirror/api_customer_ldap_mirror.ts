@@ -14,6 +14,8 @@ export class ApiModuleCustomerLdapMirror extends ApiModule {
     memoryLdap!: LdapMemoryServer;
     memoryStore!: LdapStore;
 
+    ldapBase: string = "";
+
     modname(): string {
         return "customer-ldap-mirror";
     }
@@ -25,12 +27,12 @@ export class ApiModuleCustomerLdapMirror extends ApiModule {
     async initialize() {
         let ldapPort = config.get('ldap-mirror.PORT');
         let ldapHost = config.get('ldap-mirror.HOST');
-        let ldapBase = config.get('ldap-mirror.BASE_DN');
+        this.ldapBase = config.get('ldap-mirror.BASE_DN');
         let ldapSSL = config.get('ldap-mirror.SSL');
         let scrapeIntervalMin = config.get('ldap-mirror.SCRAPE_INTERVAL_MINUTES');
 
         this.memoryStore = new LdapStore();
-        this.memoryLdap = new LdapMemoryServer(ldapPort, ldapHost, ldapSSL, ldapBase, {
+        this.memoryLdap = new LdapMemoryServer(ldapPort, ldapHost, ldapSSL, this.ldapBase, {
             authenticateUser: (name, authentication) => {
                 return new Promise<AuthenticationResult>((res, _) => {
                     if (authentication instanceof AuthenticationChoiceSasl && authentication.mechanism == "GSSAPI") {
@@ -66,8 +68,10 @@ export class ApiModuleCustomerLdapMirror extends ApiModule {
                 let firstName = cust.givenName.trim() != "" ? cust.firstName.trim() : cust.firstName.trim().split(" ")[0];
                 let surName = cust.givenName.trim() != "" ? cust.givenName.trim() : cust.firstName.trim().split(" ").splice(1).join(' ');
 
-                return constructLdapEntry('TODO: enter-dn-here', [
-                    { attr: "dn", vals: ["dn: uid=rbrown,ou=people,dc=example,dc=com"] },
+                let dn = "uid=cust-" + cust.uid + ",dc=pegasus," + this.ldapBase;
+
+                return constructLdapEntry(dn, [
+                    { attr: "dn", vals: [dn] },
                     { attr: "sn", vals: [surName] },
                     { attr: "cn", vals: [firstName + " " + surName] },
                     { attr: "givenName", vals: [firstName] },

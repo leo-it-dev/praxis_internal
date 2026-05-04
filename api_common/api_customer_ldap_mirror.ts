@@ -13,4 +13,5 @@ export type Customer = {
     fax: string, // ktelfax
     email: string, // kemail
     birthday?: Date // kgebdat
+    uid: number // kid
 }
