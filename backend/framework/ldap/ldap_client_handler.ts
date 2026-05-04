@@ -6,9 +6,10 @@ import { readBindRequest } from "./messages/bind_request";
 import { BindResponse, buildBindResponse } from "./messages/bind_response";
 import { buildLdapMessage, ProtocolOpCode, readLdapMessage } from "./messages/ldap_message";
 import { LdapResult, LdapResultCode } from "./messages/ldap_result";
-import { readSearchRequest } from "./messages/search_request";
+import { readSearchRequest, SearchRequestScope } from "./messages/search_request";
 import { buildSearchResultDone, buildSearchResultEntry, PartialAttribute } from "./messages/search_result_entry";
 import { evaluateFilter, FilterResult } from './filter/filter';
+import { LdapAttribute, LdapEntry } from './ldap_store';
 
 export class LdapClientHandler {
 
@@ -98,16 +99,46 @@ export class LdapClientHandler {
 
             if (ldapMessage.protocolOp.idBlock.tagNumber == ProtocolOpCode.searchRequest) {
                 let searchRequest = readSearchRequest(ldapMessage.protocolOp);
-
                 if (!searchRequest) {
                     this.terminate();
                     return;
                 }
 
                 let ldapEntries = this.ldapServer.getLdapStore().getAllEntries();
-                let matchedEntries = ldapEntries.filter(entry => evaluateFilter(entry, searchRequest.filter) == FilterResult.TRUE);
+                let matchedEntries: LdapEntry[] = [];
+                let startTime = new Date().getTime();
 
-                // TODO: Evaluate everything left except filter from searchRequest
+                // TODO: Maybe implement
+                // attributes
+                // derefAliases
+                // baseObject
+                // scope
+                // in the future.
+
+                for (let entry of ldapEntries) {
+                    if (searchRequest.timeLimit != 0 && (new Date().getTime() - startTime) / 1000 > searchRequest.timeLimit) {
+                        break;
+                    }
+                    if (evaluateFilter(entry, searchRequest.filter) == FilterResult.TRUE) {
+                        if (searchRequest.typesOnly) {
+                            matchedEntries.push(new LdapEntry(
+                                entry.objectNameDN,
+                                entry.attributes.map(a => {
+                                    return {
+                                        type: a.type,
+                                        vals: []
+                                    }
+                                }),
+                            ));
+                        } else {
+                            matchedEntries.push(entry);
+                        }
+
+                        if (searchRequest.sizeLimit != 0 && matchedEntries.length >= searchRequest.sizeLimit) {
+                            break;
+                        }
+                    }
+                }
 
                 for (let entry of matchedEntries) {
                     this.sendLdapMessage(buildLdapMessage({
