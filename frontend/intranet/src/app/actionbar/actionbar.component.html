@@ -6,7 +6,7 @@
 <div id="action-items" [class.hamburgerExpanded]="this.mobileViewHamburgerExpanded">
     <span class="action-item lockedItem"><a (click)="this.mobileViewHamburgerExpanded=false" [routerLink]="isLoggedIn() && hasQsPermission() ? '/qs' : null">QS-Meldung</a></span>
     <span class="action-item lockedItem"><a (click)="this.mobileViewHamburgerExpanded=false" [routerLink]="isLoggedIn() && hasNewsPermission() ? '/news' : null">Praxis-News</a></span>
-    <span class="action-item lockedItem"><a (click)="this.mobileViewHamburgerExpanded=false" [routerLink]="isLoggedIn() && hasTravelExpensesPermission() ? '/travel-expenses' : null">Anfahrtskosten</a></span>
+    <!-- <span class="action-item lockedItem"><a (click)="this.mobileViewHamburgerExpanded=false" [routerLink]="isLoggedIn() && hasTravelExpensesPermission() ? '/travel-expenses' : null">Anfahrtskosten</a></span> -->
 </div>
 <span class="spreader"></span>
 
