@@ -1,5 +1,5 @@
 import { Customer } from "../../../api_common/api_customer_ldap_mirror";
-import { DrugUnits, ReportableDrug } from "../../../api_common/api_qs";
+import { Business, DrugUnits, ReportableDrug } from "../../../api_common/api_qs";
 import { row, runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary } from "./pegasus_connection";
 
 const movetaDrugUnitMapping = {
@@ -41,6 +41,21 @@ function processDrugRows(rows: row[]): ReportableDrug[] {
     return drugs;
 }
 
+function processBusinessRows(rows: row[]): Business[] {
+    let businesses: Array<Business> = [];
+    for (let row of rows) {
+        businesses.push({
+            businessMovetaID: row.BEKEN,
+            customerMovetaId: row.BEKKEN,
+            businessType: row.BEBEZ,
+            vvvo: row.BEVVVO
+        });
+    };
+
+    businesses = businesses.sort((businessA, businessB) => businessA.businessMovetaID.localeCompare(businessB.businessMovetaID));
+    return businesses;
+}
+
 function processCustomerRows(rows: row[]): Customer[] {
     let customers: Array<Customer> = [];
     for (let row of rows) {
@@ -52,16 +67,28 @@ function processCustomerRows(rows: row[]): Customer[] {
             plz: parseInt(row.KPLZ),
             place: row.KORT,
             phone: row.KTEL,
-            memo: row.KTEXT + " " + row.KMEMO,
+            memo: row.KMEMO,
             fax: row.KTELFAX,
             email: row.KEMAIL,
             birthday: new Date(row.KGEBDAT) || undefined,
-            uid: row.KNR
+            uid: row.KNR,
+            movetaCustomerId: row.KKEN1
         })
     };
 
     customers = customers.sort((custA, custB) => custA.firstName.localeCompare(custB.firstName));
     return customers;
+}
+
+export async function readBusinessesFromMovetaDB(): Promise<Array<Business>> {
+    return new Promise((res, rej) => {
+        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select BEKKEN,BEKEN,BEBEZ,BEVVVO,BEHIDDEN from SYSADM.BETRIEBE WHERE BEHIDDEN=0").then(rows => {
+            let businesses = processBusinessRows(rows);
+            res(businesses);
+        }).catch(err => {
+            rej(err);
+        });
+    });
 }
 
 export async function readReportableDrugListFromMovetaDB(): Promise<Array<ReportableDrug>> {
@@ -77,7 +104,7 @@ export async function readReportableDrugListFromMovetaDB(): Promise<Array<Report
 
 export async function readCustomersFromMovetaDB(): Promise<Array<Customer>> {
     return new Promise((res, rej) => {
-        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select KNR,KNAM1,KNAM2,KSUCH,KSTR,KPLZ,KORT,KTEL,KTEXT,KMEMO,KTELFAX,KEMAIL,KGEBDAT FROM SYSADM.KUNDEN WHERE KHIDDEN=0").then(rows => {
+        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select KKEN1,KNR,KNAM1,KNAM2,KSUCH,KSTR,KPLZ,KORT,KTEL,KTEXT,KMEMO,KTELFAX,KEMAIL,KGEBDAT FROM SYSADM.KUNDEN WHERE KHIDDEN=0").then(rows => {
             let customers = processCustomerRows(rows);
             res(customers);
         }).catch(err => {

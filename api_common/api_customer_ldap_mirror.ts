@@ -14,4 +14,5 @@ export type Customer = {
     email: string, // kemail
     birthday?: Date // kgebdat
     uid: number // kid
+    movetaCustomerId: string; // kkenn1
 }

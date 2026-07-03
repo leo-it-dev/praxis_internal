@@ -47,7 +47,7 @@ export class QsreportComponent extends ModuleComponent {
 	HINT_WARN_drug_local = HINT_WARN_drug
 
 	selectedFarmer: Signal<Farmer | undefined | null>;
-	farmerSerializer: IStringify<Farmer> = { display: (farmer) => ({ text: farmer.name.replaceAll("  ", " "), hint: NO_HINT }) };
+	farmerSerializer: IStringify<Farmer> = { display: (farmer) => ({ text: farmer.name.replaceAll("  ", " ") + (farmer.additionalInfoHydrated != "" ? " - " + farmer.additionalInfoHydrated : ""), hint: NO_HINT }) };
 
 	pageInitFinished: Subject<void> = new Subject<void>();
 

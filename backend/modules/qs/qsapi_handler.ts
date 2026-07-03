@@ -1,18 +1,10 @@
 import vetproof = require('vet_proof_external_tools_api');
-import { DrugReport } from '../../../api_common/api_qs';
+import { DrugReport, Farmer } from '../../../api_common/api_qs';
 import { getLogger } from '../../logger';
 import { QsAccessToken } from './qs_accesstoken';
 import { Logger } from 'winston';
 const config = require('config');
 const crypto = require('crypto');
-
-export type Farmer = {
-    name: string; // Eindeutige Identifikation des Tierhalters in VetProof
-    locationNumber: string; // VVVO-Nummer des Tierhalters
-    productionType: number[]; // Produktionsart laut QS, evtl mehrere wenn Rind und Schwein
-    qsNumber: string; // QS-Nummer des Tierhalters
-    vpId: number; // Eindeutige Identifikation des Tierhalters in VetProof
-};
 
 export class QsApiHandler {
     private client: vetproof.ApiClient;
@@ -33,7 +25,7 @@ export class QsApiHandler {
     requestSingleDrugReport(id: number): Promise<vetproof.VeterinaryDocumentData> {
         return new Promise((res, rej) => {
             this.checkAndRenewAccessToken().then(() => {
-                new vetproof.TierarztBelegeApi(this.client).veterinaryDocumentsIdGet({id: id}, (error, data, resp) => {
+                new vetproof.TierarztBelegeApi(this.client).veterinaryDocumentsIdGet({id: id}, (error: any, data: any, resp: any) => {
                     if (error) {
                         rej(error);
                     } else {
@@ -47,7 +39,7 @@ export class QsApiHandler {
     requestDrugReports(limit: number, offset: number): Promise<vetproof.VeterinaryDocumentDataList> {
         return new Promise((res, rej) => {
             this.checkAndRenewAccessToken().then(() => {
-                new vetproof.TierarztBelegeApi(this.client).veterinaryDocumentsGet({limit: limit, offset: offset}, (error, data, resp) => {
+                new vetproof.TierarztBelegeApi(this.client).veterinaryDocumentsGet({limit: limit, offset: offset}, (error: any, data: any, resp: any) => {
                     if (error) {
                         rej(error);
                     } else {
@@ -61,7 +53,7 @@ export class QsApiHandler {
     requestVersionInformation(): Promise<string> {
         return new Promise((res, rej) => {
             this.checkAndRenewAccessToken().then(() => {
-                new vetproof.VersionApi(this.client).versionGet((error, data, response) => {
+                new vetproof.VersionApi(this.client).versionGet((error: any, data: any, response: any) => {
                     if (error) {
                         rej(error);
                     } else {
@@ -76,7 +68,7 @@ export class QsApiHandler {
 
     renewAccessToken(): Promise<string> {
         return new Promise((res, rej) => {
-            this.authApi.accessTokenPost({'accessTokenInput': {'id': config.get('generic.GATEWAY_ID'), 'alias': config.get('generic.USER_ALIAS'), 'password': config.get('generic.USER_PASSWORD')}}, (error, data, response) => {
+            this.authApi.accessTokenPost({'accessTokenInput': {'id': config.get('generic.GATEWAY_ID'), 'alias': config.get('generic.USER_ALIAS'), 'password': config.get('generic.USER_PASSWORD')}}, (error: any, data: any, response: any) => {
                 if (error) {
                     rej(error);
                 } else {
@@ -130,7 +122,7 @@ export class QsApiHandler {
             await this.checkAndRenewAccessToken();
 
             let data = await new Promise<any>((res, rej) => {
-                api.farmerLinkGet(branchName, {'offset': offset, 'limit': limit}, (error, data, response) => {
+                api.farmerLinkGet(branchName, {'offset': offset, 'limit': limit}, (error: any, data: any, response: any) => {
                     if (error) {
                         rej(response.text);
                     } else {
@@ -191,7 +183,8 @@ export class QsApiHandler {
                                     locationNumber: locationNumber,
                                     productionType: [productionType],
                                     qsNumber: qsNumber,
-                                    vpId: vpId
+                                    vpId: vpId,
+                                    additionalInfoHydrated: ""
                                 };
                                 farmers.push(farmInst);
                             }
@@ -233,7 +226,7 @@ export class QsApiHandler {
             let reference = crypto.randomUUID();
             this.checkAndRenewAccessToken().then(() => {
                 this.logger.info("NewDrugReport> Sending new drug report to QS!", {reference:reference});
-                this.vetDocumentsApi.veterinaryDocumentsPost(drugReport, (error, data, response) => {
+                this.vetDocumentsApi.veterinaryDocumentsPost(drugReport, (error: any, data: any, response: any) => {
                     if (error) {
                         logFailure("NewDrugReport> Error posting prescription-row to API (early error): sent data but got an error!", {report: drugReport, error: error.message, responseText: response.text, reference:reference});
                         rej(this.parseErrors(JSON.parse(response.text)));

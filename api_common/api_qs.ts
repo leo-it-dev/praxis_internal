@@ -30,6 +30,13 @@ export const DrugUnits = {
 	piece: { id: DrugUnitApi.PIECE, name: "Stück", abbrev: "st" }
 };
 
+export type Business = {
+	customerMovetaId: string;
+	businessMovetaID: string,
+	businessType: string;
+	vvvo: string;
+}
+
 export type DrugPackage = {
 	package: string;
 	pid: number;
@@ -50,6 +57,7 @@ export type Farmer = {
 	productionType: number[]; // Produktionsart laut QS
 	qsNumber: string; // QS-Nummer des Tierhalters
 	vpId: number; // Eindeutige Identifikation des Tierhalters in VetProof
+	additionalInfoHydrated: string; // Standort des Betriebs aus Moveta nachgeladen, oder memos etc. (falls vorhanden).
 };
 
 export type PrescriptionRow = {

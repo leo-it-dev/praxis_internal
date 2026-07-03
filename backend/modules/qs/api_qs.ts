@@ -1,5 +1,5 @@
 import { Mutex } from 'async-mutex';
-import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, castReportReadbackFromVeterinaryDocumentData, DrugReport, DrugReportApiReadback, DrugUnits, ReportableDrug } from '../../../api_common/api_qs';
+import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, Business, castReportReadbackFromVeterinaryDocumentData, DrugReport, DrugReportApiReadback, DrugUnits, Farmer, ReportableDrug } from '../../../api_common/api_qs';
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
 import { QsFarmerAnimalAgeUsageGroup } from '../../../api_common/qs/qs-farmer-production-age-mapping';
 import { QsFarmerProductionCombination } from '../../../api_common/qs/qs-farmer-production-combinations';
@@ -10,11 +10,12 @@ import { getLogger } from '../../logger';
 import { sleep, sum } from '../../utilities/utilities';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
 import { readReportableDrugListFromHIT } from './hit_drug_crawler';
-import { Farmer, QsApiHandler } from './qsapi_handler';
+import { QsApiHandler } from './qsapi_handler';
 import vetproof = require('vet_proof_external_tools_api');
 import { UserPermission } from '../../../api_common/permission_types';
+import { Customer } from '../../../api_common/api_customer_ldap_mirror';
 import { SqlUpdate } from '../../framework/sqlite_database';
-import { readReportableDrugListFromMovetaDB } from '../../framework/moveta/moveta_functions';
+import { readBusinessesFromMovetaDB, readCustomersFromMovetaDB, readReportableDrugListFromMovetaDB } from '../../framework/moveta/moveta_functions';
 import { row } from '../../framework/moveta/pegasus_connection';
 const config = require('config');
 
@@ -205,14 +206,68 @@ export class ApiModuleQs extends ApiModule {
         });
     }
 
+    async hydrateQsFarmersWithMovetaBusinessInformation(farmers: Farmer[]): Promise<Farmer[]> {
+        const inst = this;
+        return new Promise<Farmer[]>((res, rej) => {
+            this.logger().info("Reading business data from moveta to hydrate qs farmer information!");
+
+            let customersList: Customer[] = [];
+            let businessList: Business[] = [];
+
+            let datasets = [
+                {promise: readBusinessesFromMovetaDB(), store: (businesses: any[]) => businessList = businesses},
+                {promise: readCustomersFromMovetaDB(), store: (customers: any[]) => customersList = customers}
+            ];
+
+            Promise.allSettled(datasets.map(d => d.promise)).then(datasetsSettled => {
+                for (let datasetIdx = 0; datasetIdx < datasets.length; datasetIdx++) {
+                    let datasetSettled = datasetsSettled[datasetIdx];
+                    if (datasetSettled.status != 'fulfilled') {
+                        this.logger().error("Error reading customers and businesses from moveta to hydrate qs farmer data!", {});
+                        rej();
+                        return;
+                    } else {
+                        datasets[datasetIdx].store(datasetSettled.value);
+                    }
+                }
+
+                for (let farmer of farmers) {
+                    let businessMoveta = businessList.find(business => business.vvvo == farmer.locationNumber);
+                    let customersRelatingToBusiness = customersList.filter(c => c.movetaCustomerId == businessMoveta?.customerMovetaId);
+                    if (customersRelatingToBusiness.length == 0) {
+                        this.logger().warn("Moveta business entry found with no active customer!", {businessVVVO: farmer.locationNumber, businessId: businessMoveta?.customerMovetaId, expectedCustomerId: businessMoveta?.customerMovetaId});
+                        continue;
+                    }
+
+                    if (customersRelatingToBusiness.length > 1) {
+                        this.logger().warn("Moveta business entry found with more than one associated customer!", {businessVVVO: farmer.locationNumber, businessId: businessMoveta?.customerMovetaId, firstUsedCustomer: customersRelatingToBusiness[0].movetaCustomerId, customerCount: customersRelatingToBusiness.length});
+                        continue;
+                    }
+
+                    let customer = customersRelatingToBusiness[0];
+                    farmer.additionalInfoHydrated = customer.memo.trim(); // Temporär, später tatsächliche Betriebsadresse aus intranet
+                }
+                res(farmers);
+            });
+        });
+    }
+
     async updateQsDatabase(finished: () => void) {
         const inst = this;
         return new Promise<void>(async (res, rej) => {
             this.logger().info("Scheduled update of internal database of QS informations!");
             await this.updateFarmersMutex.acquire();
     
-            this.qsApiHandlerProd.readFarmers().then(farmers => {
-                inst.farmers = farmers;
+            this.qsApiHandlerProd.readFarmers().then(async farmers => {
+                try {
+                    const farmersHydrated = await this.hydrateQsFarmersWithMovetaBusinessInformation(farmers);
+                    inst.farmers = farmersHydrated;
+                    this.logger().info("Successfully hydrated farmer list with moveta information!", {});
+                } catch(err) {
+                    inst.farmers = farmers;
+                    this.logger().info("Error hydrating farmer list with moveta information!", {error: err});
+                }
+
                 this.logger().info("Successfully updated list of registered farmers!", {entryCount: this.farmers.length});
             }).catch(e => {
                 this.logger().error("Error updating internal database of registered farmers!", {error: e});
