@@ -11,12 +11,12 @@ import { sleep, sum } from '../../utilities/utilities';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
 import { readReportableDrugListFromHIT } from './hit_drug_crawler';
 import { QsApiHandler } from './qsapi_handler';
-import vetproof = require('vet_proof_external_tools_api');
 import { UserPermission } from '../../../api_common/permission_types';
 import { Customer } from '../../../api_common/api_customer_ldap_mirror';
 import { SqlUpdate } from '../../framework/sqlite_database';
 import { readBusinessesFromMovetaDB, readCustomersFromMovetaDB, readReportableDrugListFromMovetaDB } from '../../framework/moveta/moveta_functions';
 import { row } from '../../framework/moveta/pegasus_connection';
+import vetproof = require('vet_proof_external_tools_api');
 const config = require('config');
 
 export class QsApiDocumentReports {
@@ -245,7 +245,7 @@ export class ApiModuleQs extends ApiModule {
                     }
 
                     let customer = customersRelatingToBusiness[0];
-                    farmer.additionalInfoHydrated = customer.memo.trim(); // Temporär, später tatsächliche Betriebsadresse aus intranet
+                    farmer.additionalInfoHydrated = (customer.memo ?? "").trim(); // Temporär, später tatsächliche Betriebsadresse aus intranet
                 }
                 res(farmers);
             });

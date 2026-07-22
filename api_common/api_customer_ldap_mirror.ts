@@ -8,9 +8,9 @@ export type Customer = {
     street: string, // kstr
     plz: number, // kplz
     place: string, // kort
-    phone: string, // ktel
-    memo: string, // ktext + kmemo
-    fax: string, // ktelfax
+    phone: string | undefined, // ktel
+    memo: string | undefined, // ktext + kmemo
+    fax: string | undefined, // ktelfax
     email: string, // kemail
     birthday?: Date // kgebdat
     uid: number // kid
