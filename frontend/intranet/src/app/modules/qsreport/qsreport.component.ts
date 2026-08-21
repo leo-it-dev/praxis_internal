@@ -4,7 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { NullUserInfo, UserInfo } from '../../../../../../api_common/api_ldapquery';
-import { ApiInterfacePutPrescriptionRowsIn, Farmer, PrescriptionRow, ReportableDrug } from '../../../../../../api_common/api_qs';
+import { ApiInterfacePutPrescriptionRowsIn, Farmer, PrescriptionRow } from '../../../../../../api_common/api_qs';
 import { ApiInterfaceEmptyOut } from '../../../../../../api_common/backend_call';
 import { UserPermission } from '../../../../../../api_common/permission_types';
 import { BlockingoverlayComponent, OverlayButtonDesign } from '../../blockingoverlay/blockingoverlay.component';
@@ -23,6 +23,8 @@ import { CategorizedList } from '../../utilities/categorized-list';
 import { LdapQueryBackendFetch, LdapqueryBackendService } from '../ldapquery/ldapquery-backend.service';
 import { PrescriptionRowComponent } from "./prescription-row/prescription-row.component";
 import { QsBackendFetch, QsreportBackendService } from './qsreport-backend.service';
+import { Drug } from '../../../../../../api_common/generic_types/drug';
+import { EntitiesBackendFetch, EntitiesBackendService } from '../entities/entities-backend.service';
 
 export const DRUG_CATEGORY_OK = "moveta";
 export const DRUG_CATEGORY_WARN = "hit";
@@ -72,7 +74,7 @@ export class QsreportComponent extends ModuleComponent {
 		design: OverlayButtonDesign.PRIMARY_COLORED
 	}];
 
-	reportableDrugList: WritableSignal<CategorizedList<ReportableDrug>> = signal(new CategorizedList<ReportableDrug>());
+	reportableDrugList: WritableSignal<CategorizedList<Drug>> = signal(new CategorizedList<Drug>());
 	farmers: WritableSignal<Farmer[]> = signal([]);
 
 	vets: WritableSignal<UserInfo[]> = signal([]);
@@ -86,15 +88,22 @@ export class QsreportComponent extends ModuleComponent {
 
 	async loadApiData() {
 
-		Promise.allSettled([this.getBackendService().fetchBackendData(), this.ldapBackendService.fetchBackendData(), this.loadUiFinished]).then((proms) => {
+		Promise.allSettled([this.getBackendService().fetchBackendData(), this.ldapBackendService.fetchBackendData(), this.entitiesBackendService.fetchBackendData(), this.loadUiFinished]).then((proms) => {
 			let backendQsFetchProm = proms[0] as PromiseSettledResult<QsBackendFetch>;
 			let backendLdapFetchProm = proms[1] as PromiseSettledResult<LdapQueryBackendFetch>;
+			let backendEntitiesFetchProm = proms[2] as PromiseSettledResult<EntitiesBackendFetch>;
 
 			if (backendQsFetchProm.status == 'fulfilled') {
-				this.reportableDrugList.set(backendQsFetchProm.value.drugs);
-				console.log("Loaded " + this.reportableDrugList().length + " drugs!");
 				this.farmers.set(backendQsFetchProm.value.farmers);
 				console.log("Loaded " + this.farmers().length + " farmers!");
+			}
+
+			if (backendEntitiesFetchProm.status == 'fulfilled') {
+				let categorizedList: CategorizedList<Drug> = new CategorizedList<Drug>();
+				categorizedList.add(backendEntitiesFetchProm.value.drugs, DRUG_CATEGORY_OK);
+				categorizedList.add(backendEntitiesFetchProm.value.drugsExternal, DRUG_CATEGORY_WARN);
+				this.reportableDrugList.set(categorizedList);
+				console.log("Loaded " + this.reportableDrugList().length + " drugs!");
 			}
 
 			if (backendLdapFetchProm.status == 'fulfilled') {
@@ -151,7 +160,8 @@ export class QsreportComponent extends ModuleComponent {
 		private offlineStore: OfflineStoreService,
 		private changeDetectorRef: ChangeDetectorRef,
 		private loadingService: LoadingoverlayService,
-		private ldapBackendService: LdapqueryBackendService
+		private ldapBackendService: LdapqueryBackendService,
+		private entitiesBackendService: EntitiesBackendService
 	) {
 		super(QsreportBackendService);
 
@@ -308,9 +318,9 @@ export class QsreportComponent extends ModuleComponent {
 		}
 	}
 
-	showDrugErrorOverlay(drug: ReportableDrug|undefined) {
-		if (drug && !this.drugErrorOverlayQuitRemembered) {
-			this.drugErrorOverlayDrugName = drug.name;
+	showDrugErrorOverlay(drugName: Drug|undefined) {
+		if (drugName && !this.drugErrorOverlayQuitRemembered) {
+			this.drugErrorOverlayDrugName = drugName.moveta.name || drugName.hit.name;
 			this.drugErrorOverlayShown.set(true);
 			this.drugErrorOverlayQuitRemembered = true;
 		} else {

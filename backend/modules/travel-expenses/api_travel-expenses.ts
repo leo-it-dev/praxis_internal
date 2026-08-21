@@ -1,10 +1,10 @@
 import * as config from 'config';
 import { getRepeatedScheduler } from "../..";
+import { ApiInterfaceTravelExpensesMetaOut, TravelExpenseStage } from '../../../api_common/api_travelexpenses';
 import { ApiInterfaceEmptyIn, ApiModuleResponse } from "../../../api_common/backend_call";
 import { UserPermission } from "../../../api_common/permission_types";
-import { ApiModule } from "../../api_module";
+import { ApiModuleAuthorized } from "../../api_module";
 import * as ors from '../../framework/openrouteservice';
-import { ApiInterfaceTravelExpensesMetaOut, TravelExpenseStage } from '../../../api_common/api_travelexpenses';
 
 type TravelExpensesConfig = {
     COST_STAGES: [
@@ -16,7 +16,7 @@ type TravelExpensesConfig = {
     ]
 }
 
-export class ApiModuleTravelExpenses extends ApiModule {
+export class ApiModuleTravelExpenses extends ApiModuleAuthorized {
 
     centerOfEarthLat = config.get('map.CENTER_OF_EARTH_LAT') as number;
     centerOfEarthLon = config.get('map.CENTER_OF_EARTH_LON') as number;
@@ -34,16 +34,12 @@ export class ApiModuleTravelExpenses extends ApiModule {
         getRepeatedScheduler().scheduleRepeatedEvent(this, "travel-expense-isochrones", this.travelExpenseIsochronesRecalculationIntervalMinutes * 60, async (finished) => { await this.recalculateIsochrones(); finished(); }, true);
     }
 
-    loginRequired(): boolean {
-        return true;
-    }
-
     permissionRequired(): UserPermission | undefined {
         return UserPermission.TRAVEL_EXPENSES_MAP;
     }
 
     registerEndpoints(): void {
-        this.get<ApiInterfaceEmptyIn, ApiInterfaceTravelExpensesMetaOut>("travelmeta", async (req, user) => {
+        this.get<ApiInterfaceEmptyIn, ApiInterfaceTravelExpensesMetaOut>("travelmeta", async (req) => {
             let result: ApiModuleResponse<ApiInterfaceTravelExpensesMetaOut>;
             result = {
                 statusCode: 200, responseObject: {

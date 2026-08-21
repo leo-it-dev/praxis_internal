@@ -109,6 +109,19 @@
       "urls": [
         "/module/travel-expenses/travelmeta"
       ]
+    },
+    {
+      "name": "entities",
+      "cacheConfig": {
+        "strategy": "freshness",
+        "timeout": "5s",
+        "maxAge": "14d",
+        "refreshAhead": "1d",
+        "maxSize": 100
+      },
+      "urls": [
+        "/module/entities/entities"
+      ]
     }
   ]
 }

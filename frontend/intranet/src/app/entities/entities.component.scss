@@ -1,0 +1,107 @@
+:host {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-height: 100%;
+    overflow-y: scroll;
+}
+
+form {
+    width: 100%;
+    padding: 50px;
+    box-sizing: border-box;
+    height: 100%;
+}
+
+label {
+    width: 10%;
+    min-width: max-content;
+}
+
+input, app-datepicker {
+    flex: 1;
+    min-width: 0;
+}
+
+.cont {
+    width: 100%;
+    padding: 10px 0px;
+    margin: 0px auto;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    column-gap: 10px;
+}
+
+#left {
+    width: 15%;
+    max-width: 150px;
+    min-width: 100px;
+    box-sizing: border-box;
+    float: left;
+    position: sticky;
+    top: 60px;
+}
+
+#right {
+    float: left;
+    left: 30px;
+    position: relative;
+    width: calc(calc(100% - 30px - min(150px, max(15%, 100px))));
+    padding-left: 20px;
+    box-sizing: border-box;
+    border-left: 1px solid var(--shadeLevel2);
+}
+
+h5, h4, h3, h2 {
+    margin-top: 0;
+}
+
+.data-section {
+    position: relative;
+    text-transform: uppercase;
+    font-size: 10pt;
+    line-height: 10pt;
+    height: 10pt;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+.data-section:after {
+    display: block;
+    content: '';
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    border-bottom: 1px solid var(--shadeLevel2);
+    width: 100%;
+    height: 0px;
+}
+
+.data-section:before {
+    content: attr(data-text);
+    display: block;
+    position: relative;
+    top: 0;
+    left: 0;
+    width: max-content;
+    height: max-content;
+    background-image: linear-gradient(to right, var(--action-button-gradient-left), var(--action-button-gradient-right));
+    z-index: 1;
+    padding-right: 10px;
+    background-clip: text;
+    color: transparent;
+    text-wrap: nowrap;
+}
+
+#searchController {
+    box-shadow: 0 0 5px var(--shelfGradientDark);
+    border-left: 2px solid var(--notification);
+    padding: 20px;
+    margin-bottom: 30px;
+}

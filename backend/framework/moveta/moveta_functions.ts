@@ -1,5 +1,6 @@
-import { Customer } from "../../../api_common/api_customer_ldap_mirror";
-import { Business, DrugUnits, ReportableDrug } from "../../../api_common/api_qs";
+import { MovetaBusinessChunk } from "../../../api_common/generic_types/business";
+import { MovetaCustomerChunk } from "../../../api_common/generic_types/customer";
+import { DrugUnits, MovetaDrugChunk } from "../../../api_common/generic_types/drug";
 import { row, runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary } from "./pegasus_connection";
 
 const movetaDrugUnitMapping = {
@@ -19,10 +20,11 @@ function parseDrugUnitIfPossible(movetaUnit: string) {
     return movetaUnit in movetaDrugUnitMapping ? movetaDrugUnitMapping[movetaUnit as keyof typeof movetaDrugUnitMapping] : undefined;
 }
 
-function processDrugRows(rows: row[]): ReportableDrug[] {
-    let drugs: Array<ReportableDrug> = [];
+function processDrugRows(rows: row[]): MovetaDrugChunk[] {
+    let drugs: Array<MovetaDrugChunk> = [];
     for (let row of rows) {
         drugs.push({
+            commonId: row.AKEN,
             znr: row.AZULASSUNG,
             name: row.ABEZ,
             shortsearch: row.ASUCH,
@@ -33,7 +35,6 @@ function processDrugRows(rows: row[]): ReportableDrug[] {
                     unitSuggestion: parseDrugUnitIfPossible(row.APCK)
                 }
             ],
-            reportabilityVerifierMarkedErronous: false
         })
     };
 
@@ -41,23 +42,23 @@ function processDrugRows(rows: row[]): ReportableDrug[] {
     return drugs;
 }
 
-function processBusinessRows(rows: row[]): Business[] {
-    let businesses: Array<Business> = [];
+function processBusinessRows(rows: row[]): MovetaBusinessChunk[] {
+    let businesses: Array<MovetaBusinessChunk> = [];
     for (let row of rows) {
         businesses.push({
-            businessMovetaID: row.BEKEN,
+            commonId: row.BEKEN + row.BEVVVO,
             customerMovetaId: row.BEKKEN,
             businessType: row.BEBEZ,
             vvvo: row.BEVVVO
         });
     };
 
-    businesses = businesses.sort((businessA, businessB) => businessA.businessMovetaID.localeCompare(businessB.businessMovetaID));
+    businesses = businesses.sort((businessA, businessB) => businessA.commonId.localeCompare(businessB.commonId));
     return businesses;
 }
 
-function processCustomerRows(rows: row[]): Customer[] {
-    let customers: Array<Customer> = [];
+function processCustomerRows(rows: row[]): MovetaCustomerChunk[] {
+    let customers: Array<MovetaCustomerChunk> = [];
     for (let row of rows) {
         customers.push({
             firstName: row.KNAM1,
@@ -72,7 +73,7 @@ function processCustomerRows(rows: row[]): Customer[] {
             email: row.KEMAIL,
             birthday: new Date(row.KGEBDAT) || undefined,
             uid: row.KNR,
-            movetaCustomerId: row.KKEN1
+            commonId: row.KKEN1
         })
     };
 
@@ -80,9 +81,9 @@ function processCustomerRows(rows: row[]): Customer[] {
     return customers;
 }
 
-export async function readBusinessesFromMovetaDB(): Promise<Array<Business>> {
+export async function readBusinessesFromMovetaDB(): Promise<Array<MovetaBusinessChunk>> {
     return new Promise((res, rej) => {
-        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select BEKKEN,BEKEN,BEBEZ,BEVVVO,BEHIDDEN from SYSADM.BETRIEBE WHERE BEHIDDEN=0").then(rows => {
+        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select BEKKEN,BEKEN,BEBEZ,BEVVVO,BEHIDDEN from SYSADM.BETRIEBE WHERE BEHIDDEN=0 OR BEHIDDEN IS NULL").then(rows => {
             let businesses = processBusinessRows(rows);
             res(businesses);
         }).catch(err => {
@@ -91,9 +92,9 @@ export async function readBusinessesFromMovetaDB(): Promise<Array<Business>> {
     });
 }
 
-export async function readReportableDrugListFromMovetaDB(): Promise<Array<ReportableDrug>> {
+export async function readReportableDrugListFromMovetaDB(): Promise<Array<MovetaDrugChunk>> {
     return new Promise((res, rej) => {
-        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select ASUCH,ABEZ,AMEN,APCK,AZULASSUNG,APACKUNGSID from SYSADM.ARZNEIEN WHERE AZULASSUNG IS NOT NULL AND AHIDDEN=0").then(rows => {
+        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select AKEN,ASUCH,ABEZ,AMEN,APCK,AZULASSUNG,APACKUNGSID from SYSADM.ARZNEIEN WHERE AZULASSUNG IS NOT NULL AND AHIDDEN=0").then(rows => {
             let drugs = processDrugRows(rows);
             res(drugs);
         }).catch(err => {
@@ -102,9 +103,9 @@ export async function readReportableDrugListFromMovetaDB(): Promise<Array<Report
     });
 }
 
-export async function readCustomersFromMovetaDB(): Promise<Array<Customer>> {
+export async function readCustomersFromMovetaDB(): Promise<Array<MovetaCustomerChunk>> {
     return new Promise((res, rej) => {
-        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select KKEN1,KNR,KNAM1,KNAM2,KSUCH,KSTR,KPLZ,KORT,KTEL,KTEXT,KMEMO,KTELFAX,KEMAIL,KGEBDAT FROM SYSADM.KUNDEN WHERE KHIDDEN=0").then(rows => {
+        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select KKEN1,KNR,KNAM1,KNAM2,KSUCH,KSTR,KPLZ,KORT,KTEL,KTEXT,KMEMO,KTELFAX,KEMAIL,KGEBDAT FROM SYSADM.KUNDEN WHERE KHIDDEN=0 OR KHIDDEN IS NULL").then(rows => {
             let customers = processCustomerRows(rows);
             res(customers);
         }).catch(err => {

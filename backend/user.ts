@@ -16,6 +16,7 @@ export const UserPermissionToSecurityGroup = {
     [UserPermission.NEWS]: expandSecurityGroupNameToFullDN(config.get("userPermissions.SECURITY_GROUP_ALLOW_NEWS")),
     [UserPermission.POST_NEWS]: expandSecurityGroupNameToFullDN(config.get("userPermissions.SECURITY_GROUP_ALLOW_POST_NEWS")),
     [UserPermission.TRAVEL_EXPENSES_MAP]: expandSecurityGroupNameToFullDN(config.get("userPermissions.SECURITY_GROUP_ALLOW_TRAVEL_EXPENSES_MAP")),
+    [UserPermission.ENTITIES_LIST]: expandSecurityGroupNameToFullDN(config.get("userPermissions.SECURITY_GROUP_ALLOW_ENTITIES_LIST")),
 }
 export const SecurityGroupToUserPermission = Object.fromEntries(Object.entries(UserPermissionToSecurityGroup).map(a => a.reverse()))
 

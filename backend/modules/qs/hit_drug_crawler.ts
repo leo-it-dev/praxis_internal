@@ -1,14 +1,14 @@
 // const util = require('util')
 let xlsx = require('js-xlsx');
-import { compare, parseSimpleDate } from "../../utilities/utilities";
-import { DrugPackage, ReportableDrug } from "../../../api_common/api_qs";
+import { Drug, DrugPackage, HitDrugChunk } from "../../../api_common/generic_types/drug";
 import { getLogger } from "../../logger";
+import { compare, parseSimpleDate } from "../../utilities/utilities";
 const config = require('config');
 
 let logger = getLogger('hit-drug-crawler');
 
-function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
-    let reportableDrugs: Array<ReportableDrug> = [];
+function parseReportableDrugsCSV(lines: Array<String>): Array<HitDrugChunk> {
+    let reportableDrugs: Array<HitDrugChunk> = [];
     
     // Parse CSV file
     let headers = lines[0].split(";");
@@ -71,7 +71,7 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
             // As we have sorted the list to ascending registration dates, we remove the last added drug and add the current one.
             // This removes the old registration of the same drug and replaces it with the new registration!
             let oldReg = parsedValsRemovedDuplicates.pop();
-            if (oldReg.name !== parsedDrug.name || oldReg.pack !== parsedDrug.pack) {
+            if (oldReg !== undefined && (oldReg.name !== parsedDrug.name || oldReg.pack !== parsedDrug.pack)) {
                 logger.warn("Replaced old drug registration with new one, but details have changed which is unexpected!", {oldReg: oldReg, newReg: parsedDrug});
             }
         }
@@ -89,7 +89,7 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
     for(let obj of parsedValsRemovedDuplicates) {
         if (lastZnr != obj.znr) {
             if (drugListZnr.length > 0) {
-                reportableDrugs.push({znr: lastZnr, name: lastName, forms: drugListZnr, shortsearch: null, reportabilityVerifierMarkedErronous: false})
+                reportableDrugs.push({commonId: lastZnr, znr: lastZnr, name: lastName, forms: drugListZnr})
             }
             drugListZnr = [];
         }
@@ -105,7 +105,7 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
     }
     
     if (drugListZnr.length > 0) {
-        reportableDrugs.push({znr: lastZnr, name: lastName, forms: drugListZnr, shortsearch: null, reportabilityVerifierMarkedErronous: false})
+        reportableDrugs.push({commonId: lastZnr, znr: lastZnr, name: lastName, forms: drugListZnr})
     }
 
     // sort grouped drugs by name ascending
@@ -113,7 +113,7 @@ function parseReportableDrugsCSV(lines: Array<String>): Array<ReportableDrug> {
     return reportableDrugs;
 }
 
-export async function readReportableDrugListFromHIT(): Promise<Array<ReportableDrug>> {
+export async function readReportableDrugListFromHIT(): Promise<Array<HitDrugChunk>> {
     return new Promise((res, rej) => {
         fetch(config.get('generic.DRUGS_CSV_URL_HIT'), {}).then(dat => dat.arrayBuffer()).then(array => {
             let text = new TextDecoder('iso-8859-1');

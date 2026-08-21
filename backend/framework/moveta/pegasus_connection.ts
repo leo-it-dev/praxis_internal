@@ -1,4 +1,3 @@
-import { DrugUnits, ReportableDrug } from "../../../api_common/api_qs";
 import { getLogger } from "../../logger";
 import path = require("node:path");
 const { exec } = require('child_process');

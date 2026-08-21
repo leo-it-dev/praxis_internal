@@ -1,23 +1,23 @@
-import { ApiModule } from "../../api_module";
+import { Mutex } from "async-mutex";
 import { ApiInterfaceUserInfoOut, ApiInterfaceUsersListInfoOut, UserInfo } from "../../../api_common/api_ldapquery";
 import { ApiInterfaceEmptyIn, ApiModuleResponse } from "../../../api_common/backend_call";
-import ldapjs = require('ldapjs');
-import { Mutex } from "async-mutex";
 import { UserPermission } from "../../../api_common/permission_types";
-import { userPermissionsFromSecurityGroupDNs, expandSecurityGroupNameToFullDN } from "../../user";
+import { ApiModuleAuthorized } from "../../api_module";
+import { expandSecurityGroupNameToFullDN, userPermissionsFromSecurityGroupDNs } from "../../user";
 import { ensureIsList } from "../../utilities/utilities";
+import ldapjs = require('ldapjs');
 
 const config = require('config');
 
-export class ApiModuleLdapQuery extends ApiModule {
+export class ApiModuleLdapQuery extends ApiModuleAuthorized {
 
     private ldapConfig = {
         url: config.get('generic.LDAP_URL'),
         connectionTimeOut: 30000,
         reconnect: true
     };
-    private ldapClient: ldapjs.Client;
-    private ldapConnectMutex: Mutex;
+    private ldapClient: ldapjs.Client | undefined;
+    private ldapConnectMutex: Mutex = new Mutex();
 
     modname(): string {
         return "ldapquery";
@@ -37,8 +37,8 @@ export class ApiModuleLdapQuery extends ApiModule {
                 this.ldapClient = ldapjs.createClient(this.ldapConfig);
                 this.ldapClient.on('error', (err) => {
                     this.logger().warn("LDAP client disconnected. Next access will try to reconnect.", {errorCode: err.code});
-                    this.ldapClient.unbind();
-                    this.ldapClient.destroy();
+                    this.ldapClient!.unbind();
+                    this.ldapClient!.destroy();
                     this.ldapClient = undefined;
                 });
                 this.ldapClient.bind(config.get('generic.LDAP_LOGIN_USER'), config.get('generic.LDAP_LOGIN_PASS'), (error) => {
@@ -55,12 +55,7 @@ export class ApiModuleLdapQuery extends ApiModule {
     }
 
     async initialize() {
-        this.ldapConnectMutex = new Mutex();
         await this.assureLdapConnected();
-    }
-
-    loginRequired(): boolean {
-        return true;
     }
 
     findAttr(attributes: ldapjs.Attribute[], attrName: string) {
@@ -83,7 +78,7 @@ export class ApiModuleLdapQuery extends ApiModule {
 
         return {
             // Append additional ActiveDirectory attributes needed here to add to the response
-            thumbnail: thumbnail !== undefined ? "data:image/jpg;base64," + (thumbnail?.buffers[0].toString('base64')) : null,
+            thumbnail: thumbnail !== undefined ? "data:image/jpg;base64," + (thumbnail?.buffers[0].toString('base64')) : "",
             vetproofVeterinaryName: this.findAttr(ldapEntry.attributes, config.get('generic.AD_ATTRIBUTE_QS_VETERINARY_ID'))?.values[0] ?? "<default>",
             accName: this.findAttr(ldapEntry.attributes, config.get('generic.AD_ATTRIBUTE_QS_DOCUMENT_NUMBER_USER_NAME_PREFIX'))?.values[0] ?? "<default>",
             permissions: permissions,
@@ -92,7 +87,7 @@ export class ApiModuleLdapQuery extends ApiModule {
         };
     }
 
-    readUserInfo(userSID): Promise<UserInfo> {
+    readUserInfo(userSID: string): Promise<UserInfo> {
         return new Promise(async (res, rej) => {
             try {
                 let ldapEntries = await this.performLdapSearch(config.get('generic.LDAP_USER_DN_BASE'), {
@@ -149,7 +144,7 @@ export class ApiModuleLdapQuery extends ApiModule {
                 let userInfo = await this.readUserInfo(user.userTokenData.sid);
                 result = { statusCode: 200, responseObject: {userinfo: userInfo }, error: undefined};
             } catch(err) {
-                result = { statusCode: 400, responseObject: {userinfo: undefined }, error: err };
+                result = { statusCode: 400, responseObject: undefined, error: err as string };
             }
             return result;
         });
@@ -159,7 +154,7 @@ export class ApiModuleLdapQuery extends ApiModule {
                 let userInfos = await this.readAllUserInfos();
                 result = { statusCode: 200, responseObject: {userinfos: userInfos }, error: undefined};
             } catch(err) {
-                result = { statusCode: 400, responseObject: {userinfos: undefined }, error: err };
+                result = { statusCode: 400, responseObject: undefined, error: err as string };
             }
             return result;
         });
@@ -168,8 +163,8 @@ export class ApiModuleLdapQuery extends ApiModule {
     performLdapSearch(baseDN: string, options: ldapjs.SearchOptions): Promise<ldapjs.SearchEntry[] | undefined> {
         return new Promise(async (resolve, reject) => {
             await this.assureLdapConnected();
-            let entries = [];
-            this.ldapClient.search(baseDN, options, function (err, res) {
+            let entries: ldapjs.SearchEntry[] = [];
+            this.ldapClient!.search(baseDN, options, function (err, res) {
                 if (err) {
                     reject(err.message);
                 } else {

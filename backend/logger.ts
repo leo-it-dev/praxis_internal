@@ -75,7 +75,8 @@ class OtelWinstonTransporter extends TransportStream {
         })
 
         const { level, message, ...meta } = info;
-        const otelLevel = customLevels.openTelemetryLevels[level];
+
+        const otelLevel = customLevels.openTelemetryLevels[level as keyof typeof customLevels.openTelemetryLevels] ?? SeverityNumber.UNSPECIFIED;
         loggerProvider.getLogger('intranet-otel').emit({
             body: message,
             severityNumber: otelLevel,

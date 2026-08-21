@@ -9,9 +9,9 @@ import { User, userPermissionsFromSecurityGroupNames } from "./user";
 import { SQLiteDB, SqlUpdate } from "./framework/sqlite_database";
 
 export abstract class ApiModule {
-    private _app: Express;
-    private _logger!: Logger;
-    private _sqlite!: SQLiteDB;
+    protected _app: Express;
+    protected _logger!: Logger;
+    protected _sqlite!: SQLiteDB;
 
     constructor(app: Express) {
         this._app = app;
@@ -23,59 +23,99 @@ export abstract class ApiModule {
 
         const sqliteCreateTable = this.sqliteTableCreate();
         if (sqliteCreateTable != undefined) {
-            await this._sqlite.sqlUpdate(sqliteCreateTable);
+            for (let update of sqliteCreateTable) {
+                await this._sqlite.sqlUpdate(update);
+            }
         }
+
+        this.moduleInitialized();
     }
 
+    moduleInitialized() {};
     abstract modname(): string;
     abstract registerEndpoints(): void;
     abstract initialize(): any;
-    abstract loginRequired(): boolean;
-    abstract permissionRequired(): UserPermission | undefined;
     
     basepath(): string {
         return "/module/" + this.modname();
     }
 
-    logger(): Logger {
+    protected logger(): Logger {
         if (this._logger === undefined) {
             this._logger = getLogger(this.modname());
         }
         return this._logger;
     }
 
-    protected sqliteTableCreate(): SqlUpdate | undefined {
+    protected sqliteTableCreate(): SqlUpdate[] | undefined {
         return undefined;
     };
 
     protected sqlite() {
         return this._sqlite;
     }
+}
 
-    postJson<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user?: User) => Promise<ApiModuleResponse<RES>>) {
+
+export abstract class ApiModuleUnauthorized extends ApiModule {
+
+    constructor(app: Express) {
+        super(app);
+    }
+
+    protected postJson<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>) => Promise<ApiModuleResponse<RES>>) {
+        this._app.post(this.basepath() + "/" + route, bodyParser.json(), async (req, res) => {
+            let moduleResponse = await handler(new RequestTyped<REQ>(req));
+
+            let transformedResponse: ApiModuleBody = {
+                content: moduleResponse.responseObject,
+                error: moduleResponse.error
+            };
+            res.status(moduleResponse.statusCode).json(transformedResponse);
+        });
+    }
+
+    protected get<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>) => Promise<ApiModuleResponse<RES>>) {
+        this._app.get(this.basepath() + "/" + route, async (req, res) => {
+            let moduleResponse = await handler(new RequestTyped<REQ>(req));
+
+            let transformedResponse: ApiModuleBody = {
+                content: moduleResponse.responseObject,
+                error: moduleResponse.error
+            };
+            res.status(moduleResponse.statusCode).json(transformedResponse);
+        });
+    }
+}
+
+export abstract class ApiModuleAuthorized extends ApiModule {
+
+    constructor(app: Express) {
+        super(app);
+    }
+
+    abstract permissionRequired(): UserPermission | undefined;
+
+    protected postJson<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user: User) => Promise<ApiModuleResponse<RES>>) {
         this._app.post(this.basepath() + "/" + route, bodyParser.json(), async (req, res) => {
             let validationResult: string|JsonObject|undefined = undefined;
             let moduleResponse: ApiModuleResponse<RES>;
 
-            if (!this.loginRequired()) {
-                moduleResponse = await handler(new RequestTyped<REQ>(req), undefined);
-            } else {
-                validationResult = await AdfsOidc.validateTokenInRequest(req);
+            validationResult = await AdfsOidc.validateTokenInRequest(req);
 
-                if (validationResult instanceof Object) {
-                    let userPermissions = userPermissionsFromSecurityGroupNames(validationResult["roles"] as string[]);
+            if (validationResult instanceof Object) {
+                let userPermissions = userPermissionsFromSecurityGroupNames(validationResult["roles"] as string[]);
 
-                    if (!userPermissions.userHasPermission(this.permissionRequired())) {
-                        moduleResponse = { error: "unauthorized: " + validationResult, statusCode: 401, responseObject: undefined }
-                        this.logger().error("User tried to access backend resource without permission! There may be a problem with the client app or a foreign program tries to access our backend!", {path: req.path, ip: req.ip});
-                    } else {
-                        moduleResponse = await handler(new RequestTyped<REQ>(req), {userTokenData: validationResult, userPermissions: userPermissions});
-                    }
-                } else {
+                if (!userPermissions.userHasPermission(this.permissionRequired())) {
                     moduleResponse = { error: "unauthorized: " + validationResult, statusCode: 401, responseObject: undefined }
-                    this.logger().error("User tried to access backend resource with invalid access token! There may be a problem with the client app or a foreign program tries to access our backend!", {path: req.path, ip: req.ip});
-                    return;
+                    this.logger().error("User tried to access backend resource without permission! There may be a problem with the client app or a foreign program tries to access our backend!", {path: req.path, ip: req.ip});
+                } else {
+                    moduleResponse = await handler(new RequestTyped<REQ>(req), {userTokenData: validationResult, userPermissions: userPermissions});
                 }
+            } else {
+                moduleResponse = { error: "unauthorized: " + validationResult, statusCode: 401, responseObject: undefined }
+                this.logger().error("User tried to access backend resource with invalid access token! There may be a problem with the client app or a foreign program tries to access our backend!", {path: req.path, ip: req.ip});
+                return;
             }
 
             let transformedResponse: ApiModuleBody = {
@@ -86,30 +126,26 @@ export abstract class ApiModule {
         });
     }
 
-    get<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user?: User) => Promise<ApiModuleResponse<RES>>) {
+    protected get<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user: User) => Promise<ApiModuleResponse<RES>>) {
         this._app.get(this.basepath() + "/" + route, async (req, res) => {
             let validationResult: string|JsonObject|undefined = undefined;
             let moduleResponse: ApiModuleResponse<RES>;
 
-            if (!this.loginRequired()) {
-                moduleResponse = await handler(new RequestTyped<REQ>(req), undefined);
-            } else {
-                validationResult = await AdfsOidc.validateTokenInRequest(req);
+            validationResult = await AdfsOidc.validateTokenInRequest(req);
 
-                if (validationResult instanceof Object) {
-                    let userPermissions = userPermissionsFromSecurityGroupNames(validationResult["roles"] as string[]);
+            if (validationResult instanceof Object) {
+                let userPermissions = userPermissionsFromSecurityGroupNames(validationResult["roles"] as string[]);
 
-                    if (!userPermissions.userHasPermission(this.permissionRequired())) {
-                        moduleResponse = { error: "unauthorized: " + validationResult, statusCode: 401, responseObject: undefined }
-                        this.logger().error("User tried to access backend resource without permission! There may be a problem with the client app or a foreign program tries to access our backend!", {path: req.path, ip: req.ip});
-                    } else {
-                        moduleResponse = await handler(new RequestTyped<REQ>(req), {userTokenData: validationResult, userPermissions: userPermissions});
-                    }
-                } else {
+                if (!userPermissions.userHasPermission(this.permissionRequired())) {
                     moduleResponse = { error: "unauthorized: " + validationResult, statusCode: 401, responseObject: undefined }
-                    this.logger().error("User tried to access backend resource with invalid access token! There may be a problem with the client app or a foreign program tries to access our backend!", {path: req.path, ip: req.ip});
-                    return;
+                    this.logger().error("User tried to access backend resource without permission! There may be a problem with the client app or a foreign program tries to access our backend!", {path: req.path, ip: req.ip});
+                } else {
+                    moduleResponse = await handler(new RequestTyped<REQ>(req), {userTokenData: validationResult, userPermissions: userPermissions});
                 }
+            } else {
+                moduleResponse = { error: "unauthorized: " + validationResult, statusCode: 401, responseObject: undefined }
+                this.logger().error("User tried to access backend resource with invalid access token! There may be a problem with the client app or a foreign program tries to access our backend!", {path: req.path, ip: req.ip});
+                return;
             }
 
             let transformedResponse: ApiModuleBody = {

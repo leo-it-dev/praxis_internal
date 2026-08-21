@@ -4,11 +4,13 @@ import { SystemOverviewComponent } from './system-overview/system-overview.compo
 import { QsreportComponent } from './modules/qsreport/qsreport.component';
 import { NewsComponent } from './news/news.component';
 import { TravelExpensesMapComponent } from './travel-expenses-map/travel-expenses-map.component';
+import { EntitiesComponent } from './entities/entities.component';
 
 export const routes: Routes = [
     {path: 'login', component: LoginComponent},
     {path: 'qs', component: QsreportComponent},
     {path: 'system', component: SystemOverviewComponent},
     {path: 'news', component: NewsComponent},
-    {path: 'travel-expenses', component: TravelExpensesMapComponent}
+    {path: 'travel-expenses', component: TravelExpensesMapComponent},
+    {path: 'entities', component: EntitiesComponent}
 ];

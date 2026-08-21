@@ -1,15 +1,15 @@
 import * as asn1js from 'asn1js';
 import { Socket } from "net";
 import { getLogger } from "../../logger";
+import { evaluateFilter, FilterResult } from './filter/filter';
 import { AuthenticationResult, LdapMemoryServer } from "./ldap_memory_server";
+import { LdapEntry } from './ldap_store';
 import { readBindRequest } from "./messages/bind_request";
 import { BindResponse, buildBindResponse } from "./messages/bind_response";
 import { buildLdapMessage, ProtocolOpCode, readLdapMessage } from "./messages/ldap_message";
 import { LdapResult, LdapResultCode } from "./messages/ldap_result";
-import { readSearchRequest, SearchRequestScope } from "./messages/search_request";
+import { readSearchRequest } from "./messages/search_request";
 import { buildSearchResultDone, buildSearchResultEntry, PartialAttribute } from "./messages/search_result_entry";
-import { evaluateFilter, FilterResult } from './filter/filter';
-import { LdapAttribute, LdapEntry } from './ldap_store';
 
 export class LdapClientHandler {
 

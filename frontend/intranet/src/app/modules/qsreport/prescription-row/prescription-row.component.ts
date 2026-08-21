@@ -3,12 +3,13 @@ import { AbstractControl, FormBuilder, FormControl, NgControl, ReactiveFormsModu
 import { DRUG_CATEGORY_OK, DRUG_CATEGORY_WARN, HINT_OK_drug, HINT_OK_usageGroup, HINT_WARN_drug, HINT_WARN_usageGroup } from '../qsreport.component';
 import { toSignal } from '@angular/core/rxjs-interop'
 import { IItemDisable, IStringify, SearchDropdownComponent } from '../../../search-dropdown/search-dropdown.component';
-import { DrugPackage, DrugUnit, DrugUnits, Farmer, PrescriptionRow, ReportableDrug } from '../../../../../../../api_common/api_qs';
+import { Farmer, PrescriptionRow } from '../../../../../../../api_common/api_qs';
 import { ProductionUsageGroup, QsFarmerAnimalAgeUsageGroup } from "../../../../../../../api_common/qs/qs-farmer-production-age-mapping"
 import { ApiCompatibleProductionType, QsFarmerProductionCombination } from '../../../../../../../api_common/qs/qs-farmer-production-combinations';
 import { CategorizedItem, CategorizedList } from '../../../utilities/categorized-list';
 import { NO_HINT } from '../../../hint-ok/hint.component';
 import { computedIsUpdated } from '../../../utilities/angular-util';
+import { Drug, DrugPackage, DrugUnit, DrugUnits, DrugVerifiedState } from '../../../../../../../api_common/generic_types/drug';
 
 @Component({
 	selector: 'app-prescription-row',
@@ -22,13 +23,13 @@ export class PrescriptionRowComponent {
 	@ViewChild('farmerDropdown') farmerDropdown?: SearchDropdownComponent<Farmer>;
 	@ViewChild('productionDropdown') productionDropdown?: SearchDropdownComponent<ApiCompatibleProductionType>;
 	@ViewChild('usageDropdown') usageDropdown?: SearchDropdownComponent<ProductionUsageGroup>;
-	@ViewChild('drugDropdown') drugDropdown?: SearchDropdownComponent<ReportableDrug>;
+	@ViewChild('drugDropdown') drugDropdown?: SearchDropdownComponent<Drug>;
 	@ViewChild('packingDropdown') packingDropdown?: SearchDropdownComponent<DrugPackage>;
 
 	@Input({ required: true }) 	farmers: Farmer[] = [];
 	@Input({ required: true })	selectedFarmer: Signal<Farmer | undefined | null> = signal(undefined);
-	@Input({ required: true }) 	reportableDrugList: CategorizedList<ReportableDrug> = new CategorizedList<ReportableDrug>();
-	@Output("drugOverlayShown")	drugErrorOverlayShown: EventEmitter<ReportableDrug|undefined> = new EventEmitter<ReportableDrug|undefined>();
+	@Input({ required: true }) 	reportableDrugList: CategorizedList<Drug> = new CategorizedList<Drug>();
+	@Output("drugOverlayShown")	drugErrorOverlayShown: EventEmitter<Drug|undefined> = new EventEmitter<Drug|undefined>();
 	@Output("addRow") 			addRow: EventEmitter<void> = new EventEmitter<void>();
 	@Output("deleteRow") 		deleteRow: EventEmitter<void> = new EventEmitter<void>();
 
@@ -61,7 +62,7 @@ export class PrescriptionRowComponent {
 	selectedProductionType: Signal<ApiCompatibleProductionType|null|undefined>;
 	selectedUsageGroup: Signal<ProductionUsageGroup | null | undefined>;
 	selectedDrugUnit: Signal<DrugUnit | null | undefined>;
-	selectedDrug: Signal<CategorizedItem<ReportableDrug> | null | undefined>;
+	selectedDrug: Signal<CategorizedItem<Drug> | null | undefined>;
 	selectedPackingForm: Signal<DrugPackage | null | undefined>;
 
 	// Computations
@@ -85,13 +86,13 @@ export class PrescriptionRowComponent {
 	selectedDrugPackingForms: Signal<DrugPackage[]> = computed(() => {
 		let drug = this.selectedDrug();
 		if (drug) {
-			return drug.item.forms;
+			return drug.item.moveta.name != "" ? drug.item.moveta.forms : drug.item.hit.forms;
 		}
 		return [];
 	});
 
-	isDrugDisabled: IItemDisable<CategorizedItem<ReportableDrug>> = {
-		isItemDisabled: (item) => item.item.reportabilityVerifierMarkedErronous
+	isDrugDisabled: IItemDisable<CategorizedItem<Drug>> = {
+		isItemDisabled: (item) => item.item.intranet.reportabilityVerifierMarkedErronous == DrugVerifiedState.eVERIFIED_NOT_REPORTABLE
 	};
 
 	// Serializer
@@ -106,9 +107,10 @@ export class PrescriptionRowComponent {
 	
 	drugPackingSerializer: IStringify<DrugPackage> = { display: (drugPackage) => ({ text: drugPackage.package, hint: NO_HINT }) };
 	drugUnitSerializer: IStringify<DrugUnit> = { display: (drugUnit) => ({ text: drugUnit.name, hint: NO_HINT }) };
-	drugSerializer: IStringify<CategorizedItem<ReportableDrug>> = {
+	drugSerializer: IStringify<CategorizedItem<Drug>> = {
 		display: (reportableDrug) => ({
-			text: reportableDrug.item.name + (reportableDrug.item.forms.length == 1 ? " - " + reportableDrug.item.forms[0].package : " ..."),
+			text: reportableDrug.item.moveta.name != "" ? (reportableDrug.item.moveta.name + (reportableDrug.item.moveta.forms.length == 1 ? " - " + reportableDrug.item.moveta.forms[0].package : " ..."))
+														: (reportableDrug.item.hit.name + (reportableDrug.item.hit.forms.length == 1 ? " - " + reportableDrug.item.hit.forms[0].package : " ...")),
 			hint: reportableDrug.category == DRUG_CATEGORY_OK ? HINT_OK_drug : HINT_WARN_drug
 		})
 	};
@@ -125,7 +127,7 @@ export class PrescriptionRowComponent {
 		productionType: new FormControl<ApiCompatibleProductionType | null>(null, Validators.required),
 		usageGroup: new FormControl<ProductionUsageGroup | null>(null, Validators.required),
 		animalCount: [0, Validators.required],
-		drugZNR: new FormControl<CategorizedItem<ReportableDrug> | null>(null, Validators.required),
+		drugZNR: new FormControl<CategorizedItem<Drug> | null>(null, Validators.required),
 		drugPID: new FormControl<DrugPackage | null>(null, Validators.required),
 		amount: [0, [Validators.required, this.biggerThanZeroValidator]],
 		amountUnit: new FormControl<DrugUnit | null>(null, Validators.required),
@@ -136,7 +138,7 @@ export class PrescriptionRowComponent {
 		return this.qsFormGroup.valid && this.selectedUsageGroup() != null && this.selectedDrug() != null && this.selectedPackingForm() != null;
 	}
 
-	drugSelected(drug: CategorizedItem<ReportableDrug> | undefined) {
+	drugSelected(drug: CategorizedItem<Drug> | undefined) {
 		if (drug?.category == DRUG_CATEGORY_WARN) {
 			this.drugErrorOverlayShown.emit(drug.item);
 		}
@@ -181,11 +183,14 @@ export class PrescriptionRowComponent {
 
 		// We need to find the correct drug using znr and pid. We may have the same drug in our prefered drug list and the fallback list.
 		// Find all drugs that have the correct znr and contain the correct pid, then use a drug from the prefered drug list if found, otherwise use the drug from the fallback drug list.
-		let applicableDrugEntries = this.reportableDrugList.filter(d => d.item.znr == object.drugs[0].approvalNumber
-			&& d.item.forms.map(f => f.pid).includes(object.drugs[0].packageId));
+		let applicableDrugEntries = this.reportableDrugList.filter(d => d.item.moveta.znr != "" ?
+			    d.item.moveta.znr == object.drugs[0].approvalNumber && d.item.moveta.forms.map(f => f.pid).includes(object.drugs[0].packageId)
+			:
+			    d.item.hit.znr == object.drugs[0].approvalNumber && d.item.hit.forms.map(f => f.pid).includes(object.drugs[0].packageId)
+			);
 		// We filtered for all drugs with correct znr and pid. Now use the drug from the OK category if found, otherwise just use first drug found.
 		let drug = applicableDrugEntries.find(d => d.category == DRUG_CATEGORY_OK) || applicableDrugEntries[0];
-		let packaging = drug.item.forms.find(form => form.pid == object.drugs[0].packageId) || null;
+		let packaging = (drug.item.moveta.forms.length > 0 ? drug.item.moveta.forms : drug.item.hit.forms).find(form => form.pid == object.drugs[0].packageId) || null;
 
 		// Wait for computed() list selectedDrugPackingForms to be recalculated.
 		this.qsFormGroup.controls["drugZNR"].setValue(drug);
@@ -206,7 +211,7 @@ export class PrescriptionRowComponent {
 					amount: this.qsFormGroup.controls["amount"].value!,
 					amountUnit: this.selectedDrugUnit()!.id,
 					applicationDuration: this.qsFormGroup.controls["applicationDuration"].value!,
-					approvalNumber: this.selectedDrug()!.item.znr,
+					approvalNumber: this.selectedDrug()!.item.moveta.znr || this.selectedDrug()!.item.hit.znr,
 					packageId: this.selectedPackingForm()!.pid
 				}
 			]

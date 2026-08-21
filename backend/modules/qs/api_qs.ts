@@ -1,21 +1,20 @@
 import { Mutex } from 'async-mutex';
-import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, Business, castReportReadbackFromVeterinaryDocumentData, DrugReport, DrugReportApiReadback, DrugUnits, Farmer, ReportableDrug } from '../../../api_common/api_qs';
+import { ApiInterfaceDrugsOut, ApiInterfaceFarmersOut, ApiInterfacePutPrescriptionRowsIn, castReportReadbackFromVeterinaryDocumentData, DrugReport, DrugReportApiReadback, Farmer } from '../../../api_common/api_qs';
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from '../../../api_common/backend_call';
+import { Business } from '../../../api_common/generic_types/business';
+import { Customer } from '../../../api_common/generic_types/customer';
+import { Drug, DrugUnits, DrugVerifiedState } from '../../../api_common/generic_types/drug';
+import { UserPermission } from '../../../api_common/permission_types';
 import { QsFarmerAnimalAgeUsageGroup } from '../../../api_common/qs/qs-farmer-production-age-mapping';
 import { QsFarmerProductionCombination } from '../../../api_common/qs/qs-farmer-production-combinations';
-import { ApiModule } from '../../api_module';
+import { ApiModuleAuthorized } from '../../api_module';
 import { performPatches } from '../../ext_config_patcher';
 import { getApiModule, getRepeatedScheduler } from '../../index';
 import { getLogger } from '../../logger';
 import { sleep, sum } from '../../utilities/utilities';
+import { ApiModuleEntities } from '../entities/api_entities';
 import { ApiModuleLdapQuery } from '../ldapquery/api_ldapquery';
-import { readReportableDrugListFromHIT } from './hit_drug_crawler';
 import { QsApiHandler } from './qsapi_handler';
-import { UserPermission } from '../../../api_common/permission_types';
-import { Customer } from '../../../api_common/api_customer_ldap_mirror';
-import { SqlUpdate } from '../../framework/sqlite_database';
-import { readBusinessesFromMovetaDB, readCustomersFromMovetaDB, readReportableDrugListFromMovetaDB } from '../../framework/moveta/moveta_functions';
-import { row } from '../../framework/moveta/pegasus_connection';
 import vetproof = require('vet_proof_external_tools_api');
 const config = require('config');
 
@@ -30,18 +29,17 @@ export type DrugReportability = {
     reportable: boolean
 }
 
-export class ApiModuleQs extends ApiModule {
+export class ApiModuleQs extends ApiModuleAuthorized {
 
     MAX_QS_REPORT_NUMBER_LENGTH_CHARS = 20;
     INTRANET_QS_REPORT_NUMBER_WATERMARK = "_A";
     QS_API_MAX_ENTRIES_PER_REPORT_READ = 100;
 
+    private moduleEntities!: ApiModuleEntities;
+
     private qsApiHandlerTest!: QsApiHandler;
     private qsApiHandlerProd!: QsApiHandler;
-    private reportableDrugsPrefered: Array<ReportableDrug> = []; // List of drugs that *should* cover all drugs we use.
-    private reportableDrugsFallback: Array<ReportableDrug> = []; // If there are drugs missing though, a vet may also use drugs from the fallback list.
     private farmers: Array<Farmer> = [];
-    private qsApiReports: QsApiDocumentReports = new QsApiDocumentReports();
 
     private updateDrugsMutex = new Mutex();
     private updateFarmersMutex = new Mutex();
@@ -50,8 +48,8 @@ export class ApiModuleQs extends ApiModule {
         return "qs";
     }
 
-    loginRequired(): boolean {
-        return true;
+    moduleInitialized(): void {
+        this.moduleEntities = getApiModule(ApiModuleEntities)!;
     }
 
     initializeDrugSources() {
@@ -66,37 +64,7 @@ export class ApiModuleQs extends ApiModule {
         return UserPermission.QS_REPORT;
     }
 
-    sqliteTableCreate(): SqlUpdate | undefined {
-        return {
-            update: "CREATE TABLE IF NOT EXISTS qs ( \
-                znr varchar(32) NOT NULL, \
-                pid integer NOT NULL, \
-                reportable BOOLEAN NOT NULL,\
-                PRIMARY KEY (znr, pid)\
-            );",
-            params: [],
-        }
-    }
-
-    async sqliteStoreDrugVerifiabilityCache(drugList: Array<DrugReportability>) {
-        for(let drug of drugList) {
-            await this.sqlite().sqlUpdate({
-                update: "INSERT OR REPLACE INTO qs (znr, pid, reportable) VALUES (?, ?, ?);",
-                params: [ drug.znr, drug.pid, drug.reportable ],
-            });
-        }
-    }
-
-    async sqliteReadDrugVerifiabilityCache(): Promise<Array<DrugReportability>> {
-        let rows = await this.sqlite().sqlFetchAll("SELECT znr,pid,reportable FROM qs", []) as row[];
-        return rows.map(row => ({
-            reportable: row["reportable"] as boolean,
-            pid: row["pid"] as number,
-            znr: row["znr"] as string
-        } as DrugReportability));
-    }
-
-    async verifyReportabilityOfDrugList(drugList: Array<ReportableDrug>) {
+    async verifyReportabilityOfDrugList(drugList: Array<Drug>) {
         let logger = getLogger('qs-znr-validator');
         let reference = new Date().getTime();
         logger.info("Starting drug ZNR verification cycle.", {reference: reference});
@@ -105,104 +73,70 @@ export class ApiModuleQs extends ApiModule {
         let productionType = QsFarmerProductionCombination.splitProductionIdIntoAPICompatibleIDs(farmer.productionType[0])[0];
         let usageGroup = QsFarmerAnimalAgeUsageGroup.getUsageGroupsBasedOnProductionType(productionType.productionType)[0];
 
-        let erronousDrugs = [];
-        let successfullDrugs = [];
+        let erronousDrugs = 0;
+        let successfullDrugs = 0;
 
-        let drugReportVerifiabilityCache = await this.sqliteReadDrugVerifiabilityCache();
-
-        for(let drugNumber = 0; drugNumber < drugList.length; drugNumber++) {
-            let drug = drugList[drugNumber];
-            let drugVerifiabilityCache = drugReportVerifiabilityCache.find(cacheEntry => cacheEntry.znr.toLowerCase() == drug.znr.toLowerCase()
-                                                                                        && cacheEntry.pid == drug.forms[0].pid);
-
-            if (drugVerifiabilityCache != undefined) {
-
-                drug.reportabilityVerifierMarkedErronous = !drugVerifiabilityCache.reportable;
-                if (drug.reportabilityVerifierMarkedErronous) {
+        for(let [drugNumber, drug] of drugList.entries()) {
+            switch(drug.intranet.reportabilityVerifierMarkedErronous) {
+                case DrugVerifiedState.eVERIFIED_NOT_REPORTABLE:
                     logger.debug("Following drug is marked invalid cached (" + drugNumber + "/" + drugList.length + "): ", {drug: drug, reference:reference});
-                    erronousDrugs.push(drug);
-                } else {
+                    erronousDrugs++;
+                    break;
+                case DrugVerifiedState.eVERIFIED_SUCCESSFULLY_REPORTABLE:
                     logger.debug("Following drug is marked valid cached (" + drugNumber + "/" + drugList.length + "): ", {drug: drug, reference:reference});
-                    successfullDrugs.push(drug);
-                }
-            } else {
-                let date = new Date();
-                let drugReport: DrugReport = {
-                    deliveryDate: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0'),
-                    documentNumber: '_V' + date.getTime(),
-                    locationNumber: farmer.locationNumber,
-                    veterinary: config.get('generic.QS_API_AUTOMATED_DRUG_TEST_USER'),
-                    prescriptionRows: [{
-                        animalCount: 1,
-                        animalGroup: usageGroup.usageGroup,
-                        drugs: [
-                            {
-                                amount: 1,
-                                applicationDuration: 1,
-                                packageId: drug.forms[0].pid,
-                                amountUnit: (drug.forms[0].unitSuggestion || DrugUnits.injector).id,
-                                approvalNumber: drug.znr
-                            }
-                        ]}
-                    ]
-                };
+                    successfullDrugs++;
+                    break;
+                case DrugVerifiedState.eNOT_TESTED:
+                    let date = new Date();
+                    let drugReport: DrugReport = {
+                        deliveryDate: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0'),
+                        documentNumber: '_V' + date.getTime(),
+                        locationNumber: farmer.locationNumber,
+                        veterinary: config.get('generic.QS_API_AUTOMATED_DRUG_TEST_USER'),
+                        prescriptionRows: [{
+                            animalCount: 1,
+                            animalGroup: usageGroup.usageGroup,
+                            drugs: [
+                                {
+                                    amount: 1,
+                                    applicationDuration: 1,
+                                    packageId: drug.moveta.forms[0].pid,
+                                    amountUnit: (drug.moveta.forms[0].unitSuggestion || DrugUnits.injector).id,
+                                    approvalNumber: drug.moveta.znr
+                                }
+                            ]}
+                        ]
+                    };
 
-                await sleep(config.get('generic.QS_API_AUTOMATED_DRUG_TEST_INTERVAL_SECONDS') * 1000, (res) => {
-                    this.qsApiHandlerTest.postDrugReport(drugReport, false).then((dat) => {
-                        // successfully posted, drugs are all valid.
-                        drug.reportabilityVerifierMarkedErronous = false;
-                        successfullDrugs.push(drug);
-                        logger.debug("Following drug is marked valid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, reference:reference});
-                        res();
-                    }).catch((err) => {
-                        // error posting, drugs contain invalid ZNRs or drug units.
-                        drug.reportabilityVerifierMarkedErronous = true;
-                        erronousDrugs.push(drug);
-                        logger.debug("Following drug is marked invalid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, err: err, reference:reference});
-                        res();
+                    await sleep(config.get('generic.QS_API_AUTOMATED_DRUG_TEST_INTERVAL_SECONDS') * 1000, (res) => {
+                        this.qsApiHandlerTest.postDrugReport(drugReport, false).then((dat) => {
+                            // successfully posted, drugs are all valid.
+                            drug.intranet.reportabilityVerifierMarkedErronous = DrugVerifiedState.eVERIFIED_SUCCESSFULLY_REPORTABLE;
+                            successfullDrugs++;
+                            logger.debug("Following drug is marked valid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, reference:reference});
+                        }).catch((err) => {
+                            // error posting, drugs contain invalid ZNRs or drug units.
+                            drug.intranet.reportabilityVerifierMarkedErronous = DrugVerifiedState.eVERIFIED_NOT_REPORTABLE;
+                            erronousDrugs++;
+                            logger.debug("Following drug is marked invalid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, err: err, reference:reference});
+                        }).finally(async () => {
+                            await this.moduleEntities.addOrUpdateDrugEntry(drug);
+                            res();
+                        });
                     });
-                });
+                    break;
             }
         }
-        logger.info("Finished drug ZNR verification cycle.", {successfull: successfullDrugs.length, erronous: erronousDrugs.length, reference:reference});
-        await this.sqliteStoreDrugVerifiabilityCache(drugList.map(drug => ({
-            reportable: !drug.reportabilityVerifierMarkedErronous,
-            pid: drug.forms[0].pid,
-            znr: drug.znr
-        })));
+        logger.info("Finished drug ZNR verification cycle.", {successfull: successfullDrugs, erronous: erronousDrugs, reference:reference});
     }
 
     async updateDrugs(finished: () => void) {
         const inst = this;
         this.logger().info("Scheduled update of internal databases of reportable drugs!");
-
         this.initializeDrugSources();
-
-        await this.updateDrugsMutex.acquire();
-        let databases = [
-            {logname: "Moveta", promise: readReportableDrugListFromMovetaDB(), store: (drugs: ReportableDrug[]) => inst.reportableDrugsPrefered = drugs},
-            {logname: "HIT",    promise: readReportableDrugListFromHIT(),      store: (drugs: ReportableDrug[]) => inst.reportableDrugsFallback = drugs}
-        ];
-
-        Promise.allSettled(databases.map(d => d.promise)).then(drugs => {
-            let logStr = "Read databases of reportable drugs: \n";
-            databases.forEach((database, i) => {
-                let drug = drugs[i];
-                if (drug.status == "fulfilled") {
-                    database.store(drug.value);
-                    logStr += " - " + database.logname + ": " + drug.value.length + " Drugs / " + sum(drug.value.map(d => d.forms.length)) + " Packaging Forms\n";
-                } else {
-                    logStr += " - " + database.logname + ": error: " + drug.reason.trim("\n") + "\n";
-                    this.logger().error("Error receiving drug list from provider!", {provider: database.logname, reason: drug.reason.trim("\n")});
-                }
-            });
-            this.updateDrugsMutex.release();
-            this.logger().info(logStr);
-        
-            this.logger().info("Received all drugs, starting reportability check of approval numbers of primary drug list!");
-            this.verifyReportabilityOfDrugList(this.reportableDrugsPrefered).then(() => {
-                finished();
-            });
+        this.logger().info("Received all drugs, starting reportability check of approval numbers of primary drug list!");
+        this.verifyReportabilityOfDrugList(await this.moduleEntities.getDrugEntities()).then(() => {
+            finished();
         });
     }
 
@@ -215,8 +149,8 @@ export class ApiModuleQs extends ApiModule {
             let businessList: Business[] = [];
 
             let datasets = [
-                {promise: readBusinessesFromMovetaDB(), store: (businesses: any[]) => businessList = businesses},
-                {promise: readCustomersFromMovetaDB(), store: (customers: any[]) => customersList = customers}
+                {promise: this.moduleEntities.getBusinessEntries(), store: (businesses: any[]) => businessList = businesses},
+                {promise: this.moduleEntities.getCustomerEntries(), store: (customers: any[]) => customersList = customers}
             ];
 
             Promise.allSettled(datasets.map(d => d.promise)).then(datasetsSettled => {
@@ -232,20 +166,24 @@ export class ApiModuleQs extends ApiModule {
                 }
 
                 for (let farmer of farmers) {
-                    let businessMoveta = businessList.find(business => business.vvvo == farmer.locationNumber);
-                    let customersRelatingToBusiness = customersList.filter(c => c.movetaCustomerId == businessMoveta?.customerMovetaId);
+                    let businessMoveta = businessList.find(business => business.moveta.vvvo == farmer.locationNumber);
+                    let customersRelatingToBusiness = customersList.filter(c => c.moveta.commonId == businessMoveta?.moveta.customerMovetaId);
+                    if (businessMoveta === undefined) {
+                        this.logger().warn("QS business entry found that has no corresponding business in pegasus!", {businessVVVO: farmer.locationNumber});
+                        continue;
+                    }
                     if (customersRelatingToBusiness.length == 0) {
-                        this.logger().warn("Moveta business entry found with no active customer!", {businessVVVO: farmer.locationNumber, businessId: businessMoveta?.customerMovetaId, expectedCustomerId: businessMoveta?.customerMovetaId});
+                        this.logger().warn("Moveta business entry found with no active customer!", {businessVVVO: farmer.locationNumber, businessId: businessMoveta?.moveta.vvvo, expectedCustomerId: businessMoveta?.moveta.customerMovetaId});
                         continue;
                     }
 
                     if (customersRelatingToBusiness.length > 1) {
-                        this.logger().warn("Moveta business entry found with more than one associated customer!", {businessVVVO: farmer.locationNumber, businessId: businessMoveta?.customerMovetaId, firstUsedCustomer: customersRelatingToBusiness[0].movetaCustomerId, customerCount: customersRelatingToBusiness.length});
+                        this.logger().warn("Moveta business entry found with more than one associated customer!", {businessVVVO: farmer.locationNumber, businessId: businessMoveta?.moveta.customerMovetaId, firstUsedCustomer: customersRelatingToBusiness[0].moveta.commonId, customerCount: customersRelatingToBusiness.length});
                         continue;
                     }
 
                     let customer = customersRelatingToBusiness[0];
-                    farmer.additionalInfoHydrated = (customer.memo ?? "").trim(); // Temporär, später tatsächliche Betriebsadresse aus intranet
+                    farmer.additionalInfoHydrated = (customer.moveta.memo ?? "").trim(); // Temporär, später tatsächliche Betriebsadresse aus intranet
                 }
                 res(farmers);
             });
@@ -257,7 +195,7 @@ export class ApiModuleQs extends ApiModule {
         return new Promise<void>(async (res, rej) => {
             this.logger().info("Scheduled update of internal database of QS informations!");
             await this.updateFarmersMutex.acquire();
-    
+
             this.qsApiHandlerProd.readFarmers().then(async farmers => {
                 try {
                     const farmersHydrated = await this.hydrateQsFarmersWithMovetaBusinessInformation(farmers);
@@ -319,7 +257,6 @@ export class ApiModuleQs extends ApiModule {
         } catch(er) {
             logger.error("Error reading qs reports from QS-API! " + er);
         }
-        this.qsApiReports = apiDocumentReports;
         finished();
     }
 
@@ -341,21 +278,14 @@ export class ApiModuleQs extends ApiModule {
 
         this.updateQsDatabase(() => null).then(() => {
             this.updateDrugs(() => {
-
                 // we don't immediately trigger update-qs-database and update-drugs, as the second one requires the first one to have run at least once. Therefore we start them ourselves the first time in a specified order of execution.
                 getRepeatedScheduler().scheduleRepeatedEvent(this, "update-qs-database", config.get('generic.QS_DATABASE_CRAWL_UPDATE_INTERVAL_DAYS') * 24 * 60 * 60, this.updateQsDatabase.bind(this), false);
                 getRepeatedScheduler().scheduleRepeatedEvent(this, "update-drugs", config.get('generic.DRUGS_CRAWLING_INTERVAL_DAYS') * 24 * 60 * 60, this.updateDrugs.bind(this), false);
-
             });
         });
-        
     }
 
     registerEndpoints() {
-        this.get<ApiInterfaceEmptyIn, ApiInterfaceDrugsOut>("drugs", async (req, user) => {
-            await this.updateDrugsMutex.waitForUnlock();
-            return { statusCode: 200, responseObject: {prefered: this.reportableDrugsPrefered, fallback: this.reportableDrugsFallback}, error: undefined };
-        });
         this.get<ApiInterfaceEmptyIn, ApiInterfaceFarmersOut>("farmers", async (req, user) => {
             await this.updateFarmersMutex.waitForUnlock();
             return { statusCode: 200, responseObject: {farmers: this.farmers}, error: undefined };

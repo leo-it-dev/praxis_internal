@@ -21,7 +21,7 @@ export interface ApiModuleResponse<T extends ApiModuleInterfaceB2F> {
 
 export interface ApiModuleBody {
     content?: ApiModuleInterfaceB2F;
-    error?: string
+    error: string | undefined
 }
 
 export class RequestTyped<T extends ApiModuleInterfaceF2B> {

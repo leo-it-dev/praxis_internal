@@ -30,12 +30,18 @@ export class DatepickerComponent implements AfterViewInit {
 	}
 
 	setDate(date: Date) {
-		this.control.setValue(
-			new String(date.getDate()).padStart(2, '0') + "." +
-			new String(date.getMonth() + 1).padStart(2, '0') + "." +
-			new String(date.getFullYear()).padStart(2, '0'));
-		this.updateTodayButtonVisibility();
-		this.onChangeValidationCallback(this.control.value);
+		if (date) {
+			this.control.setValue(
+				new String(date.getDate()).padStart(2, '0') + "." +
+				new String(date.getMonth() + 1).padStart(2, '0') + "." +
+				new String(date.getFullYear()).padStart(2, '0'));
+			this.updateTodayButtonVisibility();
+			this.onChangeValidationCallback(this.control.value);
+		} else {
+			this.control.setValue("");
+			this.updateTodayButtonVisibility();
+			this.onChangeValidationCallback(this.control.value);
+		}
 	}
 
 	updateTodayButtonVisibility() {
@@ -84,15 +90,17 @@ export class DatepickerComponent implements AfterViewInit {
 	}
 
 	setDateToToday() {
-		this.setDate(new Date());
+		if (this.control.enabled) {
+			this.setDate(new Date());
+		}
 	}
 
 	parseDate(): Date | undefined {
 		return DatepickerComponent.parseDateGerman(this.control.value);
 	}
 
-	static parseDateGerman(searchString: string): Date | undefined {
-		let dateParts = searchString.split(".");
+	static parseDateGerman(searchString: string | undefined): Date | undefined {
+		let dateParts = searchString ? searchString.split(".") : [];
 		let date = undefined;
 
 		if (dateParts.length >= 2) {

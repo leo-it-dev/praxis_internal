@@ -9,7 +9,6 @@ import * as ssl from './ssl/ssl';
 /**
  * Endpoint modules
  */
-import { ApiModule } from './api_module';
 import { DeploymentType } from './deployment';
 import { AdfsOidc } from './framework/adfs_oidc_instance';
 import * as ors from './framework/openrouteservice';
@@ -22,6 +21,8 @@ import { ApiModuleMeta } from './modules/meta/api_meta';
 import { ApiModuleNews } from './modules/news/api_news';
 import { ApiModuleQs } from './modules/qs/api_qs';
 import { ApiModuleTravelExpenses } from './modules/travel-expenses/api_travel-expenses';
+import { ApiModuleEntities } from './modules/entities/api_entities';
+import { ApiModule } from './api_module';
 
 let apiModulesInstances: ApiModule[] = [];
 
@@ -106,13 +107,14 @@ async function startup() {
 
     moduleLogger.info("started server");
     const apiModules = [
+        ApiModuleEntities,
         ApiModuleMeta,
         ApiModuleAuth,
         ApiModuleQs,
         ApiModuleLdapQuery,
         ApiModuleNews,
         ApiModuleTravelExpenses,
-        ApiModuleCustomerLdapMirror
+        ApiModuleCustomerLdapMirror,
     ];
 
     ssl.initSSL();

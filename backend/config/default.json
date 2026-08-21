@@ -57,7 +57,9 @@
         "DRUGS_SQLBASE_ADMIN_USERNAME": "SYSADM",
         "DRUGS_SQLBASE_ADMIN_PASSWORD": "SYSADM",
         "DRUGS_SQLBASE_WORKING_DATABASE": "your-moveta-database-name-on-server",
-        "SQLLXTLK_BINARY_PATH": "/opt/Unify/SQLBase/sqllxtlk"
+        "SQLLXTLK_BINARY_PATH": "/opt/Unify/SQLBase/sqllxtlk",
+
+        "ENTITIES_POLL_INTERVAL_MINUTES": 60
     },
     "logging": {
         "OPEN_TELEMETRY_SERVICE_NAME": "intranet",
@@ -72,7 +74,8 @@
         "SECURITY_GROUP_ALLOW_QS_REPORTS": "SomeAdSecurityGroup",
         "SECURITY_GROUP_ALLOW_NEWS": "SomeAdSecurityGroup",
         "SECURITY_GROUP_ALLOW_POST_NEWS": "SomeAdSecurityGroup",
-        "SECURITY_GROUP_ALLOW_TRAVEL_EXPENSES_MAP": "SomeAdSecurityGroup"
+        "SECURITY_GROUP_ALLOW_TRAVEL_EXPENSES_MAP": "SomeAdSecurityGroup",
+        "SECURITY_GROUP_ALLOW_ENTITIES_LIST": "SomeAdSecurityGroup"
     },
     "map": {
         "CENTER_OF_EARTH_LAT": 48.13879175912195,

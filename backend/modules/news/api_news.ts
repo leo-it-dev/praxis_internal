@@ -1,12 +1,12 @@
+import * as config from 'config';
 import { getRepeatedScheduler } from "../..";
 import { ApiInterfaceDropNewsIn, ApiInterfaceNewsOut, ApiInterfacePostNewsIn, News } from "../../../api_common/api_news";
 import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut, ApiModuleResponse } from "../../../api_common/backend_call";
 import { UserPermission } from "../../../api_common/permission_types";
-import { ApiModule } from "../../api_module";
+import { ApiModuleAuthorized } from "../../api_module";
 import { SqlUpdate } from "../../framework/sqlite_database";
-import * as config from 'config';
 
-export class ApiModuleNews extends ApiModule {
+export class ApiModuleNews extends ApiModuleAuthorized {
 
     newsBackendData: News[] = [];
 
@@ -18,10 +18,6 @@ export class ApiModuleNews extends ApiModule {
         getRepeatedScheduler().scheduleRepeatedEvent(this, "update-news", (config.get('generic.NEWS_UPDATE_INTERVAL_MINUTES') as number) * 60, (finish) => {this.updateNews.bind(this)(); finish()}, true);
     }
 
-    loginRequired(): boolean {
-        return true;
-    }
-
     permissionRequired(): UserPermission | undefined {
         return UserPermission.NEWS;
     }
@@ -30,8 +26,8 @@ export class ApiModuleNews extends ApiModule {
         this.newsBackendData = this.newsBackendData.sort((a, b) => a.created.getTime() > b.created.getTime() ? -1 : 1);
     }
 
-    protected sqliteTableCreate(): SqlUpdate | undefined {
-        return {
+    protected sqliteTableCreate(): SqlUpdate[] | undefined {
+        return [{
             params: [],
             update: "CREATE TABLE IF NOT EXISTS news (\
                ID INTEGER PRIMARY KEY AUTOINCREMENT, \
@@ -40,13 +36,13 @@ export class ApiModuleNews extends ApiModule {
                user VARCHAR(64) NOT NULL,\
                userSID VARCHAR(64) NOT NULL\
             \);"
-        }
+        }]
     }
 
     async sqliteReadAllNews(): Promise<News[]> {
         return new Promise<News[]>(async (res, rej) => {
             try {
-                let rows = await this.sqlite().sqlFetchAll("SELECT * FROM news;", []);
+                let rows = await this.sqlite().sqlFetchAll("SELECT * FROM news;", []) as any[];
                 let news: News[] = rows.map(row => {
                     return {
                         created: new Date(row["created"]),
@@ -70,7 +66,7 @@ export class ApiModuleNews extends ApiModule {
                     params: [news.text, news.created, news.creator, news.creatorSID],
                     update: "INSERT INTO news(text, created, user, userSID) VALUES (?, ?, ?, ?)"
                 });
-                let row = await this.sqlite().sqlFetchFirst("SELECT last_insert_rowid()", []);
+                let row = await this.sqlite().sqlFetchFirst("SELECT last_insert_rowid()", []) as any;
                 res(row["last_insert_rowid()"]);
             } catch (err) {
                 rej(err);
@@ -150,7 +146,7 @@ export class ApiModuleNews extends ApiModule {
                     };
                 }
 
-                let news: News = this.newsBackendData.find(n => n.id == req.body.newsID);
+                let news: News | undefined = this.newsBackendData.find(n => n.id == req.body.newsID);
 
                 if (!news) {
                     return {

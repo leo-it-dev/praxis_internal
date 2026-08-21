@@ -1,55 +1,5 @@
 import { ApiModuleInterfaceB2F, ApiModuleInterfaceF2B } from "./backend_call";
-
-export enum DrugUnitApi {
-	GRAM = "GRAM",
-	MILLILITER = "MILLILITER",
-	INJECTOR = "INJECTOR",
-	PILL = "PILL",
-	BATON = "BATON",
-	SPRAY = "SPRAY",
-	KILOGRAM = "KILOGRAM",
-	LITER = "LITER",
-	PIECE = "PIECE",
-}
-
-export type DrugUnit = {
-	id: DrugUnitApi;
-	name: string;
-	abbrev?: string;
-}
-
-export const DrugUnits = {
-	gram: { id: DrugUnitApi.GRAM, name: "Gramm", abbrev: "g" },
-	milliliter: { id: DrugUnitApi.MILLILITER, name: "Milliliter", abbrev: "ml" },
-	injector: { id: DrugUnitApi.INJECTOR, name: "Injektor" },
-	pill: { id: DrugUnitApi.PILL, name: "Tablette" },
-	baton: { id: DrugUnitApi.BATON, name: "Stab" },
-	spray: { id: DrugUnitApi.SPRAY, name: "Spraydose" },
-	kilogram: { id: DrugUnitApi.KILOGRAM, name: "Kilogramm", abbrev: "kg" },
-	liter: { id: DrugUnitApi.LITER, name: "Liter", abbrev: "l" },
-	piece: { id: DrugUnitApi.PIECE, name: "Stück", abbrev: "st" }
-};
-
-export type Business = {
-	customerMovetaId: string;
-	businessMovetaID: string,
-	businessType: string;
-	vvvo: string;
-}
-
-export type DrugPackage = {
-	package: string;
-	pid: number;
-	unitSuggestion?: DrugUnit;
-}
-
-export type ReportableDrug = {
-	znr: string;
-	name: string;
-	forms: DrugPackage[];
-	shortsearch: string | undefined;
-	reportabilityVerifierMarkedErronous: boolean;
-};
+import { Drug, DrugUnitApi } from "./generic_types/drug";
 
 export type Farmer = {
 	name: string; // Eindeutige Identifikation des Tierhalters in VetProof
@@ -123,6 +73,6 @@ export function castReportReadbackFromVeterinaryDocumentData(vetDocumentData: an
 }
 
 /* Api endpoints */
-export interface ApiInterfaceDrugsOut   extends ApiModuleInterfaceB2F { prefered: ReportableDrug[]; fallback: ReportableDrug[] };
+export interface ApiInterfaceDrugsOut   extends ApiModuleInterfaceB2F { prefered: Drug[]; fallback: Drug[] };
 export interface ApiInterfaceFarmersOut extends ApiModuleInterfaceB2F { farmers: Farmer[] };
 export interface ApiInterfacePutPrescriptionRowsIn extends ApiModuleInterfaceF2B { drugReport: DrugReport; cacheTillOnline: true};

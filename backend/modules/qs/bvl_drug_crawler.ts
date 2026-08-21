@@ -12,7 +12,7 @@ export type ReportableDrug = {
     forms: Array<DrugPackage>;
 };
 
-function parseReportableDrugsExcelBlob(blob): Array<ReportableDrug> {
+function parseReportableDrugsExcelBlob(blob: any): Array<ReportableDrug> {
     let workbook = xlsx.read(blob);
     let sheet_name_list = workbook.SheetNames;
     let xlData = xlsx.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);

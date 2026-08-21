@@ -3,8 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SearchDropdownComponent } from './search-dropdown.component';
 
 describe('SearchDropdownComponent', () => {
-  let component: SearchDropdownComponent;
-  let fixture: ComponentFixture<SearchDropdownComponent>;
+  let component: SearchDropdownComponent<string>;
+  let fixture: ComponentFixture<SearchDropdownComponent<string>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -12,7 +12,7 @@ describe('SearchDropdownComponent', () => {
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(SearchDropdownComponent);
+    fixture = TestBed.createComponent(SearchDropdownComponent<string>);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

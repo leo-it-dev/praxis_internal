@@ -8,10 +8,10 @@ let logger = getLogger("scheduler");
 export class ScheduledRepeatedEvent {
 
     lastTriggerTime: number = -1;
-    repeatedTriggerBlocked: boolean;
+    repeatedTriggerBlocked: boolean = false;
 
     constructor(
-        public module: ApiModule,
+        public module: ApiModule | undefined,
         public name: string,
         public intervalSeconds: number,
         public callback: (callFinished: () => void) => void,
@@ -26,7 +26,7 @@ export class ScheduledRepeatedEvent {
 
 export class RepeatedTaskScheduler {
     scheduledRepeatedEvents: ScheduledRepeatedEvent[] = [];
-    interval: NodeJS.Timeout = undefined;
+    interval: NodeJS.Timeout | undefined = undefined;
 
     schedulerInit() {
         if (this.interval == undefined) {
@@ -46,7 +46,7 @@ export class RepeatedTaskScheduler {
         }
     }
 
-    scheduleRepeatedEvent(module: ApiModule, name: string, intervalSeconds: number, callback: (callFinished: () => void) => void, triggerImmediatelyAfterRegister: boolean): ScheduledRepeatedEvent {
+    scheduleRepeatedEvent(module: ApiModule | undefined, name: string, intervalSeconds: number, callback: (callFinished: () => void) => void, triggerImmediatelyAfterRegister: boolean): ScheduledRepeatedEvent {
         let event = new ScheduledRepeatedEvent(module, name, intervalSeconds, callback, triggerImmediatelyAfterRegister);
         this.scheduledRepeatedEvents.push(event);
         logger.info("Registered new repeated scheduled event!", event.toLogInfo());

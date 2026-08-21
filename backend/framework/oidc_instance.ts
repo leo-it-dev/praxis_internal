@@ -20,7 +20,7 @@ export class OidcInstance {
         this.configuration = configResolved;
         this.jwksUpdateMutex = new Mutex();
         this.jwksUpdateInterval = getRepeatedScheduler().scheduleRepeatedEvent(
-            null,
+            undefined,
             "jwks-keystore-update", 
             config.get('generic.JWKS_UPDATE_INTERVAL_MINUTES') * 60, 
             this.updateJwksKeyStore.bind(this), 
@@ -58,7 +58,7 @@ export class OidcInstance {
         return this.configuration;
     }
 
-    getJwksCertificate(x5t: string): JwksCertificate {
+    getJwksCertificate(x5t: string): JwksCertificate | undefined {
         return this.configuration.jwksCertificates.find(c => c.x5t == x5t);
     }
 
@@ -99,7 +99,7 @@ export class OidcInstance {
                 return;
             }
 
-            jwt.verify(jwtToken, certificate.publicKey, { clockTolerance: 10 }, (err, user) => {
+            jwt.verify(jwtToken, certificate.publicKey, { clockTolerance: 10 }, (err: any, user: Record<string, any>) => {
                 if (err == null) {
                     // Success
                     this.logger.debug("Successfully validated JWT token!", {userSid: user.sid, userEmail: user.email});

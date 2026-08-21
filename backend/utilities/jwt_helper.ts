@@ -5,7 +5,7 @@ const ssl = require('../ssl/ssl');
 
 const logger = getLogger('jwt-helper');
 
-export function parseJWTtoken(jwtString: string): {'header': string, 'content': string, 'hash': string} {
+export function parseJWTtoken(jwtString: string): {'header': string, 'content': Record<string, any>, 'hash': string} {
     let [header, content, hash] = jwtString.split(".");
     
     const headerParsed = JSON.parse(Buffer.from(header, 'base64').toString('ascii'));

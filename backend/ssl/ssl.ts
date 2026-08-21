@@ -61,7 +61,7 @@ export function httpsRequest(hostname: string, path: string, method: string, bod
                 rej(err);
             });
             response.on('end', () => {
-                res({'statusCode': response.statusCode, 'data': data});
+                res({'statusCode': response.statusCode || -1, 'data': data});
             });
         });
         requ.write(body);

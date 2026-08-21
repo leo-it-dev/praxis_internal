@@ -5,6 +5,7 @@ import { LdapqueryBackendService } from '../modules/ldapquery/ldapquery-backend.
 import { QsreportBackendService } from '../modules/qsreport/qsreport-backend.service';
 import { NewsBackendService } from '../modules/news/news-backend.service';
 import { TravelexpensesBackendService } from '../modules/travelexpenses/travelexpenses-backend.service';
+import { EntitiesBackendService } from '../modules/entities/entities-backend.service';
 
 export interface IModule {
 	fetchBackendDataFilter(): Promise<any>;
@@ -30,10 +31,12 @@ export class ModuleService {
 		private qsreportBackendModule: QsreportBackendService,
 		private ldapqueryBackendModule: LdapqueryBackendService,
 		private newsBackendModule: NewsBackendService,
-		private travelExpensesModule: TravelexpensesBackendService
+		private travelExpensesModule: TravelexpensesBackendService,
+		private entitiesListModule: EntitiesBackendService
 	) {
 		// Append future modules here to auto-cache backend information upon online-login.
 		let modules: BackendService[] = [
+			entitiesListModule,
 			qsreportBackendModule,
 			ldapqueryBackendModule,
 			newsBackendModule,

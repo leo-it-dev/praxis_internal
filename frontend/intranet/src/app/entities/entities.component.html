@@ -1,0 +1,110 @@
+<button (click)="this.selectCustomers()">Kunden</button>
+<button (click)="this.selectBusinesses()">Betriebe</button>
+<button (click)="this.selectDrugs()">Arzneien</button>
+
+@if (this.isCustomersSelected()) {
+<form [formGroup]="customerFormGroup" #customerForm [class.valid]="customerFormGroup.valid">
+    <div id="searchController">
+        <h5>Kombinierten Kundenstamm aus Moveta Pegasus & Intranet durchsuchen und bearbeiten:</h5>
+        <app-search-dropdown #customerSearchDropdown placeholder="Kunde suchen..." [items]="this.customerList()"
+            [serial]="this.customerSerializer" [formControl]="customerFormGroup.controls['customerDropdown']"
+            (itemSelectedEvent)="customerSelected($event)"></app-search-dropdown>
+    </div>
+
+    @if(this.customerFormGroup.value['customerDropdown'] != "") {
+        <div id="left">
+            <logged-out-svg></logged-out-svg>
+        </div>
+        <div id="right">
+            <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
+            <div class="cont">
+                <label for="first-name">Name</label>
+                <input type="text" id="first-name" formControlName="firstName" placeholder="Vorname" />
+                <input type="text" id="given-name" formControlName="givenName" placeholder="Nachname" />
+            </div>
+            <div class="cont">
+                <label for="search">Suchtext</label>
+                <input type="text" id="search" formControlName="search" placeholder="Suchtext" />
+            </div>
+            <div class="cont">
+                <label for="street">Adresse</label>
+                <input type="text" id="street" formControlName="street" placeholder="Straße und Hausnummer" />
+                <input type="number" id="plz" formControlName="plz" placeholder="PLZ" />
+                <input type="text" id="place" formControlName="place" placeholder="Ort" />
+            </div>
+            <div class="cont">
+                <label for="phone">Kontakt</label>
+                <input type="text" id="phone" formControlName="phone" placeholder="Telefon" />
+                <input type="text" id="fax" formControlName="fax" placeholder="Fax" />
+                <input type="text" id="email" formControlName="email" placeholder="Email" />
+            </div>
+            <div class="cont">
+                <label for="memo">Memo</label>
+                <input type="text" id="memo" formControlName="memo" placeholder="Memotext" />
+            </div>
+            <div class="cont">
+                <label for="birthday">Geburtstag</label>
+                <app-datepicker id="birthday" placeholder="Geburtstag" [formControl]="this.customerFormGroup.controls.birthday"></app-datepicker>
+            </div>
+            <div class="cont">
+                <label for="uid">UID</label>
+                <input type="number" id="uid" formControlName="uid" placeholder="UID" />
+            </div>
+            <div class="cont">
+                <label for="moveta-customer-id">Moveta</label>
+                <input type="text" id="moveta-customer-id" formControlName="movetaCustomerId" placeholder="Moveta Kunden ID" />
+            </div>
+        </div>
+    }
+</form>
+}
+
+@if (this.isBusinessSelected()) {
+<form [formGroup]="businessFormGroup" #customerForm [class.valid]="businessFormGroup.valid">
+    <div id="searchController">
+        <h5>Kombinierten Kundenstamm aus Moveta Pegasus & Intranet durchsuchen und bearbeiten:</h5>
+        <app-search-dropdown #businessSearchDropdown placeholder="Betrieb suchen..." [items]="this.businessList()"
+            [serial]="this.businessSerializer" [formControl]="businessFormGroup.controls['businessDropdown']"
+            (itemSelectedEvent)="businessSelected($event)"></app-search-dropdown>
+    </div>
+
+    @if(this.businessFormGroup.value['businessDropdown'] != "") {
+        <div id="left">
+            
+        </div>
+        <div id="right">
+            <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
+            <div class="cont">
+                <label for="first-name">Name</label>
+                <input type="text" id="first-name" formControlName="firstName" placeholder="Vorname" />
+                <input type="text" id="given-name" formControlName="givenName" placeholder="Nachname" />
+            </div>
+        </div>
+    }
+</form>
+}
+
+@if (this.isDrugsSelected()) {
+<form [formGroup]="drugFormGroup" #customerForm [class.valid]="drugFormGroup.valid">
+    <div id="searchController">
+        <h5>Kombinierten Kundenstamm aus Moveta Pegasus & Intranet durchsuchen und bearbeiten:</h5>
+        <app-search-dropdown #businessSearchDropdown placeholder="Arzneien suchen..." [items]="this.drugsList()"
+            [serial]="this.drugSerializer" [formControl]="drugFormGroup.controls['drugDropdown']"
+            (itemSelectedEvent)="drugSelected($event)"></app-search-dropdown>
+    </div>
+
+    @if(this.drugFormGroup.value['drugDropdown'] != "") {
+        <div id="left">
+            
+        </div>
+        <div id="right">
+            <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
+            <div class="cont">
+                <label for="first-name">Name</label>
+                <input type="text" id="first-name" formControlName="firstName" placeholder="Vorname" />
+                <input type="text" id="given-name" formControlName="givenName" placeholder="Nachname" />
+            </div>
+        </div>
+    }
+</form>
+}

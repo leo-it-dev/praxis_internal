@@ -4,17 +4,17 @@ const config = require('config');
 
 // https://learn.microsoft.com/de-de/entra/identity-platform/id-token-claims-reference
 export class AdfsSessionToken { // ID-Token
-    tokenRaw : string;
-    authorizationInitiatedTimestamp: number;
-    notBeforeTimestamp: number;
-    expirationTimestamp: number;
-    uniqueName: string; // m-kraiburg\\test
-    userPrincipalName: string; // test@mittermeier-kraiburg.vet
-    userEmail: string;
-    userRoles: [string];
-    givenName: string;
-    familyName: string;
-    thumbnailPhoto: string;
+    tokenRaw : string = "";
+    authorizationInitiatedTimestamp: number = -1;
+    notBeforeTimestamp: number = -1;
+    expirationTimestamp: number = -1;
+    uniqueName: string = ""; // m-kraiburg\\test
+    userPrincipalName: string = ""; // test@mittermeier-kraiburg.vet
+    userEmail: string = "";
+    userRoles: string[] = [];
+    givenName: string = "";
+    familyName: string = "";
+    thumbnailPhoto: string = "";
 
     constructor(tokenStr: string) {
         this.tokenRaw = tokenStr
