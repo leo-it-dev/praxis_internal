@@ -11,7 +11,12 @@ export type IntranetBusinessChunk = Chunk & {
     dummy: string
 }
 
-export type Business = CombinedEntity & {
-    moveta: MovetaBusinessChunk
-    intranet: IntranetBusinessChunk
+export type Business = CombinedEntity & MovetaBusinessChunk & IntranetBusinessChunk;
+
+export const EMPTY_BUSINESS: Business = {
+    commonId: "",
+    businessType: "",
+    customerMovetaId: "",
+    dummy: "",
+    vvvo: ""
 }

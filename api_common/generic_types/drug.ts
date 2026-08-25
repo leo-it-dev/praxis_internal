@@ -59,8 +59,13 @@ export type IntranetDrugChunk = Chunk & {
     reportabilityVerifierMarkedErronous: DrugVerifiedState;
 }
 
-export type Drug = CombinedEntity & {
-    moveta: MovetaDrugChunk;
-    intranet: IntranetDrugChunk;
-    hit: HitDrugChunk;
+export type Drug = CombinedEntity & MovetaDrugChunk & IntranetDrugChunk & HitDrugChunk;
+
+export const EMPTY_DRUG: Drug = {
+    commonId: "",
+    forms: [],
+    name: "",
+    reportabilityVerifierMarkedErronous: DrugVerifiedState.eNOT_TESTED,
+    shortsearch: "",
+    znr: ""
 }

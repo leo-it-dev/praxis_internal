@@ -1,4 +1,5 @@
 import { IntranetBusinessChunk, MovetaBusinessChunk } from "../../../api_common/generic_types/business";
+import { Chunk } from "../../../api_common/generic_types/chunk";
 import { IntranetCustomerChunk, MovetaCustomerChunk } from "../../../api_common/generic_types/customer";
 import { DrugVerifiedState, HitDrugChunk, IntranetDrugChunk, MovetaDrugChunk } from "../../../api_common/generic_types/drug";
 import { readBusinessesFromMovetaDB, readCustomersFromMovetaDB, readReportableDrugListFromMovetaDB } from "../../framework/moveta/moveta_functions";
@@ -14,10 +15,12 @@ export class IntranetSqliteCustomerEntityDatabase extends WritableHydrationDatab
         super();
     }
 
-    async readAll(): Promise<IntranetCustomerChunk[]> {
+    async readAll(commonId: string|undefined): Promise<IntranetCustomerChunk[]> {
         return new Promise<IntranetCustomerChunk[]>(async (res, rej) => {
             try {
-                let rows = await this.sqlite.sqlFetchAll("SELECT * FROM customers;", []);
+                let rows = commonId == undefined ? 
+                    await this.sqlite.sqlFetchAll("SELECT * FROM customers;", []) : 
+                    await this.sqlite.sqlFetchAll("SELECT * FROM customers WHERE kkenmoveta=?;", [commonId]);
                 let customerChunks: IntranetCustomerChunk[] = rows.map(row => {
                     return {
                         commonId: (row as any)['kkenmoveta'],
@@ -39,7 +42,7 @@ export class IntranetSqliteCustomerEntityDatabase extends WritableHydrationDatab
         return new Promise<number>(async (res, rej) => {
             try {
                 await this.sqlite.sqlUpdate({
-                    params: [chunk.commonId, chunk.image, chunk.nonpaying, chunk.altgpsstreet, chunk.altgpsplace, chunk.altgpsplace],
+                    params: [chunk.commonId, chunk.image, chunk.nonpaying, chunk.altgpsstreet, chunk.altgpsplz, chunk.altgpsplace],
                     update: "INSERT OR REPLACE INTO customers(kkenmoveta, image, nonpaying, altgpsstreet, altgpsplz, altgpsplace) VALUES (?, ?, ?, ?, ?, ?)"
                 });
                 let row = await this.sqlite.sqlFetchFirst("SELECT last_insert_rowid()", []) as any;
@@ -84,10 +87,11 @@ export class IntranetSqliteBusinessEntityDatabase extends WritableHydrationDatab
         super();
     }
 
-    async readAll(): Promise<IntranetBusinessChunk[]> {
+    async readAll(commonId: string|undefined): Promise<IntranetBusinessChunk[]> {
         return new Promise<IntranetBusinessChunk[]>(async (res, rej) => {
             try {
-                let rows = await this.sqlite.sqlFetchAll("SELECT * FROM business;", []);
+                let rows = commonId == undefined ? await this.sqlite.sqlFetchAll("SELECT * FROM business;", [])
+                                                :  await this.sqlite.sqlFetchAll("SELECT * FROM business WHERE bkenmoveta=?;", [commonId]);
                 let businessChunks: IntranetBusinessChunk[] = rows.map(row => {
                     return {
                         commonId: (row as any)['bkenmoveta'],
@@ -146,8 +150,8 @@ export class MovetaCustomerEntityDatabase extends ReadOnlyEntityDatabase<"moveta
         super();
     }
 
-    async readAll(): Promise<MovetaCustomerChunk[]> {
-        return readCustomersFromMovetaDB();
+    async readAll(commonId: string|undefined): Promise<MovetaCustomerChunk[]> {
+        return readCustomersFromMovetaDB(commonId);
     }
 }
 
@@ -159,8 +163,8 @@ export class MovetaBusinessEntityDatabase extends ReadOnlyEntityDatabase<"moveta
         super();
     }
 
-    async readAll(): Promise<MovetaBusinessChunk[]> {
-        return readBusinessesFromMovetaDB();
+    async readAll(commonId: string|undefined): Promise<MovetaBusinessChunk[]> {
+        return readBusinessesFromMovetaDB(commonId);
     }
 }
 
@@ -172,10 +176,11 @@ export class IntranetSqliteDrugEntityDatabase extends WritableHydrationDatabase<
         super();
     }
 
-    async readAll(): Promise<IntranetDrugChunk[]> {
+    async readAll(commonId: string|undefined): Promise<IntranetDrugChunk[]> {
         return new Promise<IntranetDrugChunk[]>(async (res, rej) => {
             try {
-                let rows = await this.sqlite.sqlFetchAll("SELECT * FROM drugs;", []);
+                let rows = commonId == undefined ? await this.sqlite.sqlFetchAll("SELECT * FROM drugs;", []) 
+                                                : await this.sqlite.sqlFetchAll("SELECT * FROM drugs WHERE dkenmoveta=?;", [commonId]);
                 let drugChunks: IntranetDrugChunk[] = rows.map(row => {
                     return {
                         commonId: (row as any)['dkenmoveta'],
@@ -234,12 +239,12 @@ export class MovetaDrugEntityDatabase extends ReadOnlyEntityDatabase<"moveta", M
         super();
     }
 
-    async readAll(): Promise<MovetaDrugChunk[]> {
-        return readReportableDrugListFromMovetaDB();
+    async readAll(commonId: string|undefined): Promise<MovetaDrugChunk[]> {
+        return readReportableDrugListFromMovetaDB(commonId);
     }
 }
 
-export class HitDrugEntityDatabase extends ReadOnlyEntityDatabase<"hit", HitDrugChunk> {
+export class HitDrugEntityDatabase extends ReadOnlyEntityDatabase<"hit", HitDrugChunk & MovetaDrugChunk & IntranetDrugChunk> {
     readonly context = "hit" as const;
     readonly databaseName = "drug" as const;
 
@@ -247,7 +252,47 @@ export class HitDrugEntityDatabase extends ReadOnlyEntityDatabase<"hit", HitDrug
         super();
     }
 
-    async readAll(): Promise<HitDrugChunk[]> {
-        return readReportableDrugListFromHIT();
+    async readAll(_: string|undefined): Promise<(HitDrugChunk & MovetaDrugChunk & IntranetDrugChunk)[]> {
+        let drugs = await readReportableDrugListFromHIT();
+        return drugs.map(drug => {
+            return {
+                ...drug,
+                shortsearch: "",
+                reportabilityVerifierMarkedErronous: DrugVerifiedState.eVERIFIED_SUCCESSFULLY_REPORTABLE,
+            };
+        });
+    }
+}
+
+export class DummyEntityDatabase extends WritableHydrationDatabase<"dummy", Chunk> {
+    readonly context = "dummy" as const;
+    readonly databaseName = "dummy" as const;
+
+    constructor() {
+        super();
+    }
+
+    async readAll(_: string|undefined): Promise<IntranetDrugChunk[]> {
+        return new Promise<IntranetDrugChunk[]>(async (res, rej) => {
+            res([]);
+        });
+    }
+
+    async addOrModify(chunk: IntranetDrugChunk): Promise<number> {
+        return new Promise<number>(async (res, rej) => {
+            res(-1);
+        });
+    }
+
+    async deleteChunk(chunk: IntranetDrugChunk): Promise<void> {
+        return new Promise<void>(async (res, rej) => {
+            res();
+        });
+    }
+
+    constructDefaultChunk(commonId: string) {
+        return {
+            commonId: commonId,
+        }
     }
 }

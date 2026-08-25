@@ -81,9 +81,11 @@ function processCustomerRows(rows: row[]): MovetaCustomerChunk[] {
     return customers;
 }
 
-export async function readBusinessesFromMovetaDB(): Promise<Array<MovetaBusinessChunk>> {
+export async function readBusinessesFromMovetaDB(commonId: string|undefined): Promise<Array<MovetaBusinessChunk>> {
     return new Promise((res, rej) => {
-        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select BEKKEN,BEKEN,BEBEZ,BEVVVO,BEHIDDEN from SYSADM.BETRIEBE WHERE BEHIDDEN=0 OR BEHIDDEN IS NULL").then(rows => {
+        let query = commonId == undefined ? "select BEKKEN,BEKEN,BEBEZ,BEVVVO,BEHIDDEN from SYSADM.BETRIEBE WHERE BEHIDDEN=0 OR BEHIDDEN IS NULL"
+                                         :  "select BEKKEN,BEKEN,BEBEZ,BEVVVO,BEHIDDEN from SYSADM.BETRIEBE WHERE (BEHIDDEN=0 OR BEHIDDEN IS NULL) AND BEKEN='" + commonId + "'"
+        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary(query).then(rows => {
             let businesses = processBusinessRows(rows);
             res(businesses);
         }).catch(err => {
@@ -92,9 +94,11 @@ export async function readBusinessesFromMovetaDB(): Promise<Array<MovetaBusiness
     });
 }
 
-export async function readReportableDrugListFromMovetaDB(): Promise<Array<MovetaDrugChunk>> {
+export async function readReportableDrugListFromMovetaDB(commonId: string|undefined): Promise<Array<MovetaDrugChunk>> {
     return new Promise((res, rej) => {
-        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select AKEN,ASUCH,ABEZ,AMEN,APCK,AZULASSUNG,APACKUNGSID from SYSADM.ARZNEIEN WHERE AZULASSUNG IS NOT NULL AND AHIDDEN=0").then(rows => {
+        let query = commonId == undefined ? "select AKEN,ASUCH,ABEZ,AMEN,APCK,AZULASSUNG,APACKUNGSID from SYSADM.ARZNEIEN WHERE AZULASSUNG IS NOT NULL AND AHIDDEN=0"
+                                        :   "select AKEN,ASUCH,ABEZ,AMEN,APCK,AZULASSUNG,APACKUNGSID from SYSADM.ARZNEIEN WHERE (AZULASSUNG IS NOT NULL AND AHIDDEN=0) AND AKEN='" + commonId + "'";
+        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary(query).then(rows => {
             let drugs = processDrugRows(rows);
             res(drugs);
         }).catch(err => {
@@ -103,9 +107,12 @@ export async function readReportableDrugListFromMovetaDB(): Promise<Array<Moveta
     });
 }
 
-export async function readCustomersFromMovetaDB(): Promise<Array<MovetaCustomerChunk>> {
+export async function readCustomersFromMovetaDB(commonId: string|undefined): Promise<Array<MovetaCustomerChunk>> {
     return new Promise((res, rej) => {
-        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary("select KKEN1,KNR,KNAM1,KNAM2,KSUCH,KSTR,KPLZ,KORT,KTEL,KTEXT,KMEMO,KTELFAX,KEMAIL,KGEBDAT FROM SYSADM.KUNDEN WHERE KHIDDEN=0 OR KHIDDEN IS NULL").then(rows => {
+        let query = commonId == undefined ? "select KKEN1,KNR,KNAM1,KNAM2,KSUCH,KSTR,KPLZ,KORT,KTEL,KTEXT,KMEMO,KTELFAX,KEMAIL,KGEBDAT FROM SYSADM.KUNDEN WHERE KHIDDEN=0 OR KHIDDEN IS NULL"
+                                        :  "select KKEN1,KNR,KNAM1,KNAM2,KSUCH,KSTR,KPLZ,KORT,KTEL,KTEXT,KMEMO,KTELFAX,KEMAIL,KGEBDAT FROM SYSADM.KUNDEN WHERE (KHIDDEN=0 OR KHIDDEN IS NULL) AND KKEN1='" + commonId + "'" 
+
+        runMovetaSQLQueryCmdLineConvertToUTF8InstallDbIfNeccessary(query).then(rows => {
             let customers = processCustomerRows(rows);
             res(customers);
         }).catch(err => {

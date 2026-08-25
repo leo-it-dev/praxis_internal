@@ -3,7 +3,7 @@ import { ApiInterfaceEmptyIn } from '../../../../../../api_common/backend_call';
 import { Customer } from '../../../../../../api_common/generic_types/customer';
 import { UserPermission } from '../../../../../../api_common/permission_types';
 import { BackendService } from '../../api/backend.service';
-import { ApiInterfaceEntitiesListOut } from '../../../../../../api_common/api_customers';
+import { ApiInterfaceEntitiesListOut } from '../../../../../../api_common/api_entities';
 import { Business } from '../../../../../../api_common/generic_types/business';
 import { Drug } from '../../../../../../api_common/generic_types/drug';
 
@@ -40,8 +40,8 @@ export class EntitiesBackendService extends BackendService {
 
 			let loadEntities = this.authorizedBackendCall<ApiInterfaceEmptyIn, ApiInterfaceEntitiesListOut>(this.API_URL_ENTITIES_BACKEND_SERVICE_URL).then(dat => {
 				dat.customers.forEach(customer => {
-					if (customer.moveta.birthday) {
-						customer.moveta.birthday = new Date(customer.moveta.birthday);
+					if (customer.birthday) {
+						customer.birthday = new Date(customer.birthday);
 					}
 				});
 				backendDat.customers = dat.customers;

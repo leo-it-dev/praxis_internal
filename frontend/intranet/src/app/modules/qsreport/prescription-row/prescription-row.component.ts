@@ -86,13 +86,13 @@ export class PrescriptionRowComponent {
 	selectedDrugPackingForms: Signal<DrugPackage[]> = computed(() => {
 		let drug = this.selectedDrug();
 		if (drug) {
-			return drug.item.moveta.name != "" ? drug.item.moveta.forms : drug.item.hit.forms;
+			return drug.item.forms;
 		}
 		return [];
 	});
 
 	isDrugDisabled: IItemDisable<CategorizedItem<Drug>> = {
-		isItemDisabled: (item) => item.item.intranet.reportabilityVerifierMarkedErronous == DrugVerifiedState.eVERIFIED_NOT_REPORTABLE
+		isItemDisabled: (item) => item == undefined ? false : item.item.reportabilityVerifierMarkedErronous == DrugVerifiedState.eVERIFIED_NOT_REPORTABLE
 	};
 
 	// Serializer
@@ -108,11 +108,15 @@ export class PrescriptionRowComponent {
 	drugPackingSerializer: IStringify<DrugPackage> = { display: (drugPackage) => ({ text: drugPackage.package, hint: NO_HINT }) };
 	drugUnitSerializer: IStringify<DrugUnit> = { display: (drugUnit) => ({ text: drugUnit.name, hint: NO_HINT }) };
 	drugSerializer: IStringify<CategorizedItem<Drug>> = {
-		display: (reportableDrug) => ({
-			text: reportableDrug.item.moveta.name != "" ? (reportableDrug.item.moveta.name + (reportableDrug.item.moveta.forms.length == 1 ? " - " + reportableDrug.item.moveta.forms[0].package : " ..."))
-														: (reportableDrug.item.hit.name + (reportableDrug.item.hit.forms.length == 1 ? " - " + reportableDrug.item.hit.forms[0].package : " ...")),
-			hint: reportableDrug.category == DRUG_CATEGORY_OK ? HINT_OK_drug : HINT_WARN_drug
-		})
+		display: (reportableDrug) => {
+			if (!reportableDrug.item.forms) {
+				console.log(reportableDrug);
+			}
+			return {
+				text: reportableDrug.item.name + (reportableDrug.item.forms.length == 1 ? " - " + reportableDrug.item.forms[0].package : " ..."),
+				hint: reportableDrug.category == DRUG_CATEGORY_OK ? HINT_OK_drug : HINT_WARN_drug
+			}
+		}
 	};
 
 
@@ -183,14 +187,10 @@ export class PrescriptionRowComponent {
 
 		// We need to find the correct drug using znr and pid. We may have the same drug in our prefered drug list and the fallback list.
 		// Find all drugs that have the correct znr and contain the correct pid, then use a drug from the prefered drug list if found, otherwise use the drug from the fallback drug list.
-		let applicableDrugEntries = this.reportableDrugList.filter(d => d.item.moveta.znr != "" ?
-			    d.item.moveta.znr == object.drugs[0].approvalNumber && d.item.moveta.forms.map(f => f.pid).includes(object.drugs[0].packageId)
-			:
-			    d.item.hit.znr == object.drugs[0].approvalNumber && d.item.hit.forms.map(f => f.pid).includes(object.drugs[0].packageId)
-			);
+		let applicableDrugEntries = this.reportableDrugList.filter(d => d.item.znr == object.drugs[0].approvalNumber && d.item.forms.map(f => f.pid).includes(object.drugs[0].packageId));
 		// We filtered for all drugs with correct znr and pid. Now use the drug from the OK category if found, otherwise just use first drug found.
 		let drug = applicableDrugEntries.find(d => d.category == DRUG_CATEGORY_OK) || applicableDrugEntries[0];
-		let packaging = (drug.item.moveta.forms.length > 0 ? drug.item.moveta.forms : drug.item.hit.forms).find(form => form.pid == object.drugs[0].packageId) || null;
+		let packaging = drug.item.forms.find(form => form.pid == object.drugs[0].packageId) || null;
 
 		// Wait for computed() list selectedDrugPackingForms to be recalculated.
 		this.qsFormGroup.controls["drugZNR"].setValue(drug);
@@ -211,7 +211,7 @@ export class PrescriptionRowComponent {
 					amount: this.qsFormGroup.controls["amount"].value!,
 					amountUnit: this.selectedDrugUnit()!.id,
 					applicationDuration: this.qsFormGroup.controls["applicationDuration"].value!,
-					approvalNumber: this.selectedDrug()!.item.moveta.znr || this.selectedDrug()!.item.hit.znr,
+					approvalNumber: this.selectedDrug()!.item.znr,
 					packageId: this.selectedPackingForm()!.pid
 				}
 			]

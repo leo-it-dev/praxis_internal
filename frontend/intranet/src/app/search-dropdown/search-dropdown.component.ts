@@ -226,7 +226,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		if (event.key == "ArrowDown") {
 			if (input.selectionStart == input.value.length) {
 				let nextEnabledItem = this.recommendedItems().slice(this.hoveredItem() + 1).find(e => !this.itemDisabled.isItemDisabled(e));
-				if (nextEnabledItem) {
+				if (nextEnabledItem !== undefined) {
 					let nextEnabledItemIdx = this.recommendedItems().indexOf(nextEnabledItem);
 					this.hoveredItem.set(nextEnabledItemIdx);
 					this.hoveredItemChanged(true);
@@ -238,7 +238,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 			if (this.hoveredItem() != -1) {
 				if (this.hoveredItem() >= 0) {
 					let prevEnabledItem = this.recommendedItems().slice(0, this.hoveredItem()).reverse().find(e => !this.itemDisabled.isItemDisabled(e));
-					if (prevEnabledItem) {
+					if (prevEnabledItem !== undefined) {
 						let prevEnabledItemIdx = this.recommendedItems().indexOf(prevEnabledItem);
 						this.hoveredItem.set(prevEnabledItemIdx);
 						this.hoveredItemChanged(true);
@@ -254,7 +254,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 			} else if (this.recommendedItems().length == 1 && !this.itemDisabled.isItemDisabled(this.recommendedItems()[0])) {
 				selectedItem = this.recommendedItems()[0];
 			}
-			if (selectedItem) {
+			if (selectedItem !== undefined) {
 				this.selectItemExt(selectedItem);
 			}
 			event.preventDefault();
@@ -348,7 +348,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		let value = option.getElementsByClassName("dropdownRowText")[0].textContent || "";
 		let selectedItem = this.getDropdownWrapperFromDOMElement(option);
 
-		if (selectedItem && !this.itemDisabled.isItemDisabled(selectedItem)) {
+		if (selectedItem !== undefined && !this.itemDisabled.isItemDisabled(selectedItem)) {
 			input.value = value;
 			new Promise((res, _) => {
 				this.handleTextChangeFinished = res;
@@ -363,7 +363,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 	selectItemExt(item?: TItem) {
 		if (this.inputElement) {
 			const input = (this.inputElement.nativeElement as HTMLInputElement);
-			if (item && !this.itemDisabled.isItemDisabled(item) && this._items && this._items.includes(item)) {
+			if (item !== undefined && !this.itemDisabled.isItemDisabled(item) && this._items && this._items.includes(item)) {
 				input.value = this.serial!.display(item).text;
 				this.updateUIAfterInputValueChange();
 				//input.blur();
@@ -379,7 +379,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	optionMouseOver(event: Event) {
 		let optionId = this.getDropdownWrapperFromDOMElement(event.target as HTMLElement);
-		if (optionId && !this.itemDisabled.isItemDisabled(optionId)) {
+		if (optionId !== undefined && !this.itemDisabled.isItemDisabled(optionId)) {
 			this.hoveredItem.set(this.recommendedItems().indexOf(optionId));
 			this.hoveredItemChanged(false);
 		}

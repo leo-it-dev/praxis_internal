@@ -318,9 +318,9 @@ export class QsreportComponent extends ModuleComponent {
 		}
 	}
 
-	showDrugErrorOverlay(drugName: Drug|undefined) {
-		if (drugName && !this.drugErrorOverlayQuitRemembered) {
-			this.drugErrorOverlayDrugName = drugName.moveta.name || drugName.hit.name;
+	showDrugErrorOverlay(drug: Drug|undefined) {
+		if (drug && !this.drugErrorOverlayQuitRemembered) {
+			this.drugErrorOverlayDrugName = drug.name;
 			this.drugErrorOverlayShown.set(true);
 			this.drugErrorOverlayQuitRemembered = true;
 		} else {

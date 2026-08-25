@@ -1,110 +1,169 @@
-<button (click)="this.selectCustomers()">Kunden</button>
-<button (click)="this.selectBusinesses()">Betriebe</button>
-<button (click)="this.selectDrugs()">Arzneien</button>
+<app-sync-online-controller #syncController [offlineStore]="offlineModuleStore" (applyOfflineEntry)="applyOfflineEntry($event)" (unloadOfflineEntry)="unloadOfflineEntry()" (commitSynchronizeEntry)="commitSynchronizeEntry($event)" [pageInitFinished]="pageInitFinished.asObservable()"></app-sync-online-controller>
 
 @if (this.isCustomersSelected()) {
 <form [formGroup]="customerFormGroup" #customerForm [class.valid]="customerFormGroup.valid">
     <div id="searchController">
         <h5>Kombinierten Kundenstamm aus Moveta Pegasus & Intranet durchsuchen und bearbeiten:</h5>
-        <app-search-dropdown #customerSearchDropdown placeholder="Kunde suchen..." [items]="this.customerList()"
-            [serial]="this.customerSerializer" [formControl]="customerFormGroup.controls['customerDropdown']"
-            (itemSelectedEvent)="customerSelected($event)"></app-search-dropdown>
+        <div id="entityTypeSelector">
+            <button (click)="this.selectCustomers()" [disabled]="this.isCustomersSelected() || this.currentSyncEntry !== undefined"><img src="/images/farmer.svg" />Kunden</button>
+            <button (click)="this.selectBusinesses()" [disabled]="this.isBusinessSelected() || this.currentSyncEntry !== undefined" ><img src="/images/farm.svg" />Betriebe</button>
+            <button (click)="this.selectDrugs()" [disabled]="this.isDrugsSelected() || this.currentSyncEntry !== undefined"><img src="/images/vacine.svg" />Arzneien</button>
+            <app-search-dropdown #customerSearchDropdown placeholder="Kunde suchen..." [items]="this.customerList()"
+                [serial]="this.customerSerializer" [formControl]="customerFormGroup.controls['customerDropdown']"
+                (itemSelectedEvent)="customerSelected($event)"></app-search-dropdown>
+        </div>
     </div>
 
-    @if(this.customerFormGroup.value['customerDropdown'] != "") {
-        <div id="left">
-            <logged-out-svg></logged-out-svg>
+        <div id="field-cont">
+            <div id="left">
+                
+                <logged-out-svg></logged-out-svg>
+            </div>
+            <div id="right">
+                <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
+                <div class="cont">
+                    <label for="first-name">Name</label>
+                    <input type="text" id="first-name" formControlName="firstName" placeholder="Vorname" />
+                    <input type="text" id="given-name" formControlName="givenName" placeholder="Nachname" />
+                </div>
+                <div class="cont">
+                    <label for="search">Suchtext</label>
+                    <input type="text" id="search" formControlName="search" placeholder="Suchtext" />
+                </div>
+                <div class="cont">
+                    <label for="street">Re.-Adresse</label>
+                    <input type="text" id="street" formControlName="street" placeholder="Straße und Hausnummer" />
+                    <input type="number" id="plz" formControlName="plz" placeholder="PLZ" />
+                    <input type="text" id="place" formControlName="place" placeholder="Ort" />
+                </div>
+                <div class="cont">
+                    <label for="phone">Kontakt</label>
+                    <input type="text" id="phone" formControlName="phone" placeholder="Telefon" />
+                    <input type="text" id="fax" formControlName="fax" placeholder="Fax" />
+                    <input type="text" id="email" formControlName="email" placeholder="Email" />
+                </div>
+                <div class="cont">
+                    <label for="memo">Memo</label>
+                    <input type="text" id="memo" formControlName="memo" placeholder="Memotext" />
+                </div>
+                <div class="cont">
+                    <label for="birthday">Geburtstag</label>
+                    <app-datepicker id="birthday" placeholder="Geburtstag" [formControl]="this.customerFormGroup.controls.birthday"></app-datepicker>
+                </div>
+                <div class="cont">
+                    <label for="uid">UID</label>
+                    <input type="number" id="uid" formControlName="uid" placeholder="UID" />
+                </div>
+                <div class="cont">
+                    <label for="moveta-customer-id">Moveta</label>
+                    <input type="text" id="moveta-customer-id" formControlName="movetaCustomerId" placeholder="Moveta Kunden ID" />
+                </div>
+
+                <h5 class="data-section" data-text="Intranet:"></h5>
+                <div class="cont">
+                    <label for="nonpaying">Nichtzahler</label>
+                    <input type="checkbox" id="nonpaying" formControlName="nonpaying" placeholder="Nichtzahler" />
+                </div>
+                <div class="cont">
+                    <label for="moveta-customer-id">Abw. Anfahrt</label>
+                    <input type="text" id="gpsstreet" formControlName="altgpsstreet" placeholder="Straße und Hausnummer" />
+                    <input type="number" id="gpsplz" formControlName="altgpsplz" placeholder="PLZ" />
+                    <input type="text" id="gpsplace" formControlName="altgpsplace" placeholder="Ort" />
+                </div>
+                <button class="actionButton" [disabled]="!this.customerFormGroup.valid" (click)="storeCustomer()">{{this.getSessionService().isOnlineSession() ? "Änderungen übermitteln" : "Änderungen lokal speichern"}}</button>
+            </div>
         </div>
-        <div id="right">
-            <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
-            <div class="cont">
-                <label for="first-name">Name</label>
-                <input type="text" id="first-name" formControlName="firstName" placeholder="Vorname" />
-                <input type="text" id="given-name" formControlName="givenName" placeholder="Nachname" />
-            </div>
-            <div class="cont">
-                <label for="search">Suchtext</label>
-                <input type="text" id="search" formControlName="search" placeholder="Suchtext" />
-            </div>
-            <div class="cont">
-                <label for="street">Adresse</label>
-                <input type="text" id="street" formControlName="street" placeholder="Straße und Hausnummer" />
-                <input type="number" id="plz" formControlName="plz" placeholder="PLZ" />
-                <input type="text" id="place" formControlName="place" placeholder="Ort" />
-            </div>
-            <div class="cont">
-                <label for="phone">Kontakt</label>
-                <input type="text" id="phone" formControlName="phone" placeholder="Telefon" />
-                <input type="text" id="fax" formControlName="fax" placeholder="Fax" />
-                <input type="text" id="email" formControlName="email" placeholder="Email" />
-            </div>
-            <div class="cont">
-                <label for="memo">Memo</label>
-                <input type="text" id="memo" formControlName="memo" placeholder="Memotext" />
-            </div>
-            <div class="cont">
-                <label for="birthday">Geburtstag</label>
-                <app-datepicker id="birthday" placeholder="Geburtstag" [formControl]="this.customerFormGroup.controls.birthday"></app-datepicker>
-            </div>
-            <div class="cont">
-                <label for="uid">UID</label>
-                <input type="number" id="uid" formControlName="uid" placeholder="UID" />
-            </div>
-            <div class="cont">
-                <label for="moveta-customer-id">Moveta</label>
-                <input type="text" id="moveta-customer-id" formControlName="movetaCustomerId" placeholder="Moveta Kunden ID" />
-            </div>
-        </div>
-    }
-</form>
+    </form>
 }
 
 @if (this.isBusinessSelected()) {
-<form [formGroup]="businessFormGroup" #customerForm [class.valid]="businessFormGroup.valid">
+<form [formGroup]="businessFormGroup" #businessForm [class.valid]="businessFormGroup.valid">
     <div id="searchController">
         <h5>Kombinierten Kundenstamm aus Moveta Pegasus & Intranet durchsuchen und bearbeiten:</h5>
-        <app-search-dropdown #businessSearchDropdown placeholder="Betrieb suchen..." [items]="this.businessList()"
-            [serial]="this.businessSerializer" [formControl]="businessFormGroup.controls['businessDropdown']"
-            (itemSelectedEvent)="businessSelected($event)"></app-search-dropdown>
+        <div id="entityTypeSelector">
+            <button (click)="this.selectCustomers()" [disabled]="this.isCustomersSelected() || this.currentSyncEntry !== undefined"><img src="/images/farmer.svg" />Kunden</button>
+            <button (click)="this.selectBusinesses()" [disabled]="this.isBusinessSelected() || this.currentSyncEntry !== undefined" ><img src="/images/farm.svg" />Betriebe</button>
+            <button (click)="this.selectDrugs()" [disabled]="this.isDrugsSelected() || this.currentSyncEntry !== undefined"><img src="/images/vacine.svg" />Arzneien</button>
+            <app-search-dropdown #businessSearchDropdown placeholder="Betrieb suchen..." [items]="this.businessList()"
+                [serial]="this.businessSerializer" [formControl]="businessFormGroup.controls['businessDropdown']"
+                (itemSelectedEvent)="businessSelected($event)"></app-search-dropdown>
+        </div>
     </div>
 
-    @if(this.businessFormGroup.value['businessDropdown'] != "") {
-        <div id="left">
-            
-        </div>
+    <div id="field-cont">
         <div id="right">
             <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
             <div class="cont">
-                <label for="first-name">Name</label>
-                <input type="text" id="first-name" formControlName="firstName" placeholder="Vorname" />
-                <input type="text" id="given-name" formControlName="givenName" placeholder="Nachname" />
+                <label for="business-type">Betriebstyp</label>
+                <input type="text" id="business-type" formControlName="businessType" placeholder="Betriebstyp" />
             </div>
+            <div class="cont">
+                <label for="business-type">Betriebsnr.</label>
+                <input type="text" id="vvvo" formControlName="vvvo" placeholder="VVVO-Nummer" />
+            </div>
+            <div class="cont">
+                <label for="moveta-business-id">Kunden ID</label>
+                <input type="text" id="moveta-customer-id" formControlName="customerMovetaId" placeholder="Moveta Kunden ID" />
+            </div>
+            <div class="cont">
+                <label for="moveta-business-id">Moveta</label>
+                <input type="text" id="moveta-business-id" formControlName="businessMovetaId" placeholder="Moveta Betriebs ID" />
+            </div>
+            <button class="actionButton" [disabled]="!this.businessFormGroup.valid" (click)="storeBusiness()">{{this.getSessionService().isOnlineSession() ? "Änderungen übermitteln" : "Änderungen lokal speichern"}}</button>
         </div>
-    }
+    </div>
 </form>
 }
 
+
 @if (this.isDrugsSelected()) {
-<form [formGroup]="drugFormGroup" #customerForm [class.valid]="drugFormGroup.valid">
+<form [formGroup]="drugFormGroup" #drugForm [class.valid]="drugFormGroup.valid">
     <div id="searchController">
         <h5>Kombinierten Kundenstamm aus Moveta Pegasus & Intranet durchsuchen und bearbeiten:</h5>
-        <app-search-dropdown #businessSearchDropdown placeholder="Arzneien suchen..." [items]="this.drugsList()"
-            [serial]="this.drugSerializer" [formControl]="drugFormGroup.controls['drugDropdown']"
-            (itemSelectedEvent)="drugSelected($event)"></app-search-dropdown>
+        <div id="entityTypeSelector">
+            <button (click)="this.selectCustomers()" [disabled]="this.isCustomersSelected() || this.currentSyncEntry !== undefined"><img src="/images/farmer.svg" />Kunden</button>
+            <button (click)="this.selectBusinesses()" [disabled]="this.isBusinessSelected() || this.currentSyncEntry !== undefined" ><img src="/images/farm.svg" />Betriebe</button>
+            <button (click)="this.selectDrugs()" [disabled]="this.isDrugsSelected() || this.currentSyncEntry !== undefined"><img src="/images/vacine.svg" />Arzneien</button>
+            <app-search-dropdown #businessSearchDropdown placeholder="Arzneien suchen..." [items]="this.drugsList()"
+                [serial]="this.drugSerializer" [formControl]="drugFormGroup.controls['drugDropdown']"
+                (itemSelectedEvent)="drugSelected($event)"></app-search-dropdown>
+        </div>
     </div>
 
-    @if(this.drugFormGroup.value['drugDropdown'] != "") {
-        <div id="left">
-            
-        </div>
+    <div id="field-cont">
         <div id="right">
             <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
             <div class="cont">
-                <label for="first-name">Name</label>
-                <input type="text" id="first-name" formControlName="firstName" placeholder="Vorname" />
-                <input type="text" id="given-name" formControlName="givenName" placeholder="Nachname" />
+                <label for="name">Name</label>
+                <input type="text" id="name" formControlName="name" placeholder="Arzeiname" />
             </div>
+            <div class="cont">
+                <label for="name">Suchbegriff</label>
+                <input type="text" id="shortsearch" formControlName="shortsearch" placeholder="Suchbezeichner" />
+            </div>
+            <div class="cont">
+                <label for="znr">ZNR</label>
+                <input type="text" id="znr" formControlName="znr" placeholder="Zulassungsnummer" />
+            </div>
+
+            <div id="drugForms" class="cont" formArrayName="forms">
+                <label for=>PID</label>
+                <app-placeholder-field  *ngFor="let row of this.drugForms.controls; let i = index" [formControlName]="i" [serializer]="this.drugFormSerializer"></app-placeholder-field>
+            </div>
+
+    
+            <div class="cont">
+                <label for="moveta-drug-id">Moveta</label>
+                <input type="text" id="moveta-drug-id" formControlName="drugMovetaId" placeholder="Moveta Arzneien-ID" />
+            </div>
+            <h5 class="data-section" data-text="Intranet:"></h5>
+            <div class="cont">
+                <label for="drugReportabilityDropdown">QS</label>
+                <app-search-dropdown id="drugReportabilityDropdown" #drugReportabilityDropdown placeholder="Meldbarkeit in QS" [items]="this.drugReportabilityItems"
+                    [serial]="this.drugReportabilitySerial" [formControl]="drugFormGroup.controls['qsReportabilityState']"></app-search-dropdown>
+            </div>
+            <button class="actionButton" [disabled]="!this.drugFormGroup.valid" (click)="storeDrug()">{{this.getSessionService().isOnlineSession() ? "Änderungen übermitteln" : "Änderungen lokal speichern"}}</button>
         </div>
-    }
+    </div>
 </form>
 }

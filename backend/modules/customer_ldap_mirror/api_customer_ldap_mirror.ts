@@ -71,10 +71,10 @@ export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized {
         
         this.entityModule.getCustomerEntries().then(customers => {
             this.memoryStore.replace(customers.map(cust => {
-                let firstName = cust.moveta.givenName.trim() != "" ? cust.moveta.firstName.trim() : cust.moveta.firstName.trim().split(" ")[0];
-                let surName = cust.moveta.givenName.trim() != "" ? cust.moveta.givenName.trim() : cust.moveta.firstName.trim().split(" ").splice(1).join(' ');
+                let firstName = cust.givenName.trim() != "" ? cust.firstName.trim() : cust.firstName.trim().split(" ")[0];
+                let surName = cust.givenName.trim() != "" ? cust.givenName.trim() : cust.firstName.trim().split(" ").splice(1).join(' ');
 
-                let dn = "uid=cust-" + cust.moveta.uid + ",dc=pegasus," + this.ldapBase;
+                let dn = "uid=cust-" + cust.uid + ",dc=pegasus," + this.ldapBase;
 
                 return constructLdapEntry(dn, [
                     { attr: "dn", vals: [dn] },
@@ -82,15 +82,15 @@ export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized {
                     { attr: "cn", vals: [firstName + " " + surName] },
                     { attr: "givenName", vals: [firstName] },
                     { attr: "displayName", vals: [firstName + " " + surName] },
-                    { attr: "telephoneNumber", vals: [cust.moveta.phone || ""] },
-                    { attr: "mobile", vals: [cust.moveta.phone || ""] },
-                    { attr: "mail", vals: [cust.moveta.email] },
-                    { attr: "street", vals: [cust.moveta.street] },
+                    { attr: "telephoneNumber", vals: [cust.phone || ""] },
+                    { attr: "mobile", vals: [cust.phone || ""] },
+                    { attr: "mail", vals: [cust.email] },
+                    { attr: "street", vals: [cust.street] },
                     { attr: "l", vals: ["Germany"] },
-                    { attr: "st", vals: [cust.moveta.place] },
-                    { attr: "postalCode", vals: [String(cust.moveta.plz)] },
+                    { attr: "st", vals: [cust.place] },
+                    { attr: "postalCode", vals: [String(cust.plz)] },
                     { attr: "co", vals: ["DE"] },
-                    { attr: "description", vals: [cust.moveta.memo || ""] },
+                    { attr: "description", vals: [cust.memo || ""] },
                     { attr: "objectClass", vals: ["top", "person", "organizationalPerson", "inetOrgPerson"] }
                 ]);
             }));

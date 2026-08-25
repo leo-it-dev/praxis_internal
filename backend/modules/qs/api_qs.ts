@@ -77,7 +77,7 @@ export class ApiModuleQs extends ApiModuleAuthorized {
         let successfullDrugs = 0;
 
         for(let [drugNumber, drug] of drugList.entries()) {
-            switch(drug.intranet.reportabilityVerifierMarkedErronous) {
+            switch(drug.reportabilityVerifierMarkedErronous) {
                 case DrugVerifiedState.eVERIFIED_NOT_REPORTABLE:
                     logger.debug("Following drug is marked invalid cached (" + drugNumber + "/" + drugList.length + "): ", {drug: drug, reference:reference});
                     erronousDrugs++;
@@ -100,9 +100,9 @@ export class ApiModuleQs extends ApiModuleAuthorized {
                                 {
                                     amount: 1,
                                     applicationDuration: 1,
-                                    packageId: drug.moveta.forms[0].pid,
-                                    amountUnit: (drug.moveta.forms[0].unitSuggestion || DrugUnits.injector).id,
-                                    approvalNumber: drug.moveta.znr
+                                    packageId: drug.forms[0].pid,
+                                    amountUnit: (drug.forms[0].unitSuggestion || DrugUnits.injector).id,
+                                    approvalNumber: drug.znr
                                 }
                             ]}
                         ]
@@ -111,12 +111,12 @@ export class ApiModuleQs extends ApiModuleAuthorized {
                     await sleep(config.get('generic.QS_API_AUTOMATED_DRUG_TEST_INTERVAL_SECONDS') * 1000, (res) => {
                         this.qsApiHandlerTest.postDrugReport(drugReport, false).then((dat) => {
                             // successfully posted, drugs are all valid.
-                            drug.intranet.reportabilityVerifierMarkedErronous = DrugVerifiedState.eVERIFIED_SUCCESSFULLY_REPORTABLE;
+                            drug.reportabilityVerifierMarkedErronous = DrugVerifiedState.eVERIFIED_SUCCESSFULLY_REPORTABLE;
                             successfullDrugs++;
                             logger.debug("Following drug is marked valid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, reference:reference});
                         }).catch((err) => {
                             // error posting, drugs contain invalid ZNRs or drug units.
-                            drug.intranet.reportabilityVerifierMarkedErronous = DrugVerifiedState.eVERIFIED_NOT_REPORTABLE;
+                            drug.reportabilityVerifierMarkedErronous = DrugVerifiedState.eVERIFIED_NOT_REPORTABLE;
                             erronousDrugs++;
                             logger.debug("Following drug is marked invalid (" + drugNumber + "/" + drugList.length + "): ", {drugReport: drugReport, drug: drug, err: err, reference:reference});
                         }).finally(async () => {
@@ -166,24 +166,24 @@ export class ApiModuleQs extends ApiModuleAuthorized {
                 }
 
                 for (let farmer of farmers) {
-                    let businessMoveta = businessList.find(business => business.moveta.vvvo == farmer.locationNumber);
-                    let customersRelatingToBusiness = customersList.filter(c => c.moveta.commonId == businessMoveta?.moveta.customerMovetaId);
+                    let businessMoveta = businessList.find(business => business.vvvo == farmer.locationNumber);
+                    let customersRelatingToBusiness = customersList.filter(c => c.commonId == businessMoveta?.customerMovetaId);
                     if (businessMoveta === undefined) {
                         this.logger().warn("QS business entry found that has no corresponding business in pegasus!", {businessVVVO: farmer.locationNumber});
                         continue;
                     }
                     if (customersRelatingToBusiness.length == 0) {
-                        this.logger().warn("Moveta business entry found with no active customer!", {businessVVVO: farmer.locationNumber, businessId: businessMoveta?.moveta.vvvo, expectedCustomerId: businessMoveta?.moveta.customerMovetaId});
+                        this.logger().warn("Moveta business entry found with no active customer!", {businessVVVO: farmer.locationNumber, businessId: businessMoveta?.vvvo, expectedCustomerId: businessMoveta?.customerMovetaId});
                         continue;
                     }
 
                     if (customersRelatingToBusiness.length > 1) {
-                        this.logger().warn("Moveta business entry found with more than one associated customer!", {businessVVVO: farmer.locationNumber, businessId: businessMoveta?.moveta.customerMovetaId, firstUsedCustomer: customersRelatingToBusiness[0].moveta.commonId, customerCount: customersRelatingToBusiness.length});
+                        this.logger().warn("Moveta business entry found with more than one associated customer!", {businessVVVO: farmer.locationNumber, businessId: businessMoveta?.customerMovetaId, firstUsedCustomer: customersRelatingToBusiness[0].commonId, customerCount: customersRelatingToBusiness.length});
                         continue;
                     }
 
                     let customer = customersRelatingToBusiness[0];
-                    farmer.additionalInfoHydrated = (customer.moveta.memo ?? "").trim(); // Temporär, später tatsächliche Betriebsadresse aus intranet
+                    farmer.additionalInfoHydrated = (customer.memo ?? "").trim(); // Temporär, später tatsächliche Betriebsadresse aus intranet
                 }
                 res(farmers);
             });

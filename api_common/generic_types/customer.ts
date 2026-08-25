@@ -24,7 +24,24 @@ export type IntranetCustomerChunk = Chunk & {
     altgpsplace: string | undefined;
 }
 
-export type Customer = CombinedEntity & {
-    moveta: MovetaCustomerChunk;
-    intranet: IntranetCustomerChunk;
+export type Customer = CombinedEntity & MovetaCustomerChunk & IntranetCustomerChunk;
+export const EMPTY_CUSTOMER: Customer = {
+    altgpsplace: "",
+    altgpsplz: "",
+    altgpsstreet: "",
+    commonId: "",
+    email: "",
+    fax: "",
+    firstName: "",
+    givenName: "",
+    image: "",
+    memo: "",
+    nonpaying: false,
+    phone: "",
+    place: "",
+    plz: 0,
+    search: "",
+    street: "",
+    uid: 0,
+    birthday: undefined
 }

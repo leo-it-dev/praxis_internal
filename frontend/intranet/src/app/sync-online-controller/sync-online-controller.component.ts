@@ -144,7 +144,7 @@ export class SyncOnlineControllerComponent implements OnInit, OnDestroy {
 	deleteEntry(entry: OfflineEntry): Promise<OfflineEntry|undefined> {
 		this.offlineStore?.removeEntry(entry);
 		if (this.offlineStore?.entryCount() == 0) {
-			this._syncMode.set(false);
+			this.exitSynchronizationMode();
 			return Promise.resolve(undefined);
 		} else {
 			this.selectedItemIdx.set(Math.max(0, this.selectedItemIdx() - 1));

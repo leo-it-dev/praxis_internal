@@ -186,3 +186,52 @@ li {
     background-clip: text;
     color: transparent;
 }
+
+input[type=checkbox] {
+    appearance: none;
+    width: 40px;
+    height: 40px;
+    max-width: 40px;
+    max-height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 100%;
+    background-color: var(--shadeLevel1);
+    margin: 0;
+    position: relative;
+}
+
+input[type=checkbox]:checked:after {
+    display: block;
+    content: '✓';
+    position: absolute;
+    line-height: 40px;
+    font-size: 25px;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 100%;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    background-color: var(--action-button-gradient-left);
+    // background-clip: text;
+    color: white;
+    font-weight: bolder;
+}
+
+input[type=checkbox]:not(:checked):after {
+    display: block;
+    content: '';
+    position: absolute;
+    line-height: 40px;
+    font-size: 25px;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 100%;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    color: var(--shadeLevel2);
+}

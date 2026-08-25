@@ -8,10 +8,10 @@ export abstract class ReadOnlyEntityDatabase<CTX extends string, T extends Chunk
     private lastAcquisitionResult: T[] = [];
     private mutableAcquisitionResult: T[] = [];
 
-    protected abstract readAll(): Promise<T[]>;
-    public async acquire() {
+    protected abstract readAll(commonId: string|undefined): Promise<T[]>;
+    public async acquire(commonId: string|undefined) {
         return new Promise<void>((res, rej) => {
-            this.readAll().then(chunks => {
+            this.readAll(commonId).then(chunks => {
                 this.lastAcquisitionResult = chunks;
                 res();
             }).catch(err => {

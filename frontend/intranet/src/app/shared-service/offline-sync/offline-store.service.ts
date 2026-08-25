@@ -10,6 +10,7 @@ export class OfflineStoreService {
 	constructor(private errorlistService: ErrorlistService) {
 		// Register all used offline stores here:
 		this.register("qs", "QS-Meldung", "/qs");
+		this.register("entities", "Stammdaten", "/entities");
 		this.loadAllStores();
 	}
 

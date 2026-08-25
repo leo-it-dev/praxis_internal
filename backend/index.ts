@@ -2,6 +2,7 @@ import https = require('node:https');
 import express = require('express');
 import * as config from 'config';
 import * as fs from 'fs';
+import * as koffi from 'koffi';
 import * as path from 'path';
 import * as kerberos from './framework/kerberos-handler';
 import * as ssl from './ssl/ssl';
@@ -9,6 +10,7 @@ import * as ssl from './ssl/ssl';
 /**
  * Endpoint modules
  */
+import { ApiModule } from './api_module';
 import { DeploymentType } from './deployment';
 import { AdfsOidc } from './framework/adfs_oidc_instance';
 import * as ors from './framework/openrouteservice';
@@ -16,13 +18,21 @@ import { RepeatedTaskScheduler } from './framework/scheduled_events';
 import { getLogger } from './logger';
 import { ApiModuleAuth } from './modules/auth/api_auth';
 import { ApiModuleCustomerLdapMirror } from './modules/customer_ldap_mirror/api_customer_ldap_mirror';
+import { ApiModuleEntities } from './modules/entities/api_entities';
 import { ApiModuleLdapQuery } from './modules/ldapquery/api_ldapquery';
 import { ApiModuleMeta } from './modules/meta/api_meta';
 import { ApiModuleNews } from './modules/news/api_news';
 import { ApiModuleQs } from './modules/qs/api_qs';
 import { ApiModuleTravelExpenses } from './modules/travel-expenses/api_travel-expenses';
-import { ApiModuleEntities } from './modules/entities/api_entities';
-import { ApiModule } from './api_module';
+
+
+// ensure c-binding libraries correctly use UTF8 encoding.
+const libc = koffi.load('libc.so.6');
+const setlocale = libc.func('char *setlocale(int category, const char *locale)');
+const LC_ALL = 6;
+console.log('C: locale: ', setlocale(LC_ALL, 'de_DE.UTF8'));
+console.log('C: locale: ', setlocale(LC_ALL, null));
+
 
 let apiModulesInstances: ApiModule[] = [];
 
