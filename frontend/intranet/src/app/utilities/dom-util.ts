@@ -44,3 +44,10 @@ export function findThisOrParentWithClass(domElement: HTMLElement, className: st
     }
     return undefined;
 }
+
+export function makeUntabbableRecursive(domElement: Element) {
+    for (let node of domElement.children) {
+        node.setAttribute("tabIndex", "-1");
+        makeUntabbableRecursive(node);
+    }
+}

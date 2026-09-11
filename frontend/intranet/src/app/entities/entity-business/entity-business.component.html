@@ -1,0 +1,20 @@
+<form [formGroup]="businessFormGroup" [class.valid]="businessFormGroup.valid" [class.mergeConflictContainer]="this.compareBusiness !== undefined">
+    <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
+    <input type="number" id="changed" formControlName="changed" hidden>
+    <div class="cont">
+        <label for="business-type">Betriebstyp</label>
+        <input type="text" id="business-type" formControlName="businessType" placeholder="Betriebstyp" />
+    </div>
+    <div class="cont">
+        <label for="business-type">Betriebsnr.</label>
+        <input type="text" id="vvvo" formControlName="vvvo" placeholder="VVVO-Nummer" />
+    </div>
+    <div class="cont">
+        <label for="moveta-business-id">Kunden ID</label>
+        <input type="text" id="moveta-customer-id" formControlName="customerMovetaId" placeholder="Moveta Kunden ID" />
+    </div>
+    <div class="cont">
+        <label for="moveta-business-id">Moveta</label>
+        <input type="text" id="moveta-business-id" formControlName="businessMovetaId" placeholder="Moveta Betriebs ID" />
+    </div>
+</form>

@@ -196,7 +196,6 @@ input[type=checkbox] {
     min-width: 40px;
     min-height: 40px;
     border-radius: 100%;
-    background-color: var(--shadeLevel1);
     margin: 0;
     position: relative;
 }
@@ -233,5 +232,26 @@ input[type=checkbox]:not(:checked):after {
     border-radius: 100%;
     text-align: center;
     transform: translate(-50%, -50%);
-    color: var(--shadeLevel2);
+}
+
+.mergeConflict {
+    background-color: #faa !important;
+    box-shadow: 0px 0px 5px red !important;
+    border-color: red !important;
+    color: black;
+}
+.mergeConflict input,
+.mergeConflict label,
+.mergeConflict app-image-picker {
+    opacity: 1.0 !important;
+}
+
+.mergeConflictContainer input:not(.mergeConflict),
+.mergeConflictContainer label:not(.mergeConflict),
+.mergeConflictContainer app-image-picker:not(.mergeConflict) {
+    opacity: .3;
+}
+.mergeConflictContainer {
+    pointer-events: none;
+    user-select: none;
 }

@@ -24,17 +24,17 @@ export function base64urlDecode(base64url: string) {
 export function parseSimpleDate(dateStr: string): Date {
     let parts = dateStr.split(".");
     if (parts.length !== 3) {
-        logger.error("Error parsing simple date! Not exactly three parts to date!", {date: dateStr});
+        logger.error("Error parsing simple date! Not exactly three parts to date!", { date: dateStr });
         return new Date(0);
     }
     return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
 }
 
 export function compare(a: number, b: number): number {
-    if ( a > b ) {
+    if (a > b) {
         return 1;
     }
-    if ( b > a ) {
+    if (b > a) {
         return -1;
     }
     return 0;
@@ -48,8 +48,8 @@ export function sumVA(...elements: number[]): number {
 }
 
 export async function sleep(milliseconds: number, callback: ((resOut: () => void) => void) | undefined = undefined) {
-    let resOut = () => {};
-    let prom = new Promise<void>((res, rej) => {resOut = res;})
+    let resOut = () => { };
+    let prom = new Promise<void>((res, rej) => { resOut = res; })
     setTimeout(async () => {
         if (callback !== undefined) {
             await callback(resOut);

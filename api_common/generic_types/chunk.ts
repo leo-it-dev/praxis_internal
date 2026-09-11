@@ -3,5 +3,5 @@ export type Chunk = {
 }
 
 export type CombinedEntity = {
-    commonId: string
+    commonId: string;
 }

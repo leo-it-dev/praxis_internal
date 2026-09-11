@@ -7,6 +7,7 @@ import { AdfsOidc } from "./framework/adfs_oidc_instance";
 import { getLogger } from "./logger";
 import { User, userPermissionsFromSecurityGroupNames } from "./user";
 import { SQLiteDB, SqlUpdate } from "./framework/sqlite_database";
+import { BODY_SIZE_LIMIT } from "./index";
 
 export abstract class ApiModule {
     protected _app: Express;
@@ -64,7 +65,7 @@ export abstract class ApiModuleUnauthorized extends ApiModule {
     }
 
     protected postJson<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>) => Promise<ApiModuleResponse<RES>>) {
-        this._app.post(this.basepath() + "/" + route, bodyParser.json(), async (req, res) => {
+        this._app.post(this.basepath() + "/" + route, bodyParser.json({limit: BODY_SIZE_LIMIT}), async (req, res) => {
             let moduleResponse = await handler(new RequestTyped<REQ>(req));
 
             let transformedResponse: ApiModuleBody = {
@@ -97,7 +98,7 @@ export abstract class ApiModuleAuthorized extends ApiModule {
     abstract permissionRequired(): UserPermission | undefined;
 
     protected postJson<REQ extends ApiModuleInterfaceF2B, RES extends ApiModuleInterfaceB2F>(route: string, handler: (req: RequestTyped<REQ>, user: User) => Promise<ApiModuleResponse<RES>>) {
-        this._app.post(this.basepath() + "/" + route, bodyParser.json(), async (req, res) => {
+        this._app.post(this.basepath() + "/" + route, bodyParser.json({limit: BODY_SIZE_LIMIT}), async (req, res) => {
             let validationResult: string|JsonObject|undefined = undefined;
             let moduleResponse: ApiModuleResponse<RES>;
 

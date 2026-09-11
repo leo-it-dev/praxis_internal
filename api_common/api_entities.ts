@@ -12,22 +12,29 @@ export interface ApiInterfaceEntitiesListOut extends ApiModuleInterfaceB2F {
     drugsExternal: Drug[]
 };
 
+export interface ApiInterfacePatchGenericOut {
+    mergeConflict: boolean;
+}
+
 export interface ApiInterfacePatchCustomerIn extends ApiModuleInterfaceF2B {
     customer: Customer
+    forcePush: boolean
 };
 export interface ApiInterfacePatchBusinessIn extends ApiModuleInterfaceF2B {
     business: Business
+    forcePush: boolean
 };
 export interface ApiInterfacePatchDrugIn extends ApiModuleInterfaceF2B {
     drug: Drug
+    forcePush: boolean
 };
 
-export interface ApiInterfacePatchCustomerOut extends ApiModuleInterfaceB2F {
-    customerReadback: Customer
+export interface ApiInterfacePatchCustomerOut extends ApiModuleInterfaceB2F, ApiInterfacePatchGenericOut {
+    customerReadback: Customer;
 };
-export interface ApiInterfacePatchBusinessOut extends ApiModuleInterfaceB2F {
-    businessReadback: Business
+export interface ApiInterfacePatchBusinessOut extends ApiModuleInterfaceB2F, ApiInterfacePatchGenericOut {
+    businessReadback: Business;
 };
-export interface ApiInterfacePatchDrugOut extends ApiModuleInterfaceB2F {
-    drugReadback: Drug
+export interface ApiInterfacePatchDrugOut extends ApiModuleInterfaceB2F, ApiInterfacePatchGenericOut {
+    drugReadback: Drug;
 };

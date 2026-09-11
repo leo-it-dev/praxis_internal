@@ -65,13 +65,13 @@ function processCustomerRows(rows: row[]): MovetaCustomerChunk[] {
             givenName: row.KNAM2,
             search: row.KSUCH,
             street: row.KSTR,
-            plz: parseInt(row.KPLZ),
+            plz: parseInt(row.KPLZ) || null,
             place: row.KORT,
             phone: row.KTEL,
             memo: row.KMEMO,
             fax: row.KTELFAX,
             email: row.KEMAIL,
-            birthday: new Date(row.KGEBDAT) || undefined,
+            birthday: isNaN(new Date(row.KGEBDAT).getTime()) ? null : new Date(row.KGEBDAT),
             uid: row.KNR,
             commonId: row.KKEN1
         })

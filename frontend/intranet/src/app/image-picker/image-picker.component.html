@@ -1,0 +1,13 @@
+@if(this.overlayShown) {
+    <app-blockingoverlay overlayTitle="Kundenbild bearbeiten" subtitle="" [buttons] = this.overlayButtons (selectionMade)="this.processOverlayButton($event)"></app-blockingoverlay>
+}
+
+<div id="image-container" (click)="this.showOverlay()" [class.disabled]="this.controlDir.disabled">
+    @if(imageLoaded()) {
+        <img id="image" [src]="imageLoaded()" />
+    } @else {
+        <logged-out-svg></logged-out-svg>
+    }
+    <input #imageSelector id="imageSelector" type="file" accept="image/*" hidden
+        (change)="this.imageSelected()">
+</div>

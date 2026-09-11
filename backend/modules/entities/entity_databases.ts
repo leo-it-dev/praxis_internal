@@ -24,6 +24,7 @@ export class IntranetSqliteCustomerEntityDatabase extends WritableHydrationDatab
                 let customerChunks: IntranetCustomerChunk[] = rows.map(row => {
                     return {
                         commonId: (row as any)['kkenmoveta'],
+                        changed: (row as any)['changed'],
                         image: (row as any)['image'],
                         nonpaying: (row as any)['nonpaying'] == 1,
                         altgpsplace: (row as any)['altgpsplace'],
@@ -41,9 +42,10 @@ export class IntranetSqliteCustomerEntityDatabase extends WritableHydrationDatab
     async addOrModify(chunk: IntranetCustomerChunk): Promise<number> {
         return new Promise<number>(async (res, rej) => {
             try {
+                chunk.changed = new Date().getTime();
                 await this.sqlite.sqlUpdate({
-                    params: [chunk.commonId, chunk.image, chunk.nonpaying, chunk.altgpsstreet, chunk.altgpsplz, chunk.altgpsplace],
-                    update: "INSERT OR REPLACE INTO customers(kkenmoveta, image, nonpaying, altgpsstreet, altgpsplz, altgpsplace) VALUES (?, ?, ?, ?, ?, ?)"
+                    params: [chunk.commonId, chunk.changed, chunk.image, chunk.nonpaying, chunk.altgpsstreet, chunk.altgpsplz, chunk.altgpsplace],
+                    update: "INSERT OR REPLACE INTO customers(kkenmoveta, changed, image, nonpaying, altgpsstreet, altgpsplz, altgpsplace) VALUES (?, ?, ?, ?, ?, ?, ?)"
                 });
                 let row = await this.sqlite.sqlFetchFirst("SELECT last_insert_rowid()", []) as any;
                 res(row["last_insert_rowid()"]);
@@ -70,9 +72,10 @@ export class IntranetSqliteCustomerEntityDatabase extends WritableHydrationDatab
     constructDefaultChunk(commonId: string) {
         return {
             commonId: commonId,
-            altgpsplace: undefined,
-            altgpsplz: undefined,
-            altgpsstreet: undefined,
+            changed: new Date().getTime(),
+            altgpsplace: null,
+            altgpsplz: null,
+            altgpsstreet: null,
             image: undefined,
             nonpaying: false
         }
@@ -95,6 +98,7 @@ export class IntranetSqliteBusinessEntityDatabase extends WritableHydrationDatab
                 let businessChunks: IntranetBusinessChunk[] = rows.map(row => {
                     return {
                         commonId: (row as any)['bkenmoveta'],
+                        changed: (row as any)['changed'],
                         dummy: ""
                     }
                 });
@@ -108,9 +112,10 @@ export class IntranetSqliteBusinessEntityDatabase extends WritableHydrationDatab
     async addOrModify(chunk: IntranetBusinessChunk): Promise<number> {
         return new Promise<number>(async (res, rej) => {
             try {
+                chunk.changed = new Date().getTime();
                 await this.sqlite.sqlUpdate({
-                    params: [chunk.commonId],
-                    update: "INSERT OR REPLACE INTO business(bkenmoveta) VALUES (?)"
+                    params: [chunk.commonId, chunk.changed],
+                    update: "INSERT OR REPLACE INTO business(bkenmoveta, changed) VALUES (?, ?)"
                 });
                 let row = await this.sqlite.sqlFetchFirst("SELECT last_insert_rowid()", []) as any;
                 res(row["last_insert_rowid()"]);
@@ -137,6 +142,7 @@ export class IntranetSqliteBusinessEntityDatabase extends WritableHydrationDatab
     constructDefaultChunk(commonId: string) {
         return {
             commonId: commonId,
+            changed: new Date().getTime(),
             dummy: ""
         }
     }
@@ -184,6 +190,7 @@ export class IntranetSqliteDrugEntityDatabase extends WritableHydrationDatabase<
                 let drugChunks: IntranetDrugChunk[] = rows.map(row => {
                     return {
                         commonId: (row as any)['dkenmoveta'],
+                        changed: (row as any)['changed'],
                         reportabilityVerifierMarkedErronous: (row as any)['markedErronous'],
                     }
                 });
@@ -197,9 +204,10 @@ export class IntranetSqliteDrugEntityDatabase extends WritableHydrationDatabase<
     async addOrModify(chunk: IntranetDrugChunk): Promise<number> {
         return new Promise<number>(async (res, rej) => {
             try {
+                chunk.changed = new Date().getTime();
                 await this.sqlite.sqlUpdate({
-                    params: [chunk.commonId, chunk.reportabilityVerifierMarkedErronous],
-                    update: "INSERT OR REPLACE INTO drugs(dkenmoveta, markedErronous) VALUES (?, ?)"
+                    params: [chunk.commonId, chunk.changed, chunk.reportabilityVerifierMarkedErronous],
+                    update: "INSERT OR REPLACE INTO drugs(dkenmoveta, changed, markedErronous) VALUES (?, ?, ?)"
                 });
                 let row = await this.sqlite.sqlFetchFirst("SELECT last_insert_rowid()", []) as any;
                 res(row["last_insert_rowid()"]);
@@ -226,6 +234,7 @@ export class IntranetSqliteDrugEntityDatabase extends WritableHydrationDatabase<
     constructDefaultChunk(commonId: string) {
         return {
             commonId: commonId,
+            changed: new Date().getTime(),
             reportabilityVerifierMarkedErronous: DrugVerifiedState.eNOT_TESTED
         }
     }
@@ -258,6 +267,7 @@ export class HitDrugEntityDatabase extends ReadOnlyEntityDatabase<"hit", HitDrug
             return {
                 ...drug,
                 shortsearch: "",
+                changed: 0,
                 reportabilityVerifierMarkedErronous: DrugVerifiedState.eVERIFIED_SUCCESSFULLY_REPORTABLE,
             };
         });

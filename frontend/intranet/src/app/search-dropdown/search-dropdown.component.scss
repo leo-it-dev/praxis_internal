@@ -2,6 +2,7 @@
     position: relative;
     flex: 1;
     display: block;
+    border-color: var(--shadeLevel2);
 }
 
 input[type=text]:disabled {
@@ -70,7 +71,8 @@ input[type=text]:focus {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    border: 1px solid var(--shadeLevel2);
+    border: 1px solid;
+    border-color: inherit;
     border-radius: 2px;
 }
 

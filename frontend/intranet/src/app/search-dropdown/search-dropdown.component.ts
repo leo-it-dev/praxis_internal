@@ -37,6 +37,9 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	private _selectItemAfterInit: TItem|undefined = undefined;
 
+	protected disabled = false;
+	protected forceDisable = false;
+
 	handleTextChangeFinished: Function | undefined;
 	hoveredItem: WritableSignal<number> = signal(-1);
 	hintText: WritableSignal<String> = signal(this.placeholder);
@@ -114,7 +117,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	updateEnableFlag() {
 		if (this.control) {
-			if (this.filterItemsNotDisabled().length > 1) {
+			if (this.filterItemsNotDisabled().length > 1 && !this.forceDisable) {
 				this.control.enable();
 			} else {
 				this.control.disable();
@@ -126,15 +129,21 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		if (this.control) {
 			setTimeout(() => {
 				if (invalid) {
-					this.control.setErrors({'incorrect': true});
+					this.control.setErrors({...this.control.errors, 'incorrect': true});
 				} else {
-					this.control.setErrors(null);
+					let allErrors = this.control.errors;
+					if (allErrors) {
+						delete allErrors['incorrect'];
+					}
+					this.control.setErrors(allErrors);
 				}
 			}, 1);
 		}
 	}
 
 	ngAfterViewInit(): void {
+		this.forceDisable = this.control.disabled;
+
 		this.updateEnableFlag();
 		if (this._selectItemAfterInit !== undefined) {
 			this.selectItemExt(this._selectItemAfterInit as TItem);
@@ -467,5 +476,9 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	get control(): FormControl {
 		return this.controlDir.control as FormControl;
+	}
+
+	setDisabledState(isDisabled: boolean): void {
+		this.disabled = isDisabled;
 	}
 }

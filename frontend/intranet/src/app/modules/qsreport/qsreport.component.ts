@@ -73,6 +73,11 @@ export class QsreportComponent extends ModuleComponent {
 		id: 1,
 		design: OverlayButtonDesign.PRIMARY_COLORED
 	}];
+	public blockingOverlayButtons = signal([{
+		text: "Verstanden und nicht mehr anzeigen",
+		id: 1,
+		design: OverlayButtonDesign.PRIMARY_COLORED
+	}]);
 
 	reportableDrugList: WritableSignal<CategorizedList<Drug>> = signal(new CategorizedList<Drug>());
 	farmers: WritableSignal<Farmer[]> = signal([]);

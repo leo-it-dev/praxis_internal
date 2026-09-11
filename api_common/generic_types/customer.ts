@@ -6,30 +6,32 @@ export type MovetaCustomerChunk = Chunk & {
     givenName: string // knam2
     search: string, // ksuch
     street: string, // kstr
-    plz: number, // kplz
+    plz: number | null, // kplz
     place: string, // kort
     phone: string | undefined, // ktel
     memo: string | undefined, // ktext + kmemo
     fax: string | undefined, // ktelfax
     email: string, // kemail
-    birthday?: Date // kgebdat
+    birthday: Date | null // kgebdat
     uid: number // kid
 }
 
 export type IntranetCustomerChunk = Chunk & {
+    changed: number,
     image: string | undefined;
     nonpaying: boolean;
-    altgpsstreet: string | undefined;
-    altgpsplz: string | undefined;
-    altgpsplace: string | undefined;
+    altgpsstreet: string | null;
+    altgpsplz: number | null;
+    altgpsplace: string | null;
 }
 
 export type Customer = CombinedEntity & MovetaCustomerChunk & IntranetCustomerChunk;
 export const EMPTY_CUSTOMER: Customer = {
-    altgpsplace: "",
-    altgpsplz: "",
-    altgpsstreet: "",
     commonId: "",
+    changed: 0,
+    altgpsplace: "",
+    altgpsplz: null,
+    altgpsstreet: "",
     email: "",
     fax: "",
     firstName: "",
@@ -43,5 +45,5 @@ export const EMPTY_CUSTOMER: Customer = {
     search: "",
     street: "",
     uid: 0,
-    birthday: undefined
+    birthday: null
 }

@@ -1,0 +1,35 @@
+<form [formGroup]="drugFormGroup" [class.valid]="drugFormGroup.valid" [class.mergeConflictContainer]="this.compareDrug()">
+    <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
+    <input type="number" id="changed" formControlName="changed" hidden>
+    <div class="cont">
+        <label for="name">Name</label>
+        <input type="text" id="name" formControlName="name" placeholder="Arzeiname" />
+    </div>
+    <div class="cont">
+        <label for="name">Suchbegriff</label>
+        <input type="text" id="shortsearch" formControlName="shortsearch" placeholder="Suchbezeichner" />
+    </div>
+    <div class="cont">
+        <label for="znr">ZNR</label>
+        <input type="text" id="znr" formControlName="znr" placeholder="Zulassungsnummer" />
+    </div>
+
+    <div id="drugForms" class="cont" formArrayName="forms">
+        <label for=>PID</label>
+        <input type="text" *ngFor="let row of this.drugForms.controls; let i = index"
+            [value]="this.drugFormSerializer.serialize(row.value)" disabled placeholder="Packungs-ID" />
+    </div>
+
+    <div class="cont">
+        <label for="moveta-drug-id">Moveta</label>
+        <input type="text" id="moveta-drug-id" formControlName="commonId" placeholder="Moveta Arzneien-ID" />
+    </div>
+    <h5 class="data-section" data-text="Intranet:"></h5>
+    <div class="cont">
+        <label for="drugReportabilityDropdown">QS</label>
+        <app-search-dropdown id="drugReportabilityDropdown" #drugReportabilityDropdown placeholder="Meldbarkeit in QS"
+            [items]="this.drugReportabilityItems" [serial]="this.drugReportabilitySerial"
+            formControlName="reportabilityVerifierMarkedErronous"
+            [class.mergeConflict]="this.drugFormGroup.controls.reportabilityVerifierMarkedErronous.hasError('mergeConflict')"></app-search-dropdown>
+    </div>
+</form>

@@ -1,3 +1,5 @@
+@use '../../variables.scss' as *;
+
 :host {
     background-color: rgba(0, 0, 0, 0.5);
     position: fixed;
@@ -17,10 +19,21 @@
 #blockingContainerButtons {
     display: flex;
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    row-gap: 10px;
     column-gap: 10px;
+}
+
+#blockingContainerButtons > * {
+    flex: 1;
 }
 
 #blockingContainerContent {
     white-space: pre-line;
+}
+
+@media screen and (max-width: $switchToMobileWidthPx) {
+    #blockingContainerButtons {
+        flex-direction: column;
+    }
 }

@@ -33,6 +33,8 @@ const LC_ALL = 6;
 console.log('C: locale: ', setlocale(LC_ALL, 'de_DE.UTF8'));
 console.log('C: locale: ', setlocale(LC_ALL, null));
 
+export const BODY_SIZE_LIMIT = '10mb';
+
 
 let apiModulesInstances: ApiModule[] = [];
 
@@ -148,6 +150,8 @@ async function startup() {
         apiModulesInstances.push(apiModule);
     }
     moduleLoaderLogger.info("Finished module loader ---");
+
+    app.use(express.json({ limit: BODY_SIZE_LIMIT }));
 
     app.use(express.static(path.join(__dirname, filePathFrontend)));
 

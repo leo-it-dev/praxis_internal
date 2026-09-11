@@ -1,7 +1,10 @@
 import { Mutex } from "async-mutex";
+import { isDeepStrictEqual } from "util";
 import { getRepeatedScheduler } from "../..";
-import { ApiInterfaceEmptyIn, ApiInterfaceEmptyOut } from "../../../api_common/backend_call";
+import { ApiInterfaceEntitiesListOut, ApiInterfacePatchBusinessIn, ApiInterfacePatchBusinessOut, ApiInterfacePatchCustomerIn, ApiInterfacePatchCustomerOut, ApiInterfacePatchDrugIn, ApiInterfacePatchDrugOut } from "../../../api_common/api_entities";
+import { ApiInterfaceEmptyIn } from "../../../api_common/backend_call";
 import { Business } from "../../../api_common/generic_types/business";
+import { Chunk } from "../../../api_common/generic_types/chunk";
 import { Customer } from "../../../api_common/generic_types/customer";
 import { Drug } from "../../../api_common/generic_types/drug";
 import { UserPermission } from "../../../api_common/permission_types";
@@ -9,8 +12,6 @@ import { ApiModuleAuthorized } from "../../api_module";
 import { SqlUpdate } from "../../framework/sqlite_database";
 import { ReadOnlyEntityDatabase, WritableHydrationDatabase } from "./entity_database";
 import { DummyEntityDatabase, HitDrugEntityDatabase, IntranetSqliteBusinessEntityDatabase, IntranetSqliteCustomerEntityDatabase, IntranetSqliteDrugEntityDatabase, MovetaBusinessEntityDatabase, MovetaCustomerEntityDatabase, MovetaDrugEntityDatabase } from "./entity_databases";
-import { Chunk } from "../../../api_common/generic_types/chunk";
-import { ApiInterfaceEntitiesListOut, ApiInterfacePatchBusinessIn, ApiInterfacePatchBusinessOut, ApiInterfacePatchCustomerIn, ApiInterfacePatchCustomerOut, ApiInterfacePatchDrugIn, ApiInterfacePatchDrugOut } from "../../../api_common/api_entities";
 const config = require('config');
 
 type Combine<
@@ -94,10 +95,11 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
             params: [],
             update: "CREATE TABLE IF NOT EXISTS customers (\
                    kkenmoveta CHAR(8) PRIMARY KEY, \
+                   changed DATETIME NOT NULL, \
                    image TEXT, \
                    nonpaying INTEGER NOT NULL, \
                    altgpsstreet VARCHAR(64), \
-                   altgpsplz VARCHAR(64), \
+                   altgpsplz NUMBER, \
                    altgpsplace VARCHAR(64)\
                 );"
         },
@@ -105,6 +107,7 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
             params: [],
             update: "CREATE TABLE IF NOT EXISTS business (\
                    bkenmoveta CHAR(8) PRIMARY KEY, \
+                   changed DATETIME, \
                    dummy CHAR(1) \
                 );"
         },
@@ -112,6 +115,7 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
             params: [],
             update: "CREATE TABLE IF NOT EXISTS drugs (\
                    dkenmoveta CHAR(32) PRIMARY KEY, \
+                   changed DATETIME, \
                    markedErronous INTEGER NOT NULL \
                 );"
         },
@@ -140,13 +144,25 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
         this.postJson<ApiInterfacePatchBusinessIn, ApiInterfacePatchBusinessOut>("patch-business", async (req, user) => {
             let business = req.body.business;
             try {
+                let localBusiness = this.entityProviders.business.entities.find(locEntity => locEntity.commonId == business.commonId);
+                if (!localBusiness) {
+                    return { error: "Business to patch does not exist with given commonId!", responseObject: undefined, statusCode: 400};
+                }
+                if (localBusiness.changed != business.changed && !req.body.forcePush) {
+                    let localBusinessEqualityCheck = {...localBusiness};
+                    localBusinessEqualityCheck.changed = business.changed;
+                    if(!isDeepStrictEqual(localBusinessEqualityCheck, business)) {
+                        return { error: undefined, responseObject: {mergeConflict: true, businessReadback: localBusiness}, statusCode: 200};
+                    }
+                }
+
                 let patchedBusiness = await this.addOrUpdateBusinessEntry(business);
                 if (patchedBusiness === undefined) {
                     this.logger().info("Error patching business entry! Seems like it worked, but readback failed!", {business: business});
                     return { error: "Error reading back business!", responseObject: undefined, statusCode: 500};
                 } else {
                     this.logger().info("Successfully wrote business patch to database!", {business: business});
-                    return { error: undefined, responseObject: {businessReadback: patchedBusiness}, statusCode: 200};
+                    return { error: undefined, responseObject: {businessReadback: patchedBusiness, mergeConflict: false}, statusCode: 200};
                 }
             } catch(err) {
                 this.logger().error("Error writing business patch to database!", {business: business, error: err});
@@ -156,13 +172,25 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
         this.postJson<ApiInterfacePatchCustomerIn, ApiInterfacePatchCustomerOut>("patch-customer", async (req, user) => {
             let customer = req.body.customer;
             try {
+                let localCustomer = this.entityProviders.customer.entities.find(locEntity => locEntity.commonId == customer.commonId);
+                if (!localCustomer) {
+                    return { error: "Customer to patch does not exist with given commonId!", responseObject: undefined, statusCode: 400};
+                }
+                if (localCustomer.changed != customer.changed && !req.body.forcePush) {
+                    let localCustomerEqualityCheck = {...localCustomer};
+                    localCustomerEqualityCheck.changed = customer.changed;
+                    if(!isDeepStrictEqual(localCustomerEqualityCheck, customer)) {
+                        return { error: undefined, responseObject: {customerReadback: localCustomer, mergeConflict: true}, statusCode: 200};
+                    }
+                }
+
                 let patchedCustomer = await this.addOrUpdateCustomerEntry(customer);
                 if (patchedCustomer === undefined) {
                     this.logger().info("Error patching customer entry! Seems like it worked, but readback failed!", {customer: customer});
                     return { error: "Error reading back customer!", responseObject: undefined, statusCode: 500};
                 } else {
                     this.logger().info("Successfully wrote customer patch to database!", {customer: customer});
-                    return { error: undefined, responseObject: {customerReadback: patchedCustomer}, statusCode: 200};
+                    return { error: undefined, responseObject: {customerReadback: patchedCustomer, mergeConflict: false}, statusCode: 200};
                 }
             } catch(err) {
                 this.logger().error("Error writing customer patch to database!", {customer: customer, error: err});
@@ -172,13 +200,25 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
         this.postJson<ApiInterfacePatchDrugIn, ApiInterfacePatchDrugOut>("patch-drug", async (req, user) => {
             let drug = req.body.drug;
             try {
+                let localDrug = this.entityProviders.drugs.entities.find(locEntity => locEntity.commonId == drug.commonId);
+                if (!localDrug) {
+                    return { error: "Drug to patch does not exist with given commonId!", responseObject: undefined, statusCode: 400};
+                }
+                if (localDrug.changed != drug.changed && !req.body.forcePush) {
+                    let localDrugEqualityCheck = {...localDrug};
+                    localDrugEqualityCheck.changed = drug.changed;
+                    if(!isDeepStrictEqual(localDrugEqualityCheck, drug)) {
+                        return { error: undefined, responseObject: {drugReadback: localDrug, mergeConflict: true}, statusCode: 200};
+                    }
+                }
+
                 let patchedDrug = await this.addOrUpdateDrugEntry(drug);
                 if (patchedDrug === undefined) {
                     this.logger().info("Error patching drug entry! Seems like it worked, but readback failed!", {drug: drug});
                     return { error: "Error reading back drug!", responseObject: undefined, statusCode: 500};
                 } else {
                     this.logger().info("Successfully wrote drug patch to database!", {drug: drug});
-                    return { error: undefined, responseObject: {drugReadback: patchedDrug}, statusCode: 200};
+                    return { error: undefined, responseObject: {drugReadback: patchedDrug, mergeConflict: false}, statusCode: 200};
                 }
             } catch(err) {
                 this.logger().error("Error writing drug patch to database!", {drug: drug, error: err});

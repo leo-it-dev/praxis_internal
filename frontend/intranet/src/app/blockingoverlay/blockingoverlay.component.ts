@@ -1,5 +1,5 @@
 import { NgFor } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, signal, Signal } from '@angular/core';
 
 export enum OverlayButtonDesign {
 	PRIMARY_COLORED = 0,
@@ -24,11 +24,11 @@ export class BlockingoverlayComponent implements AfterViewInit, OnDestroy {
 
 	@Input({ required: false }) overlayTitle: string = "Test title";
 	@Input({ required: false }) subtitle: string = "Test subtitle";
-	@Input({ required: false }) buttons: OverlayButton[] = [
+	@Input({ required: false }) buttons: Signal<OverlayButton[]> = signal([
 		{ design: OverlayButtonDesign.BASIC_BLANK, id: 1, text: "Ignorieren" },
 		{ design: OverlayButtonDesign.BASIC_BLANK, id: 2, text: "Schließen" },
 		{ design: OverlayButtonDesign.PRIMARY_COLORED, id: 3, text: "Übernehmen" },
-	];
+	]);
 	@Output() selectionMade = new EventEmitter<OverlayButton>();
 	
 	private lastFocus: Element|null = null;
@@ -37,7 +37,7 @@ export class BlockingoverlayComponent implements AfterViewInit, OnDestroy {
 		const target = (event.target as HTMLElement);
 		if (target.hasAttribute("answerId")) {
 			const answerId = parseInt(target.getAttribute("answerId")!);
-			this.selectionMade.emit(this.buttons.find(b => b.id == answerId))
+			this.selectionMade.emit(this.buttons().find(b => b.id == answerId))
 		}
 	}
 

@@ -8,6 +8,7 @@ export type MovetaBusinessChunk = Chunk & {
 }
 
 export type IntranetBusinessChunk = Chunk & {
+    changed: number,
     dummy: string
 }
 
@@ -15,6 +16,7 @@ export type Business = CombinedEntity & MovetaBusinessChunk & IntranetBusinessCh
 
 export const EMPTY_BUSINESS: Business = {
     commonId: "",
+    changed: 0,
     businessType: "",
     customerMovetaId: "",
     dummy: "",

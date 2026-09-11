@@ -56,6 +56,7 @@ export enum DrugVerifiedState {
 }
 
 export type IntranetDrugChunk = Chunk & {
+    changed: number,
     reportabilityVerifierMarkedErronous: DrugVerifiedState;
 }
 
@@ -63,6 +64,7 @@ export type Drug = CombinedEntity & MovetaDrugChunk & IntranetDrugChunk & HitDru
 
 export const EMPTY_DRUG: Drug = {
     commonId: "",
+    changed: 0,
     forms: [],
     name: "",
     reportabilityVerifierMarkedErronous: DrugVerifiedState.eNOT_TESTED,
