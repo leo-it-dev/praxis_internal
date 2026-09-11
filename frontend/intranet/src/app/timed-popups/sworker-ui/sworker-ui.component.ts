@@ -1,6 +1,4 @@
-import { NgFor } from '@angular/common';
 import { Component } from '@angular/core';
-import { Module, ModuleService } from '../../module/module.service';
 import { ServiceworkerService } from '../../shared-service/serviceworker.service';
 
 @Component({

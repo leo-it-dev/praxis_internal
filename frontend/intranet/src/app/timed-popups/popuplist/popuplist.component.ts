@@ -28,6 +28,12 @@ export class PopuplistComponent {
 		serviceworkerService.newVersionReady.subscribe(() => {
 			this.showServiceWorkerOverlay = true;
 		});
+
+		effect(() => {
+			if (this.hideBackendCacheUpdateOverlay()) {
+				this.moduleService.clearBackendUpdateCachePlanning();
+			}
+		})
 	}
 
 	trackByFn(index: number, item: any) {

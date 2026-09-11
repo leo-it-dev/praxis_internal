@@ -1,6 +1,6 @@
 import { NgFor } from '@angular/common';
-import { Component, EventEmitter, HostListener, OnInit, Output, signal, Signal } from '@angular/core';
-import { Module, ModuleService } from '../../module/module.service';
+import { Component } from '@angular/core';
+import { IModule, ModuleService } from '../../module/module.service';
 import { DelayedSignalService } from '../../shared-service/delayed-signal.service';
 
 @Component({
@@ -19,7 +19,7 @@ export class CacheUpdatePopupComponent {
 		this._moduleService = modService;
 	}
 
-	trackByModule(index: number, obj: Module) {
-		return {i: index, inprog: obj.backendCacheUpdateInProgress(), res: obj.backendCacheUpdateResult()};
+	trackByModule(index: number, obj: IModule) {
+		return {i: index, inprog: obj.isBackendCacheUpdateInProgress(), res: obj.getBackendCacheUpdateResult()};
 	}
 }

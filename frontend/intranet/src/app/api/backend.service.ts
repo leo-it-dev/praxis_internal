@@ -1,4 +1,4 @@
-import { Injectable, Injector } from '@angular/core';
+import { Injectable, Injector, signal, WritableSignal } from '@angular/core';
 import { ApiModuleBody, ApiModuleInterfaceB2F, ApiModuleInterfaceF2B } from '../../../../../api_common/backend_call';
 import { SessionProviderService, SessionType } from '../shared-service/session/session-provider.service';
 import { OfflineCacheService } from '../shared-service/offline-cache.service';
@@ -10,6 +10,10 @@ import { UserPermission } from '../../../../../api_common/permission_types';
 	providedIn: 'root'
 })
 export abstract class BackendService implements IModule {
+
+	private backendCacheUpdateInProgress: WritableSignal<boolean> = signal(false);
+	private backendCacheUpdateResult: WritableSignal<boolean> = signal(false);
+	private backendCacheUpdatePlanned: WritableSignal<boolean> = signal(false);
 
 	constructor(
 		private offlineCacheService: OfflineCacheService,
@@ -111,6 +115,37 @@ export abstract class BackendService implements IModule {
 		} else {
 			return Promise.resolve();
 		}
+	}
+
+	updateBackendCache(): Promise<void> {
+		return new Promise((res, rej) => {
+			console.log("updating backend caches: ", this.name());
+			this.backendCacheUpdatePlanned.set(true);
+			this.backendCacheUpdateInProgress.set(true);
+
+			this.fetchBackendDataFilter().then(() => {
+				this.backendCacheUpdateInProgress.set(false);
+				this.backendCacheUpdateResult.set(true);
+				res();
+			}).catch(() => {
+				this.backendCacheUpdateInProgress.set(false);
+				this.backendCacheUpdateResult.set(false);
+				rej();
+			});
+		});
+	}
+
+	isBackendCacheUpdateInProgress(): boolean {
+		return this.backendCacheUpdateInProgress();
+	}
+	getBackendCacheUpdateResult(): boolean {
+		return this.backendCacheUpdateResult();
+	}
+	isBackendCacheUpdatePlanned(): boolean {
+		return this.backendCacheUpdatePlanned();
+	}
+	clearBackendCacheUpdatePlanFlag(): void {
+		this.backendCacheUpdatePlanned.set(false);
 	}
 
 	abstract fetchBackendData(): Promise<any>;

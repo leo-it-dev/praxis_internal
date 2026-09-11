@@ -222,11 +222,14 @@ export class EntitiesComponent extends ModuleComponent {
 						rej();
 					} else {
 						this.dropdownFormGroup.controls.mergeConflictCustomerServer.reset();
+						this.dropdownFormGroup.controls.customerEntity.reset();
+						this.dropdownFormGroup.controls.customerDropdown.reset();
+
 						let localCustomer = this.customerList().find(cust => cust.commonId == readback.customerReadback.commonId);
 						if (localCustomer !== undefined) {
 							Object.assign(localCustomer, readback.customerReadback);
 						}
-						res();
+						this.getBackendService().updateBackendCache().finally(() => res());
 					}
 				}
 			});
@@ -252,11 +255,14 @@ export class EntitiesComponent extends ModuleComponent {
 						rej();
 					} else {
 						this.dropdownFormGroup.controls.mergeConflictBusinessServer.reset();
+						this.dropdownFormGroup.controls.businessEntity.reset();
+						this.dropdownFormGroup.controls.businessDropdown.reset();
+
 						let localBusiness = this.businessList().find(business => business.commonId == readback.businessReadback.commonId);
 						if (localBusiness !== undefined) {
 							Object.assign(localBusiness, readback.businessReadback);
 						}
-						res();
+						this.getBackendService().updateBackendCache().finally(() => res());
 					}
 				}
 			});
@@ -282,12 +288,14 @@ export class EntitiesComponent extends ModuleComponent {
 						rej();
 					} else {
 						this.dropdownFormGroup.controls.mergeConflictDrugServer.reset();
+						this.dropdownFormGroup.controls.drugEntity.reset();
+						this.dropdownFormGroup.controls.drugDropdown.reset();
+
 						let localDrug = this.drugsList().find(drug => drug.commonId == readback.drugReadback.commonId);
 						if (localDrug !== undefined) {
 							Object.assign(localDrug, readback.drugReadback);
 						}
-						this.getBackendService().fetchBackendData();
-						res();
+						this.getBackendService().updateBackendCache().finally(() => res());
 					}
 				}
 			});
