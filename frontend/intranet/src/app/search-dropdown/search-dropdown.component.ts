@@ -44,7 +44,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 	hintText: WritableSignal<String> = signal(this.placeholder);
 
 	recommendedItems: WritableSignal<Array<TItem>> = signal([] as TItem[]);
-	currentItemRowDisplay: Signal<RowDisplay> = computed(() => this.lastItemSelectedEventItem() ? this.serial.display(this.lastItemSelectedEventItem()!) : {text: "", hint: NO_HINT});
+	currentItemRowDisplay: Signal<RowDisplay> = computed(() => this.control.value ? this.serial.display(this.control.value!) : {text: "", hint: NO_HINT});
 
 	constructor(private controlDir: NgControl,
 		private changeDetRef: ChangeDetectorRef
@@ -107,7 +107,6 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 	}};
 
 	@Output() itemSelectedEvent = new EventEmitter<TItem | undefined>();
-	lastItemSelectedEventItem: WritableSignal<TItem | undefined> = signal(undefined);
 
 	@ViewChild("searchInput") inputElement?: ElementRef;
 	@ViewChild("searchTooltip") searchTooltip?: ElementRef;
@@ -149,16 +148,14 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 			this._preventNextSelectEventEmit = false;
 		}
 		if (this.onChangeValidationCallback) {
+			console.log("callback", item);
 			this.onChangeValidationCallback(item);
 		}
 	}
 
 	emitEvent(item: TItem | undefined, emit: boolean) {
-		if (this.lastItemSelectedEventItem() !== item || item == undefined) {
-			this.lastItemSelectedEventItem.set(item);
-			if (emit) {
-				this.sendEvent(item);
-			}
+		if (emit) {
+			this.sendEvent(item);
 		}
 		this.forceInvalidate(item === undefined);
 	}
@@ -203,7 +200,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	handleTextChange(event: Event) {
 		this.updateUIAfterInputValueChange();
-		this.forceInvalidate(this.lastItemSelectedEventItem() === undefined);
+		this.forceInvalidate(this.control.value === undefined);
 	}
 
 	hoveredItemChanged(autoScroll: boolean) {
@@ -422,7 +419,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	gainedFocus(event: Event) {
 		this.updateUIAfterInputValueChange();
-		this.forceInvalidate(this.lastItemSelectedEventItem() === undefined);
+		this.forceInvalidate(this.control.value === undefined);
 	}
 
 	inputScrolled(event: Event) {
@@ -447,8 +444,6 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 	private onChangeValidationCallback?: Function = undefined;
 
 	writeValue(obj: any): void {
-		this.lastItemSelectedEventItem.set(undefined);
-
 		if (this.inputElement) {
 			this.selectItemExt(obj as TItem, false);
 		} else {

@@ -37,6 +37,7 @@ export class EntityBusinessComponent implements ControlValueAccessor, AfterViewI
 
 		this.businessFormGroup.valueChanges.subscribe(() => {
 			this.onChange(this.extractBusinessFromForm());
+			this.businessFormGroup.valid ? this.controlDir.control?.setErrors(null) : this.controlDir.control?.setErrors({'invalid': true})
 		});
 
 		effect(() => {

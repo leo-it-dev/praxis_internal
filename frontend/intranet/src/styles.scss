@@ -154,7 +154,8 @@ body {
 }
 
 
-input.ng-invalid:not(form) {
+input.ng-invalid:not(form),
+app-search-dropdown.ng-invalid:not(form) {
     border-left: 2px solid red !important;
     border-radius: 4px;
 }

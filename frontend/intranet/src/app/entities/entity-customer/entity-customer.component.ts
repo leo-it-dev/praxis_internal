@@ -44,9 +44,8 @@ export class EntityCustomerComponent implements ControlValueAccessor, AfterViewI
 		controlDir.valueAccessor = this;
 
 		this.customerFormGroup.valueChanges.subscribe(() => {
-			// this.controlDir.control?.markAsDirty();
-			console.log("dirty: ", this.controlDir.dirty);
 			this.onChange(this.extractCustomerFromForm());
+			this.customerFormGroup.valid ? this.controlDir.control?.setErrors(null) : this.controlDir.control?.setErrors({'invalid': true})
 		});
 
 		effect(() => {

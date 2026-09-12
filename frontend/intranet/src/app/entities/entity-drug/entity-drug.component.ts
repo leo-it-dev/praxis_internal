@@ -52,6 +52,7 @@ export class EntityDrugComponent implements ControlValueAccessor, AfterViewInit 
 
 		this.drugFormGroup.valueChanges.subscribe(() => {
 			this.onChange(this.extractDrugFromForm());
+			this.drugFormGroup.valid ? this.controlDir.control?.setErrors(null) : this.controlDir.control?.setErrors({'invalid': true})
 		});
 
 		effect(() => {
@@ -70,7 +71,7 @@ export class EntityDrugComponent implements ControlValueAccessor, AfterViewInit 
 		forms: this.formBuilder.array([new FormControl<DrugPackage>({} as DrugPackage, Validators.required)]),
 
 		shortsearch: [{ value: "", disabled: true }, Validators.required],
-		reportabilityVerifierMarkedErronous: new FormControl<DrugVerifiedState | null>({value: DrugVerifiedState.eNOT_TESTED, disabled: true}, this.mergeConflictValidator("reportabilityVerifierMarkedErronous")),
+		reportabilityVerifierMarkedErronous: new FormControl<DrugVerifiedState | null>({value: DrugVerifiedState.eNOT_TESTED, disabled: true}, [this.mergeConflictValidator("reportabilityVerifierMarkedErronous"), Validators.required]),
 		commonId: [{ value: "", disabled: true }],
 		changed: [0],
 	});
