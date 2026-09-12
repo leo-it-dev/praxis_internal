@@ -4,7 +4,7 @@ import { getRepeatedScheduler } from "../..";
 import { ApiInterfaceEntitiesListOut, ApiInterfacePatchBusinessIn, ApiInterfacePatchBusinessOut, ApiInterfacePatchCustomerIn, ApiInterfacePatchCustomerOut, ApiInterfacePatchDrugIn, ApiInterfacePatchDrugOut } from "../../../api_common/api_entities";
 import { ApiInterfaceEmptyIn } from "../../../api_common/backend_call";
 import { Business } from "../../../api_common/generic_types/business";
-import { Chunk } from "../../../api_common/generic_types/chunk";
+import { Chunk, CombinedEntity, EntityType } from "../../../api_common/generic_types/chunk";
 import { Customer } from "../../../api_common/generic_types/customer";
 import { Drug } from "../../../api_common/generic_types/drug";
 import { UserPermission } from "../../../api_common/permission_types";
@@ -46,11 +46,43 @@ type EntityProviders = {
     drugsExternal: EntityProvider<HitDrugEntityDatabase, [DummyEntityDatabase], Drug>,
 };
 
+type DataSourceCombinationResult<TPrimary extends ReadOnlyEntityDatabase<any, any>, TChunk extends Chunk, TSecondary extends readonly WritableHydrationDatabase<any, TChunk>[]> = {
+    combinedEntities: Array<Combine<TPrimary, TSecondary>>;
+    deletedEntities: Set<string>;
+    newlyAddedEntities: Set<string>;
+}
+type EntityCombinationResult<
+    TPrimary extends ReadOnlyEntityDatabase<any, any>, 
+    TSecondary extends readonly WritableHydrationDatabase<any, any>[], 
+    TEntity extends Combine<EntityOf<TPrimary>, EntityOf<TSecondary[number]>>> = {
+
+    entity: TEntity|undefined;
+    deletedEntities: Set<string>;
+    newlyAddedEntities: Set<string>;
+}
+type EntityStoreResult<
+    TPrimary extends ReadOnlyEntityDatabase<any, any>, 
+    TSecondary extends readonly WritableHydrationDatabase<any, any>[], 
+    TEntity extends Combine<EntityOf<TPrimary>, EntityOf<TSecondary[number]>>,
+    TProvider extends EntityProvider<TPrimary, TSecondary, TEntity>> = {
+
+    entity: TEntity|undefined;
+    deletedEntities: Set<string>
+    newlyAddedEntities: Set<string>;
+}
+
+
+export interface IEntityUpdate {
+    entityModified(entityType: EntityType, entity: CombinedEntity): void;
+    entityDeleted(entityType: EntityType, commonId: string): void;
+    entityAdded(entityType: EntityType, commonId: string): void;
+}
 
 export class ApiModuleEntities extends ApiModuleAuthorized {
 
     private updateEntityMutex = new Mutex();
     private entityProviders!: EntityProviders;
+    private dataObservers: IEntityUpdate[] = [];
 
     private resolveEntitiesLoaded!: () => void;
     private entitiesLoadedPromise: Promise<void> = new Promise((res, rej) => {
@@ -250,9 +282,15 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
         this.logger().info("Building entities view using pegasus and intranet data!.");
 
         try {
-            await this.buildCombinedEntities("customers", this.entityProviders.customer, undefined);
-            await this.buildCombinedEntities("businesses", this.entityProviders.business, undefined);
-            await this.buildCombinedEntities("drugs", this.entityProviders.drugs, undefined);
+            let customerData = (await this.buildCombinedEntities("customers", this.entityProviders.customer, undefined));
+            customerData.deletedEntities.forEach(c => this.dataObservers.forEach(obs => obs.entityDeleted(EntityType.CUSTOMER, c)));
+            customerData.newlyAddedEntities.forEach(c => this.dataObservers.forEach(obs => obs.entityAdded(EntityType.CUSTOMER, c)));
+            let businessData = (await this.buildCombinedEntities("businesses", this.entityProviders.business, undefined));
+            businessData.deletedEntities.forEach(c => this.dataObservers.forEach(obs => obs.entityDeleted(EntityType.BUSINESS, c)));
+            businessData.newlyAddedEntities.forEach(c => this.dataObservers.forEach(obs => obs.entityAdded(EntityType.BUSINESS, c)));
+            let drugData = (await this.buildCombinedEntities("drugs", this.entityProviders.drugs, undefined));
+            drugData.deletedEntities.forEach(c => this.dataObservers.forEach(obs => obs.entityDeleted(EntityType.DRUG, c)));
+            drugData.newlyAddedEntities.forEach(c => this.dataObservers.forEach(obs => obs.entityAdded(EntityType.DRUG, c)));
             await this.buildCombinedEntities("drugsExternal", this.entityProviders.drugsExternal, undefined);
         } catch (err) {
             this.logger().error(
@@ -267,7 +305,8 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
     private async buildCombinedEntities<
         TPrimary extends ReadOnlyEntityDatabase<any, any>, 
         TSecondary extends readonly WritableHydrationDatabase<any, any>[], 
-        TEntity extends Combine<EntityOf<TPrimary>, EntityOf<TSecondary[number]>>>(context: string, provider: EntityProvider<TPrimary, TSecondary, TEntity>, commonIdFilter: string|undefined): Promise<TEntity|undefined> {
+        TEntity extends Combine<EntityOf<TPrimary>, EntityOf<TSecondary[number]>>>(context: string, provider: EntityProvider<TPrimary, TSecondary, TEntity>, commonIdFilter: string|undefined): 
+        Promise<EntityCombinationResult<TPrimary, TSecondary, TEntity>> {
 
         await this.acquireAllChunkSources(
             context,
@@ -286,22 +325,39 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
         // if we just want to update one entity we set commonIdFilter != undefined.
         // If it is undefined we updated all entities, so we store all new entities.
         if (commonIdFilter === undefined) {
-            provider.entities = combinedChunks as TEntity;
+            provider.entities = combinedChunks.combinedEntities as TEntity;
+            return {
+                entity: undefined,
+                deletedEntities: combinedChunks.deletedEntities,
+                newlyAddedEntities: combinedChunks.newlyAddedEntities
+            }
         } else {
             // here we just want to update one entity.
             // Therefore we search for the old one and replace it.
             let providerOldEntityIdx = provider.entities.findIndex(entity => entity.commonId == commonIdFilter);
             if (providerOldEntityIdx != -1) {
-                Object.assign(provider.entities[providerOldEntityIdx], combinedChunks[0] as TEntity)
-                return provider.entities[providerOldEntityIdx];
+                Object.assign(provider.entities[providerOldEntityIdx], combinedChunks.combinedEntities[0] as TEntity)
+                return {
+                    entity: provider.entities[providerOldEntityIdx],
+                    deletedEntities: combinedChunks.deletedEntities,
+                    newlyAddedEntities: combinedChunks.newlyAddedEntities
+                }
             }
+        }
+
+        return {
+            entity: undefined,
+            deletedEntities: new Set(),
+            newlyAddedEntities: new Set()
         }
     }
 
-    private async combineDataSources<TPrimary extends ReadOnlyEntityDatabase<any, any>, TSecondary extends readonly WritableHydrationDatabase<any, any>[]>(primary: TPrimary, secondary: TSecondary):
-        Promise<Array<Combine<TPrimary, TSecondary>>> {
+    private async combineDataSources<TPrimary extends ReadOnlyEntityDatabase<any, any>, TChunk extends Chunk, TSecondary extends readonly WritableHydrationDatabase<any, TChunk>[]>(primary: TPrimary, secondary: TSecondary):
+        Promise<DataSourceCombinationResult<TPrimary, TChunk, TSecondary>> {
         type Result = Combine<TPrimary, TSecondary>;
         let entities: Result[] = [];
+        let deletedEntities: Set<string> = new Set();
+        let newlyAddedEntities: Set<string> = new Set();
 
         // We got all data, now combine it into our internal entity with all information hydrated.
         // We still prioritize moveta, so we try to match each moveta customer chunk with an intranet customer chunk, if available.
@@ -323,6 +379,7 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
                     // We don't yet have an entry of the customer in our internal intranet database, add a new empty customer chunk entry to our database.
                     let defaultProviderEntityChunk = hydrationDatabase.constructDefaultChunk(baseChunk.commonId);
                     try {
+                        newlyAddedEntities.add(baseChunk.commonId);
                         await hydrationDatabase.addOrModify(defaultProviderEntityChunk);
                         this.logger().info("Inserted new empty intranet entity chunk into database!", { commonId: baseChunk.commonId })
                     } catch (err) {
@@ -343,6 +400,7 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
             for (let danglingChunk of remainingDanglingChunks) {
                 try {
                     await hydrationDatabase.deleteChunk(danglingChunk);
+                    deletedEntities.add(danglingChunk.commonId);
                     this.logger().info("Deleted unused intranet chunk from database!", { commonId: danglingChunk.commonId })
                 } catch (err) {
                     this.logger().error("Error deleting intranet chunk from database!", { error: err, commonId: danglingChunk.commonId })
@@ -350,7 +408,11 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
             }
         }
 
-        return entities;
+        return {
+            combinedEntities: entities,
+            deletedEntities: deletedEntities,
+            newlyAddedEntities: newlyAddedEntities
+        } as DataSourceCombinationResult<TPrimary, TChunk, TSecondary>;
     }
 
     private async acquireAllChunkSources(context: string, databases: ReadOnlyEntityDatabase<string, any>[], commonIdFilter: string|undefined): Promise<void> {
@@ -384,7 +446,7 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
         TSecondary extends readonly WritableHydrationDatabase<any, any>[], 
         TEntity extends Combine<EntityOf<TPrimary>, EntityOf<TSecondary[number]>>,
         TProvider extends EntityProvider<TPrimary, TSecondary, TEntity>>(
-            entity: TEntity, databaseProvider: TProvider): Promise<TEntity | undefined> {
+            entity: TEntity, databaseProvider: TProvider): Promise<EntityStoreResult<TPrimary, TSecondary, TEntity, TProvider>> {
 
         // Write the changes to all databases.
         databaseProvider.sources.secondary.forEach(sec => {
@@ -394,8 +456,7 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
         // The change may not have updated all given fields in the databases (=> ReadOnlyDatabase...). Therefore we don't blindly replace our local object values,
         // instead we update that one entity by freshly constructing it from it's database providers.
         // This function also updates our internal object reference so all handles are still valid to that entity.
-        let entityPatched = await this.buildCombinedEntities("single-update", databaseProvider, entity.commonId);
-        return entityPatched;
+        return await this.buildCombinedEntities("single-update", databaseProvider, entity.commonId);
     }
 
     public async getCustomerEntries(): Promise<Customer[]> {
@@ -432,14 +493,42 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
 
     public async addOrUpdateCustomerEntry(entity: Customer): Promise<Customer | undefined> {
         await this.entitiesLoadedPromise;
-        return this.updateEntityMutex.runExclusive(() => this.addOrStoreEntity(entity, this.entityProviders.customer));
+        return this.updateEntityMutex.runExclusive(async () => {
+            let cb = await this.addOrStoreEntity(entity, this.entityProviders.customer);
+            this.dataObservers.forEach(obs => {
+                cb.newlyAddedEntities.forEach(newE => obs.entityAdded(EntityType.CUSTOMER, newE));
+                cb.deletedEntities.forEach(newE => obs.entityDeleted(EntityType.CUSTOMER, newE));
+                obs.entityModified(EntityType.CUSTOMER, entity);
+            });
+            return cb.entity;
+        });
     }
     public async addOrUpdateBusinessEntry(entity: Business): Promise<Business | undefined> {
         await this.entitiesLoadedPromise;
-        return this.updateEntityMutex.runExclusive(() => this.addOrStoreEntity(entity, this.entityProviders.business));
+        return this.updateEntityMutex.runExclusive(async () => {
+            let cb = await this.addOrStoreEntity(entity, this.entityProviders.business)
+            this.dataObservers.forEach(obs => {
+                cb.newlyAddedEntities.forEach(newE => obs.entityAdded(EntityType.BUSINESS, newE));
+                cb.deletedEntities.forEach(newE => obs.entityDeleted(EntityType.BUSINESS, newE));
+                obs.entityModified(EntityType.BUSINESS, entity);
+            });
+            return cb.entity;
+        });
     }
     public async addOrUpdateDrugEntry(entity: Drug): Promise<Drug | undefined> {
         await this.entitiesLoadedPromise;
-        return this.updateEntityMutex.runExclusive(() => this.addOrStoreEntity(entity, this.entityProviders.drugs));
+        return this.updateEntityMutex.runExclusive(async () => {
+            let cb = await this.addOrStoreEntity(entity, this.entityProviders.drugs)
+            this.dataObservers.forEach(obs => {
+                cb.newlyAddedEntities.forEach(newE => obs.entityAdded(EntityType.DRUG, newE));
+                cb.deletedEntities.forEach(newE => obs.entityDeleted(EntityType.DRUG, newE));
+                obs.entityModified(EntityType.DRUG, entity);
+            });
+            return cb.entity;
+        });
+    }
+
+    public registerDataObserver(observer: IEntityUpdate) {
+        this.dataObservers.push(observer);
     }
 }

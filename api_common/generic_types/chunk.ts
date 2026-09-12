@@ -5,3 +5,9 @@ export type Chunk = {
 export type CombinedEntity = {
     commonId: string;
 }
+
+export enum EntityType {
+	CUSTOMER,
+	BUSINESS,
+	DRUG,
+}

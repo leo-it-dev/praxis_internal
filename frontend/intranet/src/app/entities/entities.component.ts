@@ -5,7 +5,7 @@ import { Subject } from 'rxjs';
 import { ApiInterfacePatchBusinessIn, ApiInterfacePatchBusinessOut, ApiInterfacePatchCustomerIn, ApiInterfacePatchCustomerOut, ApiInterfacePatchDrugIn, ApiInterfacePatchDrugOut, ApiInterfacePatchGenericOut } from '../../../../../api_common/api_entities';
 import { ApiModuleInterfaceF2B } from '../../../../../api_common/backend_call';
 import { Business, EMPTY_BUSINESS } from '../../../../../api_common/generic_types/business';
-import { CombinedEntity } from '../../../../../api_common/generic_types/chunk';
+import { CombinedEntity, EntityType } from '../../../../../api_common/generic_types/chunk';
 import { Customer, EMPTY_CUSTOMER } from '../../../../../api_common/generic_types/customer';
 import { Drug, EMPTY_DRUG } from '../../../../../api_common/generic_types/drug';
 import { NO_HINT } from '../hint-ok/hint.component';
@@ -22,12 +22,6 @@ import { ErrorlistService } from '../timed-popups/popuplist/errorlist.service';
 import { EntityBusinessComponent } from './entity-business/entity-business.component';
 import { EntityCustomerComponent } from './entity-customer/entity-customer.component';
 import { EntityDrugComponent } from './entity-drug/entity-drug.component';
-
-export enum EntityType {
-	CUSTOMER,
-	BUSINESS,
-	DRUG,
-}
 
 @Component({
 	selector: 'app-entities',

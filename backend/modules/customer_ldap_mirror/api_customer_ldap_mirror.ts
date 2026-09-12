@@ -1,15 +1,17 @@
 import { getApiModule, getRepeatedScheduler } from "../..";
+import { CombinedEntity, EntityType } from "../../../api_common/generic_types/chunk";
+import { Customer, EMPTY_CUSTOMER } from "../../../api_common/generic_types/customer";
 import { UserPermission } from "../../../api_common/permission_types";
 import { ApiModuleAuthorized } from "../../api_module";
 import { validateKerberosTicket } from "../../framework/kerberos-handler";
 import { AuthenticationResult, LdapMemoryServer } from "../../framework/ldap/ldap_memory_server";
-import { constructLdapEntry, LdapStore } from "../../framework/ldap/ldap_store";
+import { constructLdapEntry, LdapEntry, LdapStore } from "../../framework/ldap/ldap_store";
 import { AuthenticationChoiceSasl } from "../../framework/ldap/messages/bind_request";
-import { ApiModuleEntities } from "../entities/api_entities";
+import { ApiModuleEntities, IEntityUpdate } from "../entities/api_entities";
 
 const config = require('config');
 
-export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized {
+export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized implements IEntityUpdate {
 
     entityModule!: ApiModuleEntities;
 
@@ -36,6 +38,8 @@ export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized {
         this.ldapBase = config.get('ldap-mirror.BASE_DN');
         let ldapSSL = config.get('ldap-mirror.SSL');
         let scrapeIntervalMin = config.get('ldap-mirror.SCRAPE_INTERVAL_MINUTES');
+
+        this.entityModule.registerDataObserver(this);
 
         this.memoryStore = new LdapStore();
         this.memoryLdap = new LdapMemoryServer(ldapPort, ldapHost, ldapSSL, this.ldapBase, {
@@ -66,34 +70,37 @@ export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized {
         }, true);
     }
 
+    buildLdapEntryFromCustomer(cust: Customer): LdapEntry {
+        let firstName = cust.givenName.trim() != "" ? cust.firstName.trim() : cust.firstName.trim().split(" ")[0];
+        let surName = cust.givenName.trim() != "" ? cust.givenName.trim() : cust.firstName.trim().split(" ").splice(1).join(' ');
+
+        let dn = "uid=cust-" + cust.uid + ",dc=pegasus," + this.ldapBase;
+
+        return constructLdapEntry(dn, [
+            { attr: "dn", vals: [dn] },
+            { attr: "sn", vals: [surName] },
+            { attr: "cn", vals: [firstName + " " + surName] },
+            { attr: "givenName", vals: [firstName] },
+            { attr: "displayName", vals: [firstName + " " + surName] },
+            { attr: "telephoneNumber", vals: [cust.phone || ""] },
+            { attr: "mobile", vals: [cust.phone || ""] },
+            { attr: "mail", vals: [cust.email] },
+            { attr: "street", vals: [cust.street] },
+            { attr: "l", vals: ["Germany"] },
+            { attr: "st", vals: [cust.place] },
+            { attr: "postalCode", vals: [String(cust.plz)] },
+            { attr: "co", vals: ["DE"] },
+            { attr: "description", vals: [cust.memo || ""] },
+            { attr: "objectClass", vals: ["top", "person", "organizationalPerson", "inetOrgPerson"] },
+            { attr: "commonId", vals: [cust.commonId] }
+        ]);
+    }
+    
     async scrapeCustomerData() {
         this.logger().info("Scheduled update of internal database of customers!");
         
         this.entityModule.getCustomerEntries().then(customers => {
-            this.memoryStore.replace(customers.map(cust => {
-                let firstName = cust.givenName.trim() != "" ? cust.firstName.trim() : cust.firstName.trim().split(" ")[0];
-                let surName = cust.givenName.trim() != "" ? cust.givenName.trim() : cust.firstName.trim().split(" ").splice(1).join(' ');
-
-                let dn = "uid=cust-" + cust.uid + ",dc=pegasus," + this.ldapBase;
-
-                return constructLdapEntry(dn, [
-                    { attr: "dn", vals: [dn] },
-                    { attr: "sn", vals: [surName] },
-                    { attr: "cn", vals: [firstName + " " + surName] },
-                    { attr: "givenName", vals: [firstName] },
-                    { attr: "displayName", vals: [firstName + " " + surName] },
-                    { attr: "telephoneNumber", vals: [cust.phone || ""] },
-                    { attr: "mobile", vals: [cust.phone || ""] },
-                    { attr: "mail", vals: [cust.email] },
-                    { attr: "street", vals: [cust.street] },
-                    { attr: "l", vals: ["Germany"] },
-                    { attr: "st", vals: [cust.place] },
-                    { attr: "postalCode", vals: [String(cust.plz)] },
-                    { attr: "co", vals: ["DE"] },
-                    { attr: "description", vals: [cust.memo || ""] },
-                    { attr: "objectClass", vals: ["top", "person", "organizationalPerson", "inetOrgPerson"] }
-                ]);
-            }));
+            this.memoryStore.replace(customers.map(cust => this.buildLdapEntryFromCustomer(cust)));
             this.logger().info("Successfully updated list of customers!", {entryCount: this.memoryStore.getAllEntries().length});
         }).catch(err => {
             this.logger().error("Error updating internal database of customers!", {error: err});
@@ -101,4 +108,31 @@ export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized {
     }
 
     registerEndpoints(): void {}
+   
+    entityAdded(entityType: EntityType, commonId: string): void {
+        if (entityType == EntityType.CUSTOMER) {
+            console.log("commonId: ", commonId);
+            let customer = {...EMPTY_CUSTOMER};
+            customer.commonId = commonId;
+            this.memoryStore.storeEntry(this.buildLdapEntryFromCustomer(customer))
+        }
+    }
+    entityDeleted(entityType: EntityType, commonId: string): void {
+        if (entityType == EntityType.CUSTOMER) {
+            let entry = this.memoryStore.getAllEntries().find(e => e.attributes.find(attr => attr.type.toString() == "commonId")?.vals[0].toString() == commonId)
+            console.log("commonId: ", commonId, "entry", entry);
+            if (entry) {
+                this.memoryStore.removeEntry(entry)
+            }
+        }
+    }
+    entityModified(entityType: EntityType, entity: CombinedEntity): void {
+        if (entityType == EntityType.CUSTOMER) {
+            let entry = this.memoryStore.getAllEntries().find(e => e.attributes.find(attr => attr.type.toString() == "commonId")?.vals[0].toString() == entity.commonId)
+            if (entry) {
+                this.memoryStore.removeEntry(entry)
+                this.memoryStore.storeEntry(this.buildLdapEntryFromCustomer(entity as Customer))
+            }
+        }
+    }
 }
