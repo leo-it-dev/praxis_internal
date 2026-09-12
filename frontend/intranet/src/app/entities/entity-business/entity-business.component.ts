@@ -1,6 +1,7 @@
-import { afterNextRender, Component, inject, Injector, Input, runInInjectionContext } from '@angular/core';
-import { ControlValueAccessor, FormBuilder, NgControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { afterNextRender, AfterViewInit, Component, effect, ElementRef, inject, Injector, Input, runInInjectionContext, Signal, signal } from '@angular/core';
+import { AbstractControl, ControlValueAccessor, FormBuilder, NgControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Business, EMPTY_BUSINESS } from '../../../../../../api_common/generic_types/business';
+import { makeUntabbableRecursive } from '../../utilities/dom-util';
 
 @Component({
 	selector: 'app-entity-business',
@@ -8,19 +9,41 @@ import { Business, EMPTY_BUSINESS } from '../../../../../../api_common/generic_t
 	templateUrl: './entity-business.component.html',
 	styleUrl: './entity-business.component.scss'
 })
-export class EntityBusinessComponent implements ControlValueAccessor {
+export class EntityBusinessComponent implements ControlValueAccessor, AfterViewInit {
+
+	WRITABLE_ENTRIES: (keyof Business)[] = [];
+
+	mergeConflictValidator = (attribute: keyof Business) => {
+		return (control: AbstractControl): ValidationErrors | null => {
+			let compareDrug = this.compareBusiness();
+			if (!compareDrug) {
+				return null;
+			}
+
+			const validator = control.value !== compareDrug[attribute]
+				? { mergeConflict: true }
+				: null;
+			return validator;
+		}
+	};
+
+	@Input({required: false})
+	public compareBusiness: Signal<Business | null> = signal(null);
 
 	private onChange: (value: Business | undefined) => void = () => { };
 
-	@Input({required: false})
-	public compareBusiness: Business | undefined;
-
-	constructor(private controlDir: NgControl, public injector: Injector) {
+	constructor(private controlDir: NgControl, public injector: Injector, private elRef: ElementRef) {
 		controlDir.valueAccessor = this;
 
 		this.businessFormGroup.valueChanges.subscribe(() => {
 			this.onChange(this.extractBusinessFromForm());
 		});
+
+		effect(() => {
+			this.compareBusiness();
+			Object.values(this.businessFormGroup.controls).forEach(control => control.updateValueAndValidity({emitEvent: false}));
+			this.businessFormGroup.updateValueAndValidity({emitEvent: false});
+		})
 	}
 
 	private formBuilder = inject(FormBuilder);
@@ -47,36 +70,19 @@ export class EntityBusinessComponent implements ControlValueAccessor {
 		this.businessSelected(obj);
 	}
 	businessSelected(business: Business | undefined) {
-		let writableEntries: (keyof Business)[] = [];
-
 		if (business) {
-			runInInjectionContext(this.injector, () => afterNextRender(() => this.businessFormGroup.patchValue({
+			this.businessFormGroup.patchValue({
 				businessType: business.businessType,
 				customerMovetaId: business.customerMovetaId,
 				vvvo: business.vvvo,
 				changed: business.changed,
 				businessMovetaId: business.commonId
-			})));
+			}, {emitEvent: false});
 
-			if (this.compareBusiness == undefined) {
-				Object.entries(this.businessFormGroup.controls).filter(e => writableEntries.includes(e[0] as keyof Business)).forEach(e => e[1].enable());
-			} else {
-				this.businessFormGroup.disable();
-				for (let writableEntry of writableEntries) {
-					if (business[writableEntry] != this.compareBusiness![writableEntry]) {
-						let mergeConflictControl = Object.entries(this.businessFormGroup.controls).find(e => e[0] == writableEntry);
-						if (mergeConflictControl) {
-							mergeConflictControl[1].setErrors({
-								mergeConflict: true
-							});
-						}
-					}
-				}
-			}
-
+			Object.entries(this.businessFormGroup.controls).filter(e => this.WRITABLE_ENTRIES.includes(e[0] as keyof Business)).forEach(e => e[1].enable({emitEvent: false}));
 		} else {
-			Object.entries(this.businessFormGroup.controls).filter(e => writableEntries.includes(e[0] as keyof Business)).forEach(e => e[1].disable());
-			Object.keys(this.businessFormGroup.controls).filter(c => c != 'businessDropdown').forEach(c => this.businessFormGroup.get(c)?.reset());
+			this.businessFormGroup.disable({emitEvent: false})
+			this.businessFormGroup.reset({}, {emitEvent: false})
 		}
 	}
 
@@ -100,6 +106,9 @@ export class EntityBusinessComponent implements ControlValueAccessor {
 		return undefined;
 	}
 
-
-
+	ngAfterViewInit(): void {
+		if (this.compareBusiness()) {
+			makeUntabbableRecursive(this.elRef.nativeElement);
+		}
+	}
 }

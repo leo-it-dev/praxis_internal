@@ -38,7 +38,6 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 	private _selectItemAfterInit: TItem|undefined = undefined;
 
 	protected disabled = false;
-	protected forceDisable = false;
 
 	handleTextChangeFinished: Function | undefined;
 	hoveredItem: WritableSignal<number> = signal(-1);
@@ -86,7 +85,6 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		} else {
 			this._selectItemAfterInit = selectItem;
 		}
-		this.updateEnableFlag();
 
 		if (items.length == 1) {
 			this.sendEvent(items[0]);
@@ -115,16 +113,6 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 	@ViewChild("searchTooltip") searchTooltip?: ElementRef;
 	@ViewChildren('optionItems') optionItems!: QueryList<ElementRef>;
 
-	updateEnableFlag() {
-		if (this.control) {
-			if (this.filterItemsNotDisabled().length > 1 && !this.forceDisable) {
-				this.control.enable();
-			} else {
-				this.control.disable();
-			}
-		}
-	}
-
 	forceInvalidate(invalid: boolean) {
 		if (this.control) {
 			setTimeout(() => {
@@ -135,18 +123,19 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 					if (allErrors) {
 						delete allErrors['incorrect'];
 					}
-					this.control.setErrors(allErrors);
+					if (allErrors != null && Object.keys(allErrors).length > 0) {
+						this.control.setErrors(allErrors);
+					} else {
+						this.control.setErrors(null);
+					}
 				}
 			}, 1);
 		}
 	}
 
 	ngAfterViewInit(): void {
-		this.forceDisable = this.control.disabled;
-
-		this.updateEnableFlag();
 		if (this._selectItemAfterInit !== undefined) {
-			this.selectItemExt(this._selectItemAfterInit as TItem);
+			this.selectItemExt(this._selectItemAfterInit as TItem, true);
 			this._selectItemAfterInit = undefined;
 		} else {
 			this.forceInvalidate(true);
@@ -164,10 +153,12 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 		}
 	}
 
-	emitEvent(item: TItem | undefined) {
+	emitEvent(item: TItem | undefined, emit: boolean) {
 		if (this.lastItemSelectedEventItem() !== item || item == undefined) {
 			this.lastItemSelectedEventItem.set(item);
-			this.sendEvent(item);
+			if (emit) {
+				this.sendEvent(item);
+			}
 		}
 		this.forceInvalidate(item === undefined);
 	}
@@ -264,7 +255,7 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 				selectedItem = this.recommendedItems()[0];
 			}
 			if (selectedItem !== undefined) {
-				this.selectItemExt(selectedItem);
+				this.selectItemExt(selectedItem, true);
 			}
 			event.preventDefault();
 		}
@@ -363,25 +354,23 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 				this.handleTextChangeFinished = res;
 			}).then(() => {
 				option.blur(); // Remove focus
-				this.emitEvent(selectedItem);
+				this.emitEvent(selectedItem, true);
 			});
 			this.updateUIAfterInputValueChange();
 		}
 	}
 
-	selectItemExt(item?: TItem) {
+	selectItemExt(item: TItem|undefined, sendEvent: boolean) {
 		if (this.inputElement) {
 			const input = (this.inputElement.nativeElement as HTMLInputElement);
 			if (item !== undefined && !this.itemDisabled.isItemDisabled(item) && this._items && this._items.includes(item)) {
 				input.value = this.serial!.display(item).text;
 				this.updateUIAfterInputValueChange();
-				//input.blur();
-				this.emitEvent(item);
+				this.emitEvent(item, sendEvent);
 			} else {
 				input.value = "";
 				this.updateUIAfterInputValueChange();
-				//input.blur();
-				this.emitEvent(undefined);
+				this.emitEvent(undefined, sendEvent);
 			}
 		}
 	}
@@ -404,14 +393,14 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 			let item = enabledItems[0];
 			let value = this.serial.display(item).text;
 			this.inputElement!.nativeElement.value = value;
-			this.emitEvent(item);
+			this.emitEvent(item, true);
 		}
 		else if (equalItem != undefined) {
 			let value = this.serial.display(equalItem).text;
 			this.inputElement!.nativeElement.value = value;
-			this.emitEvent(equalItem);
+			this.emitEvent(equalItem, true);
 		} else if (inputIsEmpty || searchString !== this.hintText()) {
-			this.emitEvent(undefined);
+			this.emitEvent(undefined, true);
 		}
 
 		/* else if (this.hoveredItem() !== -1) {
@@ -458,8 +447,10 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 	private onChangeValidationCallback?: Function = undefined;
 
 	writeValue(obj: any): void {
+		this.lastItemSelectedEventItem.set(undefined);
+
 		if (this.inputElement) {
-			this.selectItemExt(obj as TItem);
+			this.selectItemExt(obj as TItem, false);
 		} else {
 			let enabledItems = this.filterItemsNotDisabled();
 			if (enabledItems.length == 1 && (obj === undefined || obj === null)) {
@@ -480,5 +471,6 @@ export class SearchDropdownComponent<TItem> implements AfterViewInit, ControlVal
 
 	setDisabledState(isDisabled: boolean): void {
 		this.disabled = isDisabled;
+		this.control?.updateValueAndValidity({emitEvent: false});
 	}
 }

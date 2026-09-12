@@ -1,4 +1,4 @@
-<form [formGroup]="businessFormGroup" [class.valid]="businessFormGroup.valid" [class.mergeConflictContainer]="this.compareBusiness !== undefined">
+<form [formGroup]="businessFormGroup" [class.valid]="businessFormGroup.valid" [class.mergeConflictContainer]="this.compareBusiness()">
     <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
     <input type="number" id="changed" formControlName="changed" hidden>
     <div class="cont">

@@ -5,8 +5,8 @@
     (keydown)="keyDownPressed($event)"
     [placeholder]="placeholder"
 
-    class="datepicker form-control touched"
+    class="datepicker form-control"
     [formControl]="control"
     />
-<button type="button" #todayButton class="todayButton" (click)="setDateToToday()">Heute</button>
+<button type="button" #todayButton class="todayButton" (click)="setDateToToday()" [disabled]="this.control.disabled">Heute</button>
 <!-- button type=button, because html would use it to submit forms otherwise -->

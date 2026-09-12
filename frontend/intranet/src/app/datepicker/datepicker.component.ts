@@ -152,7 +152,6 @@ export class DatepickerComponent implements AfterViewInit {
 
 	writeValue(obj: any): void {
 		this.updateTodayButtonVisibility();
-		this.onChangeValidationCallback(this.control.value);
 	}
 	registerOnChange(fn: (val: string) => void): void {
 		this.onChangeValidationCallback = fn;

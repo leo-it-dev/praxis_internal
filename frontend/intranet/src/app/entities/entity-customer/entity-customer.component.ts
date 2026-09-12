@@ -1,8 +1,9 @@
-import { afterNextRender, Component, inject, Injector, Input, runInInjectionContext } from '@angular/core';
-import { ControlValueAccessor, FormBuilder, NgControl, ReactiveFormsModule } from '@angular/forms';
+import { AfterViewInit, Component, effect, ElementRef, inject, Injector, Input, Signal, signal } from '@angular/core';
+import { AbstractControl, ControlValueAccessor, EmailValidator, FormBuilder, FormControl, NgControl, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
 import { Customer } from '../../../../../../api_common/generic_types/customer';
 import { DatepickerComponent } from '../../datepicker/datepicker.component';
 import { ImagePickerComponent } from '../../image-picker/image-picker.component';
+import { makeUntabbableRecursive } from '../../utilities/dom-util';
 
 @Component({
 	selector: 'app-entity-customer',
@@ -10,22 +11,53 @@ import { ImagePickerComponent } from '../../image-picker/image-picker.component'
 	templateUrl: './entity-customer.component.html',
 	styleUrl: './entity-customer.component.scss'
 })
-export class EntityCustomerComponent implements ControlValueAccessor {
+export class EntityCustomerComponent implements ControlValueAccessor, AfterViewInit {
+
+	WRITABLE_ENTRIES: (keyof Customer)[] = [
+		'altgpsplace',
+		'altgpsplz',
+		'altgpsstreet',
+		'nonpaying',
+		'image'
+	];
+
+	mergeConflictValidator = (attribute: keyof Customer) => {
+		return (control: AbstractControl): ValidationErrors | null => {
+			let compareCustomer = this.compareCustomer();
+			if (!compareCustomer) {
+				return null;
+			}
+
+			const validator = control.value !== compareCustomer[attribute]
+				? { mergeConflict: true }
+				: null;
+			return validator;
+		}
+	};
+
+	@Input({required: false})
+	public compareCustomer: Signal<Customer | null> = signal(null);
 
 	private onChange: (value: Customer | undefined) => void = () => {};
 
-	@Input({required: false})
-	public compareCustomer: Customer | undefined;
-
-	constructor(private controlDir: NgControl, public injector: Injector) {
+	constructor(private controlDir: NgControl, public injector: Injector, private elRef: ElementRef) {
 		controlDir.valueAccessor = this;
 
-		// this.customerFormGroup.valueChanges.subscribe(() => {
-		// 	this.onChange(this.extractCustomerFromForm());
-		// });
+		this.customerFormGroup.valueChanges.subscribe(() => {
+			// this.controlDir.control?.markAsDirty();
+			console.log("dirty: ", this.controlDir.dirty);
+			this.onChange(this.extractCustomerFromForm());
+		});
+
+		effect(() => {
+			this.compareCustomer();
+			Object.values(this.customerFormGroup.controls).forEach(control => control.updateValueAndValidity({emitEvent: false}));
+			this.customerFormGroup.updateValueAndValidity({emitEvent: false});
+		})
 	}
 
 	private formBuilder = inject(FormBuilder);
+	
 	customerFormGroup = this.formBuilder.group({
 		// moveta read only data
 		firstName: [{ value: "", disabled: true }],
@@ -43,11 +75,11 @@ export class EntityCustomerComponent implements ControlValueAccessor {
 		movetaCustomerId: [{ value: "", disabled: true }],
 
 		// modifyable data
-		image: [{ value: "", disabled: true }],
-		nonpaying: [{ value: false, disabled: true }],
-		altgpsstreet: [{ value: "", disabled: true }],
-		altgpsplz: [{ value: 0, disabled: true }],
-		altgpsplace: [{ value: "", disabled: true }],
+		image: new FormControl<string>({ value: "", disabled: true }, [this.mergeConflictValidator("image")]),
+		nonpaying: new FormControl<boolean>({ value: false, disabled: true }, [this.mergeConflictValidator("nonpaying")]),
+		altgpsstreet: new FormControl<string>({ value: "", disabled: true }, [this.mergeConflictValidator("altgpsstreet")]),
+		altgpsplz: new FormControl<number>({ value: 0, disabled: true }, [this.mergeConflictValidator("altgpsplz")]),
+		altgpsplace: new FormControl<string>({ value: "", disabled: true }, [this.mergeConflictValidator("altgpsplace")]),
 		changed: [0],
 	});
 
@@ -65,67 +97,41 @@ export class EntityCustomerComponent implements ControlValueAccessor {
 	}
 
 	customerSelected(customer: Customer | undefined) {
-		let writableEntries: (keyof Customer)[] = [
-			'altgpsplace',
-			'altgpsplz',
-			'altgpsstreet',
-			'nonpaying',
-			'image'
-		];
 		if (customer) {
-			runInInjectionContext(this.injector, () => afterNextRender(() => 
-				{
-					this.customerFormGroup.patchValue({
-					firstName: customer.firstName,
-					givenName: customer.givenName,
-					search: customer.search,
-					street: customer.street,
-					plz: customer.plz,
-					place: customer.place,
-					phone: customer.phone || "",
-					memo: customer.memo || "",
-					fax: customer.fax || "",
-					email: customer.email,
-					birthday: customer.birthday ? DatepickerComponent.serializeDateGerman(customer.birthday) : "",
-					uid: customer.uid,
-					movetaCustomerId: customer.commonId,
+			this.customerFormGroup.patchValue({
+				firstName: customer.firstName,
+				givenName: customer.givenName,
+				search: customer.search,
+				street: customer.street,
+				plz: customer.plz,
+				place: customer.place,
+				phone: customer.phone || "",
+				memo: customer.memo || "",
+				fax: customer.fax || "",
+				email: customer.email,
+				birthday: customer.birthday ? DatepickerComponent.serializeDateGerman(customer.birthday) : "",
+				uid: customer.uid,
+				movetaCustomerId: customer.commonId,
 
-					changed: customer.changed,
-					altgpsplace: customer.altgpsplace,
-					altgpsplz: customer.altgpsplz,
-					altgpsstreet: customer.altgpsstreet,
-					nonpaying: customer.nonpaying,
-					image: customer.image
-				}, {emitEvent: false})
-				this.customerFormGroup.updateValueAndValidity({emitEvent: true});
-			}));
+				changed: customer.changed,
+				altgpsplace: customer.altgpsplace,
+				altgpsplz: customer.altgpsplz,
+				altgpsstreet: customer.altgpsstreet,
+				nonpaying: customer.nonpaying,
+				image: customer.image
+			}, {emitEvent: false})
 
-			if (this.compareCustomer == undefined) {
-				Object.entries(this.customerFormGroup.controls).filter(e => writableEntries.includes(e[0] as keyof Customer)).forEach(e => e[1].enable());
-			} else {
-				this.customerFormGroup.disable();
-				for (let writableEntry of writableEntries) {
-					if (customer[writableEntry] != this.compareCustomer![writableEntry]) {
-						let mergeConflictControl = Object.entries(this.customerFormGroup.controls).find(e => e[0] == writableEntry);
-						if (mergeConflictControl) {
-							mergeConflictControl[1].setErrors({
-								mergeConflict: true
-							});
-						}
-					}
-				}
-			}
+			Object.entries(this.customerFormGroup.controls).filter(e => this.WRITABLE_ENTRIES.includes(e[0] as keyof Customer)).forEach(e => e[1].enable({emitEvent: false}));
 		} else {
-			Object.entries(this.customerFormGroup.controls).filter(e => writableEntries.includes(e[0] as keyof Customer)).forEach(e => e[1].disable());
-			Object.keys(this.customerFormGroup.controls).filter(c => c != 'customerDropdown').forEach(c => this.customerFormGroup.get(c)?.reset());
+			this.customerFormGroup.disable({emitEvent: false});
+			this.customerFormGroup.reset({}, {emitEvent: false});
 		}
 	}
 
 	extractCustomerFromForm(): Customer | undefined {
 		this.customerFormGroup.updateValueAndValidity({emitEvent: false});
-		let value = this.customerFormGroup.getRawValue();
-		if (value) {
-			// We need to populate commonId=movetaCustomerId so the server can identify which entry to modify.
+		if (this.customerFormGroup.value) {
+			let value = this.customerFormGroup.getRawValue();
 			let customer: Customer = {
 				// read only properties
 				firstName: value.firstName!,
@@ -153,5 +159,11 @@ export class EntityCustomerComponent implements ControlValueAccessor {
 			return customer;
 		}
 		return undefined;
+	}
+
+	ngAfterViewInit(): void {
+		if (this.compareCustomer()) {
+			makeUntabbableRecursive(this.elRef.nativeElement);
+		}
 	}
 }

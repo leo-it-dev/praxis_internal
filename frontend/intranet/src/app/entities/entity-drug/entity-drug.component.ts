@@ -34,9 +34,6 @@ export class EntityDrugComponent implements ControlValueAccessor, AfterViewInit 
 	@Input({required: false})
 	public compareDrug: Signal<Drug | null> = signal(null);
 
-	@Input({required: true})
-	public id: string = "";
-
 	private onChange: (value: Drug | undefined) => void = () => { };
 
 	drugReportabilityItems: DrugVerifiedState[] = [DrugVerifiedState.eNOT_TESTED, DrugVerifiedState.eVERIFIED_NOT_REPORTABLE, DrugVerifiedState.eVERIFIED_SUCCESSFULLY_REPORTABLE]
@@ -102,12 +99,11 @@ export class EntityDrugComponent implements ControlValueAccessor, AfterViewInit 
 				reportabilityVerifierMarkedErronous: drug.reportabilityVerifierMarkedErronous,
 				changed: drug.changed
 			}, {emitEvent: false})
-			this.drugFormGroup.updateValueAndValidity({emitEvent: false});
 
-			Object.entries(this.drugFormGroup.controls).filter(e => this.WRITABLE_ENTRIES.includes(e[0] as keyof Drug)).forEach(e => e[1].enable());
+			Object.entries(this.drugFormGroup.controls).filter(e => this.WRITABLE_ENTRIES.includes(e[0] as keyof Drug)).forEach(e => e[1].enable({emitEvent: false}));
 		} else {
-			Object.entries(this.drugFormGroup.controls).filter(e => this.WRITABLE_ENTRIES.includes(e[0] as keyof Drug)).forEach(e => e[1].disable());
-			Object.keys(this.drugFormGroup.controls).filter(c => c != 'drugDropdown').forEach(c => this.drugFormGroup.get(c)?.reset());
+			this.drugFormGroup.disable({emitEvent: false});
+			this.drugFormGroup.reset({}, {emitEvent: false})
 		}
 	}
 

@@ -108,15 +108,10 @@ export class PrescriptionRowComponent {
 	drugPackingSerializer: IStringify<DrugPackage> = { display: (drugPackage) => ({ text: drugPackage.package, hint: NO_HINT }) };
 	drugUnitSerializer: IStringify<DrugUnit> = { display: (drugUnit) => ({ text: drugUnit.name, hint: NO_HINT }) };
 	drugSerializer: IStringify<CategorizedItem<Drug>> = {
-		display: (reportableDrug) => {
-			if (!reportableDrug.item.forms) {
-				console.log(reportableDrug);
-			}
-			return {
-				text: reportableDrug.item.name + (reportableDrug.item.forms.length == 1 ? " - " + reportableDrug.item.forms[0].package : " ..."),
-				hint: reportableDrug.category == DRUG_CATEGORY_OK ? HINT_OK_drug : HINT_WARN_drug
-			}
-		}
+		display: (reportableDrug) => ({
+			text: reportableDrug.item.name + (reportableDrug.item.forms.length == 1 ? " - " + reportableDrug.item.forms[0].package : " ..."),
+			hint: reportableDrug.category == DRUG_CATEGORY_OK ? HINT_OK_drug : HINT_WARN_drug
+		})
 	};
 
 
@@ -152,10 +147,10 @@ export class PrescriptionRowComponent {
 		if (drugPacking) {
 			if (drugPacking.unitSuggestion) {
 				let unitQS = Object.values(DrugUnits).find(u => drugPacking.unitSuggestion !== undefined && u.id == drugPacking.unitSuggestion.id && u.name == drugPacking.unitSuggestion.name);
-				this.drugUnitDOM?.selectItemExt(unitQS);
+				this.drugUnitDOM?.selectItemExt(unitQS, true);
 			}
 		} else {
-			this.drugUnitDOM?.selectItemExt(undefined);
+			this.drugUnitDOM?.selectItemExt(undefined, true);
 		}
 	}
 

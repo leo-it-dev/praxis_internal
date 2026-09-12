@@ -5,18 +5,9 @@
                             type="text" 
                             id="searchText" 
                             (scroll)="inputScrolled($event)" 
-
-                            [ngClass]="{
-                                'ng-invalid': control.invalid && (control.touched || control.dirty),
-                                'ng-valid': control.valid,
-                                'ng-touched': control.touched,
-                                'ng-untouched': control.untouched,
-                                'ng-dirty': control.dirty,
-                                'ng-pristine': control.pristine
-                            }"
                             autocomplete="off"
 
-                            [disabled]="this.disabled"
+                            [disabled]="this.disabled || this.filterItemsNotDisabled().length <= 1"
                             /><!-- We fake the value of this control, therefore we must manually fix the disabled and error functions. !-->
                             <span #searchTooltip id="inputTooltip">{{hintText()}}</span>
         </div>

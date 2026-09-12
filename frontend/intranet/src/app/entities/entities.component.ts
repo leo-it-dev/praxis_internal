@@ -1,4 +1,4 @@
-import { afterNextRender, Component, computed, effect, ElementRef, inject, Injector, runInInjectionContext, Signal, signal, ViewChild, WritableSignal } from '@angular/core';
+import { afterNextRender, Component, computed, ElementRef, inject, Injector, runInInjectionContext, Signal, signal, ViewChild, WritableSignal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Subject } from 'rxjs';
@@ -127,10 +127,6 @@ export class EntitiesComponent extends ModuleComponent {
 
 	constructor(private loadingService: LoadingoverlayService, private errorlistService: ErrorlistService, private offlineStore: OfflineStoreService, private injector: Injector) {
 		super(EntitiesBackendService);
-		effect(() => {
-			console.log(this.drugLoaded());
-		})
-
 		Promise.allSettled([this.getBackendService().fetchBackendData()]).then((proms) => {
 			let backendEntitiesProms = proms[0] as PromiseSettledResult<EntitiesBackendFetch>;
 
@@ -154,6 +150,22 @@ export class EntitiesComponent extends ModuleComponent {
 		if (this.isCustomersSelected()) this.customerSelected(undefined);
 		if (this.isBusinessSelected()) this.businessSelected(undefined);
 		if (this.isDrugsSelected()) this.drugSelected(undefined);
+	
+		this.dropdownFormGroup.controls.businessDropdown.enable();
+		this.dropdownFormGroup.controls.customerDropdown.enable();
+		this.dropdownFormGroup.controls.drugDropdown.enable();
+
+		this.dropdownFormGroup.controls.mergeConflictCustomerServer.reset();
+		this.dropdownFormGroup.controls.customerEntity.reset();
+		this.dropdownFormGroup.controls.customerDropdown.reset();
+
+		this.dropdownFormGroup.controls.mergeConflictBusinessServer.reset();
+		this.dropdownFormGroup.controls.businessEntity.reset();
+		this.dropdownFormGroup.controls.businessDropdown.reset();
+
+		this.dropdownFormGroup.controls.mergeConflictDrugServer.reset();
+		this.dropdownFormGroup.controls.drugEntity.reset();
+		this.dropdownFormGroup.controls.drugDropdown.reset();
 	}
 
 	storeEntity<TRequest extends ApiModuleInterfaceF2B, TResponse extends ApiInterfacePatchGenericOut, TEntity extends CombinedEntity>(url: string, checkValidity: () => boolean, extractFunc: () => TEntity | undefined, buildRequest: (entity: TEntity) => TRequest): Promise<TResponse | undefined> {
@@ -172,12 +184,14 @@ export class EntitiesComponent extends ModuleComponent {
 							if (!dat.mergeConflict) {
 								this.errorlistService.showErrorMessage("Entität erfolgreich gespeichert!");
 								if (this.syncController?.isSyncMode() && this.currentSyncEntry) {
-									this.resetForm();
 									await this.syncController.deleteEntry(this.currentSyncEntry);
 
-									this.dropdownFormGroup.controls.businessDropdown.enable();
-									this.dropdownFormGroup.controls.customerDropdown.enable();
-									this.dropdownFormGroup.controls.drugDropdown.enable();
+									// ensure multiple synch entries don't think they force push as the last entry kept it's merge conflict window open.
+									this.dropdownFormGroup.controls.mergeConflictBusinessServer.reset();
+									this.dropdownFormGroup.controls.mergeConflictCustomerServer.reset();
+									this.dropdownFormGroup.controls.mergeConflictDrugServer.reset();
+								} else {
+									this.resetForm();
 								}
 							}
 							res(dat);
@@ -221,10 +235,6 @@ export class EntitiesComponent extends ModuleComponent {
 						this.errorlistService.showErrorMessage("Mergekonflikt! Bitte Versionen vergleichen und dann absenden.");
 						rej();
 					} else {
-						this.dropdownFormGroup.controls.mergeConflictCustomerServer.reset();
-						this.dropdownFormGroup.controls.customerEntity.reset();
-						this.dropdownFormGroup.controls.customerDropdown.reset();
-
 						let localCustomer = this.customerList().find(cust => cust.commonId == readback.customerReadback.commonId);
 						if (localCustomer !== undefined) {
 							Object.assign(localCustomer, readback.customerReadback);
@@ -254,10 +264,6 @@ export class EntitiesComponent extends ModuleComponent {
 						this.errorlistService.showErrorMessage("Mergekonflikt! Bitte Versionen vergleichen und dann absenden.");
 						rej();
 					} else {
-						this.dropdownFormGroup.controls.mergeConflictBusinessServer.reset();
-						this.dropdownFormGroup.controls.businessEntity.reset();
-						this.dropdownFormGroup.controls.businessDropdown.reset();
-
 						let localBusiness = this.businessList().find(business => business.commonId == readback.businessReadback.commonId);
 						if (localBusiness !== undefined) {
 							Object.assign(localBusiness, readback.businessReadback);
@@ -287,10 +293,6 @@ export class EntitiesComponent extends ModuleComponent {
 						this.errorlistService.showErrorMessage("Mergekonflikt! Bitte Versionen vergleichen und dann absenden.");
 						rej();
 					} else {
-						this.dropdownFormGroup.controls.mergeConflictDrugServer.reset();
-						this.dropdownFormGroup.controls.drugEntity.reset();
-						this.dropdownFormGroup.controls.drugDropdown.reset();
-
 						let localDrug = this.drugsList().find(drug => drug.commonId == readback.drugReadback.commonId);
 						if (localDrug !== undefined) {
 							Object.assign(localDrug, readback.drugReadback);
@@ -318,6 +320,7 @@ export class EntitiesComponent extends ModuleComponent {
 							afterNextRender(async () => {
 								await this.businessSelected(offlineEntry.entry.item["item"]["business"]);
 								this.dropdownFormGroup.controls.businessDropdown.disable();
+								this.dropdownFormGroup.controls.businessEntity.markAsDirty();
 								this.currentSyncEntry = offlineEntry.entry;
 								res();
 							});
@@ -327,6 +330,7 @@ export class EntitiesComponent extends ModuleComponent {
 							afterNextRender(async () => {
 								await this.customerSelected(this.restoreCustomer(offlineEntry.entry.item["item"]["customer"]));
 								this.dropdownFormGroup.controls.customerDropdown.disable();
+								this.dropdownFormGroup.controls.customerEntity.markAsDirty();
 								this.currentSyncEntry = offlineEntry.entry;
 								res();
 							});
@@ -336,6 +340,7 @@ export class EntitiesComponent extends ModuleComponent {
 							afterNextRender(async () => {
 								await this.drugSelected(offlineEntry.entry.item["item"]["drug"]);
 								this.dropdownFormGroup.controls.drugDropdown.disable();
+								this.dropdownFormGroup.controls.drugEntity.markAsDirty();
 								this.currentSyncEntry = offlineEntry.entry;
 								res();
 							});
@@ -349,31 +354,6 @@ export class EntitiesComponent extends ModuleComponent {
 
 	unloadOfflineEntry() {
 		this.resetForm();
-
-		if (this.currentSyncEntry) {
-			this.dropdownFormGroup.patchValue({
-				mergeConflictBusinessServer: EMPTY_BUSINESS,
-				mergeConflictCustomerServer: EMPTY_CUSTOMER,
-				mergeConflictDrugServer: EMPTY_DRUG
-			});
-			console.log("nullify val!");
-
-
-			let entityTypeEndpoint = this.currentSyncEntry?.item["endpoint"];
-			switch (entityTypeEndpoint) {
-				case EntitiesComponent.API_URL_PATCH_BUSINESS:
-					this.dropdownFormGroup.controls.businessDropdown.enable();
-					break;
-				case EntitiesComponent.API_URL_PATCH_CUSTOMER:
-					this.dropdownFormGroup.controls.customerDropdown.enable();
-					break;
-				case EntitiesComponent.API_URL_PATCH_DRUG:
-					this.dropdownFormGroup.controls.drugDropdown.enable();
-					break;
-			}
-		}
-
-
 		this.currentSyncEntry = undefined;
 	}
 
@@ -395,5 +375,4 @@ export class EntitiesComponent extends ModuleComponent {
 			}
 		}
 	}
-
 }

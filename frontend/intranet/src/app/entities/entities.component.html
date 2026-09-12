@@ -44,11 +44,11 @@
             @if(isMergeConflictCustomerGUIshown()) {
                 <div>
                     <h2 id="conflictNoticeRemote">Stand auf dem Server</h2>
-                    <app-entity-customer [formControl]="dropdownFormGroup.controls.mergeConflictCustomerServer" class="small" [compareCustomer]="this.dropdownFormGroup.value.customerEntity!"></app-entity-customer>
+                    <app-entity-customer [formControl]="dropdownFormGroup.controls.mergeConflictCustomerServer" class="small" [compareCustomer]="this.customerLoaded"></app-entity-customer>
                 </div>
             }
         </div>
-        <button class="actionButton" [disabled]="!dropdownFormGroup.controls.customerEntity.valid || !isEditableCustomerGUIshown()" (click)="storeCustomer()">
+        <button class="actionButton" [disabled]="!dropdownFormGroup.controls.customerEntity.valid || !dropdownFormGroup.controls.customerEntity.dirty" (click)="storeCustomer()">
             {{this.getSessionService().isOnlineSession() ? (isMergeConflictCustomerGUIshown() ? "Meinen Stand auf dem Server speichern" : "Änderungen übermitteln") : "Änderungen lokal speichern"}}
         </button>
     }
@@ -63,11 +63,11 @@
             @if(isMergeConflictBusinessGUIshown()) {
                 <div>
                     <h2 id="conflictNoticeRemote">Stand auf dem Server</h2>
-                    <app-entity-business [formControl]="dropdownFormGroup.controls.mergeConflictBusinessServer" class="small" [compareBusiness]="this.dropdownFormGroup.value.businessEntity!"></app-entity-business>
+                    <app-entity-business [formControl]="dropdownFormGroup.controls.mergeConflictBusinessServer" class="small" [compareBusiness]="this.businessLoaded"></app-entity-business>
                 </div>
             }
         </div>
-        <button class="actionButton" [disabled]="!dropdownFormGroup.controls.businessEntity.valid || !isEditableBusinessGUIshown()" (click)="storeBusiness()">
+        <button class="actionButton" [disabled]="!dropdownFormGroup.controls.businessEntity.valid || !dropdownFormGroup.controls.businessEntity.dirty || !isEditableBusinessGUIshown()" (click)="storeBusiness()">
             {{this.getSessionService().isOnlineSession() ? (isMergeConflictBusinessGUIshown() ? "Meinen Stand auf dem Server speichern" : "Änderungen übermitteln") : "Änderungen lokal speichern"}}
         </button>
     }
@@ -77,16 +77,16 @@
                 @if(isMergeConflictDrugGUIshown()) {
                     <h2 id="conflictNoticeLocal">Dein lokaler Stand</h2>
                 }
-                <app-entity-drug id="main" [formControl]="dropdownFormGroup.controls.drugEntity" [class.small]="isMergeConflictDrugGUIshown()"></app-entity-drug>
+                <app-entity-drug [formControl]="dropdownFormGroup.controls.drugEntity" [class.small]="isMergeConflictDrugGUIshown()"></app-entity-drug>
             </div>
             @if(isMergeConflictDrugGUIshown()) {
                 <div>
                     <h2 id="conflictNoticeRemote">Stand auf dem Server</h2>
-                    <app-entity-drug id="compare" [formControl]="dropdownFormGroup.controls.mergeConflictDrugServer" class="small" [compareDrug]="this.drugLoaded"></app-entity-drug>
+                    <app-entity-drug [formControl]="dropdownFormGroup.controls.mergeConflictDrugServer" class="small" [compareDrug]="this.drugLoaded"></app-entity-drug>
                 </div>
             }
         </div>
-        <button class="actionButton" [disabled]="!dropdownFormGroup.controls.drugEntity.valid || !isEditableDrugGUIshown()" (click)="storeDrug()">
+        <button class="actionButton" [disabled]="!dropdownFormGroup.controls.drugEntity.valid || !dropdownFormGroup.controls.drugEntity.dirty || !isEditableDrugGUIshown()" (click)="storeDrug()">
             {{this.getSessionService().isOnlineSession() ? (isMergeConflictDrugGUIshown() ? "Meinen Stand auf dem Server speichern" : "Änderungen übermitteln") : "Änderungen lokal speichern"}}
         </button>
     }

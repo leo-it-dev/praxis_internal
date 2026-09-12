@@ -394,7 +394,6 @@ export class ApiModuleEntities extends ApiModuleAuthorized {
         // The change may not have updated all given fields in the databases (=> ReadOnlyDatabase...). Therefore we don't blindly replace our local object values,
         // instead we update that one entity by freshly constructing it from it's database providers.
         // This function also updates our internal object reference so all handles are still valid to that entity.
-        console.log(entity.commonId);
         let entityPatched = await this.buildCombinedEntities("single-update", databaseProvider, entity.commonId);
         return entityPatched;
     }

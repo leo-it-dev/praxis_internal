@@ -175,7 +175,7 @@ export class SyncOnlineControllerComponent implements OnInit, OnDestroy {
 	}
 
 	syncModeCanBeEntered() {
-		return (this.offlineStore?.entryCount() || 0) > 0 && this.sessionProvider.isOnlineSession();
+		return (this.offlineStore?.entryCount() || 0) > 0 && this.sessionProvider.isOnlineSession() && this.pageInitIsFinished;
 	}
 
 	async commitAllEntries() {

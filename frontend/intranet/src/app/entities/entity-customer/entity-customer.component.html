@@ -1,4 +1,4 @@
-<form [formGroup]="customerFormGroup" [class.valid]="customerFormGroup.valid" [class.mergeConflictContainer]="this.compareCustomer !== undefined">
+<form [formGroup]="customerFormGroup" [class.valid]="customerFormGroup.valid" [class.mergeConflictContainer]="this.compareCustomer()">
     <h5 class="data-section" data-text="Moveta Pegasus:"></h5>
     <app-image-picker formControlName="image" [class.mergeConflict]="this.customerFormGroup.controls.image.hasError('mergeConflict')"></app-image-picker>
     <input type="number" id="changed" formControlName="changed" hidden>

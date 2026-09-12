@@ -44,7 +44,6 @@ export class ImagePickerComponent implements ControlValueAccessor {
 	}
 
 	writeValue(obj: any): void {
-		this.changeEvent(obj);
 		this.imageLoaded.set(obj);
 	}
 
