@@ -15,6 +15,9 @@ import { DeploymentType } from './deployment';
 import { AdfsOidc } from './framework/adfs_oidc_instance';
 import * as ors from './framework/openrouteservice';
 import { RepeatedTaskScheduler } from './framework/scheduled_events';
+import { WebdavSResource, WebdavSResourceType } from './framework/webdav/elements/storage_elements';
+import { WebDAVMemoryServer } from './framework/webdav/webdav_memory_server';
+import { WebdavMemoryStorage } from './framework/webdav/webdav_memory_storage';
 import { getLogger } from './logger';
 import { ApiModuleAuth } from './modules/auth/api_auth';
 import { ApiModuleCustomerLdapMirror } from './modules/customer_ldap_mirror/api_customer_ldap_mirror';
@@ -170,9 +173,43 @@ async function startup() {
         res.sendFile(path.join(__dirname, path.join(filePathFrontend, 'index.html')));
     });
 
+    startTestWebDAV();
+
     runSecureRedirectServer();
     https.createServer(ssl.SSL_OPTIONS, app).listen(443);
 }
+
+async function startTestWebDAV() {
+    let memoryStore = new WebdavMemoryStorage();
+    let phoneResource = new WebdavSResource(
+        "/carddav/crddv-mrror-phones",
+        WebdavSResourceType.RESOURCE,
+        [
+
+        ],
+        undefined
+    );
+    let rootResource = new WebdavSResource(
+        "/carddav",
+        WebdavSResourceType.COLLECTION,
+        [
+
+        ],
+        undefined
+    );
+
+    memoryStore.registerResource(rootResource),
+    memoryStore.registerResource(phoneResource),
+    new WebDAVMemoryServer(memoryStore, {
+        mapUsernameToResource(username) {
+            if (username == config.get("carddav-mirror.USERNAME")) {
+                return phoneResource;
+            }
+            return undefined;
+        },
+    });
+}
+
 startup();
 
 export function getApiModule<T = ApiModule>(apiModuleClass: { new(...args: any[]): T }): T | undefined {

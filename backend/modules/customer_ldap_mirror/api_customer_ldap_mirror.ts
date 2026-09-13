@@ -76,12 +76,15 @@ export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized implements 
 
         let dn = "uid=cust-" + cust.uid + ",dc=pegasus," + this.ldapBase;
 
+        let customDisplayName = firstName + " " + surName + (cust.nonpaying ? "⚠️💸" : "")
+        let customMemo = (cust.memo || "") + "\n" + (cust.nonpaying ? "Achtung: Nichtzahler" : "");
+
         return constructLdapEntry(dn, [
             { attr: "dn", vals: [dn] },
             { attr: "sn", vals: [surName] },
-            { attr: "cn", vals: [firstName + " " + surName] },
+            { attr: "cn", vals: [customDisplayName] },
             { attr: "givenName", vals: [firstName] },
-            { attr: "displayName", vals: [firstName + " " + surName] },
+            { attr: "displayName", vals: [customDisplayName] },
             { attr: "telephoneNumber", vals: [cust.phone || ""] },
             { attr: "mobile", vals: [cust.phone || ""] },
             { attr: "mail", vals: [cust.email] },
@@ -90,7 +93,7 @@ export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized implements 
             { attr: "st", vals: [cust.place] },
             { attr: "postalCode", vals: [String(cust.plz)] },
             { attr: "co", vals: ["DE"] },
-            { attr: "description", vals: [cust.memo || ""] },
+            { attr: "description", vals: [customMemo] },
             { attr: "objectClass", vals: ["top", "person", "organizationalPerson", "inetOrgPerson"] },
             { attr: "commonId", vals: [cust.commonId] }
         ]);
@@ -111,7 +114,6 @@ export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized implements 
    
     entityAdded(entityType: EntityType, commonId: string): void {
         if (entityType == EntityType.CUSTOMER) {
-            console.log("commonId: ", commonId);
             let customer = {...EMPTY_CUSTOMER};
             customer.commonId = commonId;
             this.memoryStore.storeEntry(this.buildLdapEntryFromCustomer(customer))
@@ -120,7 +122,6 @@ export class ApiModuleCustomerLdapMirror extends ApiModuleAuthorized implements 
     entityDeleted(entityType: EntityType, commonId: string): void {
         if (entityType == EntityType.CUSTOMER) {
             let entry = this.memoryStore.getAllEntries().find(e => e.attributes.find(attr => attr.type.toString() == "commonId")?.vals[0].toString() == commonId)
-            console.log("commonId: ", commonId, "entry", entry);
             if (entry) {
                 this.memoryStore.removeEntry(entry)
             }
